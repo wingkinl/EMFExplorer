@@ -4,7 +4,6 @@
 
 #pragma once
 #include "FileView.h"
-#include "ClassView.h"
 #include "PropertiesWnd.h"
 
 //#define _ENABLE_STATUS_BAR
@@ -43,7 +42,6 @@ protected:  // control bar embedded members
 #endif // _ENABLE_STATUS_BAR
 	CMFCToolBarImages m_UserImages;
 	CFileView         m_wndFileView;
-	CClassView        m_wndClassView;
 	CPropertiesWnd    m_wndProperties;
 
 // Generated message map functions

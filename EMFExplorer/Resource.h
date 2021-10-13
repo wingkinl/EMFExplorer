@@ -25,8 +25,6 @@
 #define ID_CLASS_ADD_MEMBER_VARIABLE    140
 #define ID_CLASS_DEFINITION             141
 #define ID_CLASS_PROPERTIES             142
-#define ID_NEW_FOLDER                   143
-#define ID_SORT_MENU                    144
 #define ID_SORTING_GROUPBYTYPE          145
 #define ID_SORTING_SORTALPHABETIC       146
 #define ID_SORTING_SORTBYTYPE           147
@@ -41,15 +39,11 @@
 #define IDS_PROPERTIES_WND              158
 #define IDI_FILE_VIEW                   161
 #define IDI_FILE_VIEW_HC                162
-#define IDI_CLASS_VIEW                  163
-#define IDI_CLASS_VIEW_HC               164
 #define IDI_PROPERTIES_WND              167
 #define IDI_PROPERTIES_WND_HC           168
 #define IDR_EXPLORER                    169
 #define IDB_EXPLORER_24                 170
-#define IDR_SORT                        171
 #define IDB_SORT_24                     172
-#define IDR_POPUP_SORT                  173
 #define IDR_POPUP_EXPLORER              174
 #define IDB_FILE_VIEW                   175
 #define IDB_FILE_VIEW_24                176
