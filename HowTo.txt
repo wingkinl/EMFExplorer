@@ -13,7 +13,8 @@ To unregister, run (as admin):
 
 3, How to debug
 
-Use <gitrepo>\Test\PreviewHandlers
+Use PreviewHandlers
+https://www.brad-smith.info/blog/archives/183
 
 Or:
 
