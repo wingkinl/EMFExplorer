@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{B9DF2FB7-0D4D-4EFF-9ADC-B72FDD267FA7}</ProjectGuid>
+    <ProjectGuid>{D2FA3E93-0D26-4CAD-908D-75287A9F7B3E}</ProjectGuid>
     <Keyword>MFCProj</Keyword>
     <RootNamespace>EMFExplorer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>

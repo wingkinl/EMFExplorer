@@ -4,12 +4,12 @@ REGEDIT
 ;   registered in your InitInstance automatically with a call to
 ;   CWinApp::RegisterShellFileTypes and COleObjectFactory::UpdateRegistryAll.
 
-HKEY_CLASSES_ROOT\.emf = 
-HKEY_CLASSES_ROOT\\shell\open\command = EMFExplorer.EXE %1
-HKEY_CLASSES_ROOT\\shell\open\ddeexec = [open("%1")]
-HKEY_CLASSES_ROOT\\shell\open\ddeexec\application = EMFExplorer
+HKEY_CLASSES_ROOT\.emf = EMFExplorer.Document
+HKEY_CLASSES_ROOT\EMFExplorer.Document\shell\open\command = EMFExplorer.EXE %1
+HKEY_CLASSES_ROOT\EMFExplorer.Document\shell\open\ddeexec = [open("%1")]
+HKEY_CLASSES_ROOT\EMFExplorer.Document\shell\open\ddeexec\application = EMFExplorer
     ; note: the application is optional
     ;  (it defaults to the app name in "command")
 
-HKEY_CLASSES_ROOT\ = 
+HKEY_CLASSES_ROOT\EMFExplorer.Document = EMFExplorer.Document
 
