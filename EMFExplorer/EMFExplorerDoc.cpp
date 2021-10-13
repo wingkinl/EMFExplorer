@@ -14,11 +14,6 @@
 
 #include <propkey.h>
 
-#pragma warning(push)
-#pragma warning(disable:4458)
-#include <GdiPlus.h>
-#pragma warning(pop)
-
 #pragma comment(lib, "GdiPlus.lib")
 
 #ifdef _DEBUG
@@ -63,21 +58,12 @@ END_MESSAGE_MAP()
 CEMFExplorerDoc::CEMFExplorerDoc() noexcept
 {
 	// TODO: add one-time construction code here
-
+	GdiplusBegin();
 }
 
 CEMFExplorerDoc::~CEMFExplorerDoc()
 {
-}
-
-int CEMFExplorerDoc::Startup()
-{
-	return GdiplusBegin();
-}
-
-int CEMFExplorerDoc::Shutdown()
-{
-	return GdiplusEnd();
+	GdiplusEnd();
 }
 
 BOOL CEMFExplorerDoc::OnNewDocument()
@@ -111,7 +97,7 @@ void CEMFExplorerDoc::Serialize(CArchive& ar)
 
 void CEMFExplorerDoc::DeleteContents()
 {
-	m_metaFile.reset();
+	m_emf.reset();
 	m_type = EMFType::Invalid;
 }
 

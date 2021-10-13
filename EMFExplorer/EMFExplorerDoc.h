@@ -5,11 +5,7 @@
 
 #pragma once
 #include <memory>
-
-namespace Gdiplus
-{
-	class Metafile;
-}
+#include "EMFRecAccess.h"
 
 class CEMFExplorerDoc : public CDocument
 {
@@ -27,10 +23,10 @@ public:
 	};
 	inline EMFType GetEMFType() const { return m_type; }
 
+	inline std::shared_ptr<EMFAccess> GetEMFAccess() const { return m_emf; }
+
 // Operations
 public:
-	static int	Startup();
-	static int	Shutdown();
 // Overrides
 public:
 	virtual BOOL OnNewDocument();
@@ -52,7 +48,7 @@ public:
 #endif
 
 protected:
-	std::unique_ptr<Gdiplus::Metafile> m_metaFile;
+	std::shared_ptr<EMFAccess>	m_emf;
 
 	EMFType			m_type = EMFType::Invalid;
 
