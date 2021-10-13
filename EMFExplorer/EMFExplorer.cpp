@@ -90,6 +90,8 @@ BOOL CEMFExplorerApp::InitInstance()
 	theApp.GetTooltipManager()->SetTooltipParams(AFX_TOOLTIP_TYPE_ALL,
 		RUNTIME_CLASS(CMFCToolTipCtrl), &ttParams);
 
+	CEMFExplorerDoc::Startup();
+
 	// Register the application's document templates.  Document templates
 	//  serve as the connection between documents, frame windows and views
 	CSingleDocTemplate* pDocTemplate;
@@ -128,6 +130,12 @@ BOOL CEMFExplorerApp::InitInstance()
 	// Enable drag/drop open
 	m_pMainWnd->DragAcceptFiles();
 	return TRUE;
+}
+
+int CEMFExplorerApp::ExitInstance()
+{
+	CEMFExplorerDoc::Shutdown();
+	return CWinAppEx::ExitInstance();
 }
 
 // CEMFExplorerApp message handlers

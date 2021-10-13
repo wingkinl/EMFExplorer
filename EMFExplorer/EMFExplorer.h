@@ -23,6 +23,7 @@ public:
 // Overrides
 public:
 	virtual BOOL InitInstance();
+	int ExitInstance() override;
 
 // Implementation
 	BOOL  m_bHiColorIcons;

@@ -25,6 +25,11 @@ IMPLEMENT_DYNCREATE(CEMFExplorerView, CView)
 BEGIN_MESSAGE_MAP(CEMFExplorerView, CView)
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
+	ON_UPDATE_COMMAND_UI(ID_FILE_NEW, &CEMFExplorerView::OnUpdateFileNew)
+	ON_UPDATE_COMMAND_UI(ID_FILE_SAVE, &CEMFExplorerView::OnUpdateNeedDoc)
+	ON_UPDATE_COMMAND_UI(ID_EDIT_COPY, &CEMFExplorerView::OnUpdateNeedDoc)
+	ON_COMMAND(ID_EDIT_PASTE, &CEMFExplorerView::OnEditPaste)
+	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CEMFExplorerView::OnUpdateNeedClip)
 END_MESSAGE_MAP()
 
 // CEMFExplorerView construction/destruction
@@ -45,6 +50,21 @@ BOOL CEMFExplorerView::PreCreateWindow(CREATESTRUCT& cs)
 	//  the CREATESTRUCT cs
 
 	return CView::PreCreateWindow(cs);
+}
+
+BOOL CEMFExplorerView::CheckClipboardForEMF() const
+{
+	BOOL bOK = IsClipboardFormatAvailable(CF_ENHMETAFILE);
+	return bOK;
+}
+
+BOOL CEMFExplorerView::HasValidEMFInDoc() const
+{
+	CEMFExplorerDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return FALSE;
+	return pDoc->GetEMFType() != CEMFExplorerDoc::EMFType::Invalid;
 }
 
 // CEMFExplorerView drawing
@@ -72,6 +92,26 @@ void CEMFExplorerView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
 #endif
 }
 
+
+void CEMFExplorerView::OnUpdateFileNew(CCmdUI* pCmdUI)
+{
+	pCmdUI->Enable(FALSE);
+}
+
+void CEMFExplorerView::OnUpdateNeedDoc(CCmdUI* pCmdUI)
+{
+	pCmdUI->Enable(HasValidEMFInDoc());
+}
+
+void CEMFExplorerView::OnEditPaste()
+{
+
+}
+
+void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
+{
+	pCmdUI->Enable(CheckClipboardForEMF());
+}
 
 // CEMFExplorerView diagnostics
 

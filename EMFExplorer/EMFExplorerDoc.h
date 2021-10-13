@@ -4,7 +4,12 @@
 
 
 #pragma once
+#include <memory>
 
+namespace Gdiplus
+{
+	class Metafile;
+}
 
 class CEMFExplorerDoc : public CDocument
 {
@@ -14,14 +19,25 @@ protected: // create from serialization only
 
 // Attributes
 public:
+	enum class EMFType
+	{
+		Invalid,
+		FromFile,
+		FromClipboard,
+	};
+	inline EMFType GetEMFType() const { return m_type; }
 
 // Operations
 public:
-
+	static int	Startup();
+	static int	Shutdown();
 // Overrides
 public:
 	virtual BOOL OnNewDocument();
 	virtual void Serialize(CArchive& ar);
+
+	void DeleteContents() override;
+
 #ifdef SHARED_HANDLERS
 	virtual void InitializeSearchContent();
 	virtual void OnDrawThumbnail(CDC& dc, LPRECT lprcBounds);
@@ -36,6 +52,9 @@ public:
 #endif
 
 protected:
+	std::unique_ptr<Gdiplus::Metafile> m_metaFile;
+
+	EMFType			m_type = EMFType::Invalid;
 
 // Generated message map functions
 protected:

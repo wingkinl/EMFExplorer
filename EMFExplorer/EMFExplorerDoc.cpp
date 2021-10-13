@@ -14,9 +14,41 @@
 
 #include <propkey.h>
 
+#pragma warning(push)
+#pragma warning(disable:4458)
+#include <GdiPlus.h>
+#pragma warning(pop)
+
+#pragma comment(lib, "GdiPlus.lib")
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
+static	int			l_nGdiplusRequire = 0;
+static	ULONG_PTR	l_lptrGdiplus = NULL;
+
+int	GdiplusBegin()
+{
+	if (0 == l_nGdiplusRequire)
+	{
+		Gdiplus::GdiplusStartupInput input;
+		Gdiplus::GdiplusStartup(&l_lptrGdiplus, &input, NULL);
+	}
+
+	return (++l_nGdiplusRequire);
+}
+
+int GdiplusEnd()
+{
+	--l_nGdiplusRequire;
+	if (0 == l_nGdiplusRequire && 0 != l_lptrGdiplus)
+	{
+		Gdiplus::GdiplusShutdown(l_lptrGdiplus);
+		l_lptrGdiplus = NULL;
+	}
+	return (l_nGdiplusRequire);
+}
 
 // CEMFExplorerDoc
 
@@ -38,6 +70,16 @@ CEMFExplorerDoc::~CEMFExplorerDoc()
 {
 }
 
+int CEMFExplorerDoc::Startup()
+{
+	return GdiplusBegin();
+}
+
+int CEMFExplorerDoc::Shutdown()
+{
+	return GdiplusEnd();
+}
+
 BOOL CEMFExplorerDoc::OnNewDocument()
 {
 	if (!CDocument::OnNewDocument())
@@ -45,6 +87,7 @@ BOOL CEMFExplorerDoc::OnNewDocument()
 
 	// TODO: add reinitialization code here
 	// (SDI documents will reuse this document)
+
 
 	return TRUE;
 }
@@ -64,6 +107,12 @@ void CEMFExplorerDoc::Serialize(CArchive& ar)
 	{
 		// TODO: add loading code here
 	}
+}
+
+void CEMFExplorerDoc::DeleteContents()
+{
+	m_metaFile.reset();
+	m_type = EMFType::Invalid;
 }
 
 #ifdef SHARED_HANDLERS

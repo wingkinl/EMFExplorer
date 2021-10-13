@@ -23,7 +23,9 @@ public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 protected:
+	BOOL CheckClipboardForEMF() const;
 
+	BOOL HasValidEMFInDoc() const;
 // Implementation
 public:
 	virtual ~CEMFExplorerView();
@@ -39,6 +41,10 @@ protected:
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+	afx_msg void OnUpdateFileNew(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateNeedDoc(CCmdUI* pCmdUI);
+	afx_msg void OnEditPaste();
+	afx_msg void OnUpdateNeedClip(CCmdUI* pCmdUI);
 	DECLARE_MESSAGE_MAP()
 };
 

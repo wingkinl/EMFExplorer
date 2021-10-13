@@ -181,7 +181,6 @@ IDR_MAINFRAME MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&New\tCtrl+N",                ID_FILE_NEW
         MENUITEM "&Open...\tCtrl+O",            ID_FILE_OPEN
         MENUITEM "&Save\tCtrl+S",               ID_FILE_SAVE
         MENUITEM SEPARATOR
@@ -445,7 +444,7 @@ STRINGTABLE
 BEGIN
     ID_EDIT_CLEAR           "Erase the selection\nErase"
     ID_EDIT_CLEAR_ALL       "Erase everything\nErase All"
-    ID_EDIT_COPY            "Copy the selection and put it on the Clipboard\nCopy"
+    ID_EDIT_COPY            "Copy the EMF and put it on the Clipboard\nCopy"
     ID_EDIT_CUT             "Cut the selection and put it on the Clipboard\nCut"
     ID_EDIT_FIND            "Find the specified text\nFind"
     ID_EDIT_PASTE           "Insert Clipboard contents\nPaste"
