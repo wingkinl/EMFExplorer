@@ -62,7 +62,6 @@
 #define IDB_PROPERTIES_HC               184
 #define IDS_EXPLORER                    305
 #define IDS_EDIT_MENU                   306
-#define IDC_MFCLINK1                    1000
 #define IDC_GITHUB_LINK                 1000
 
 // Next default values for new objects

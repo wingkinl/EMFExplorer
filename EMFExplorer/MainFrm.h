@@ -7,6 +7,8 @@
 #include "ClassView.h"
 #include "PropertiesWnd.h"
 
+//#define _ENABLE_STATUS_BAR
+
 class CMainFrame : public CFrameWndEx
 {
 	
@@ -36,6 +38,9 @@ public:
 protected:  // control bar embedded members
 	CMFCMenuBar       m_wndMenuBar;
 	CMFCToolBar       m_wndToolBar;
+#ifdef _ENABLE_STATUS_BAR
+	CMFCStatusBar     m_wndStatusBar;
+#endif // _ENABLE_STATUS_BAR
 	CMFCToolBarImages m_UserImages;
 	CFileView         m_wndFileView;
 	CClassView        m_wndClassView;

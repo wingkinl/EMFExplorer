@@ -26,6 +26,16 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_REGISTERED_MESSAGE(AFX_WM_CREATETOOLBAR, &CMainFrame::OnToolbarCreateNew)
 END_MESSAGE_MAP()
 
+#ifdef _ENABLE_STATUS_BAR
+static UINT indicators[] =
+{
+	ID_SEPARATOR,           // status line indicator
+	ID_INDICATOR_CAPS,
+	ID_INDICATOR_NUM,
+	ID_INDICATOR_SCRL,
+};
+#endif // _ENABLE_STATUS_BAR
+
 // CMainFrame construction/destruction
 
 CMainFrame::CMainFrame() noexcept
@@ -74,6 +84,15 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// Allow user-defined toolbars operations:
 	InitUserToolbars(nullptr, uiFirstUserToolBarId, uiLastUserToolBarId);
+
+#ifdef _ENABLE_STATUS_BAR
+	if (!m_wndStatusBar.Create(this))
+	{
+		TRACE0("Failed to create status bar\n");
+		return -1;      // fail to create
+	}
+	m_wndStatusBar.SetIndicators(indicators, sizeof(indicators)/sizeof(UINT));
+#endif // _ENABLE_STATUS_BAR
 
 	// TODO: Delete these five lines if you don't want the toolbar and menubar to be dockable
 	m_wndMenuBar.EnableDocking(CBRS_ALIGN_ANY);
