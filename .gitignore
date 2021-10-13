@@ -3,3 +3,7 @@ x64/
 Debug/
 Release/
 *.aps
+/EMFExplorerHandlers/dlldata.c
+/EMFExplorerHandlers/EMFExplorerHandlers_i.c
+/EMFExplorerHandlers/EMFExplorerHandlers_i.h
+/EMFExplorerHandlers/EMFExplorerHandlers_p.c

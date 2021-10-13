@@ -1,0 +1,72 @@
+1, How to build
+
+The easier way would be to build the project with Admin access rights (run VS as Admin), or
+follow step 2 after building dll.
+
+2, How to setup/install the handlers for Windows
+
+To register, run (as admin):
+	regsvr32 EMFExplorerHandlers.dll
+
+To unregister, run (as admin):
+	regsvr32 /u EMFExplorerHandlers.dll
+
+3, How to debug
+
+Use <gitrepo>\Test\PreviewHandlers
+
+Or:
+
+See MSDN example here
+
+C++ Windows Shell thumbnail handler (CppShellExtThumbnailHandler)
+https://code.msdn.microsoft.com/windowsapps/CppShellExtThumbnailHandler-32399b35
+
+===== QUOTE BEGIN =====
+Debugging thumbnail handlers is difficult for several reasons.
+
+1) The Windows Explorer hosts thumbnail providers in an isolated process to 
+get robustness and improve security. Because of this it is difficult to debug 
+your handler as you cannot set breakpoints on your code in the explorer.exe 
+process as it is not loaded there. The isolated process is DllHost.exe and 
+this is used for other purposes so finding the right instance of this process 
+is difficult. 
+
+2) Once a thumbnail is computed for a particular file it is cached and your 
+handler won't be called again for that item unless you invalidate the cache 
+by updating the modification date of the file. Note that this cache works 
+even if the files are renamed or moved.
+
+Given all of these issues the easiest way to debug your code in a test 
+application then once you have proven it works there test it in the context 
+of the explorer. 
+
+Another thing to do is to disable the process isolation feature of explorer. 
+You can do this by putting the following named value on the CLSID of your 
+handler
+
+   HKCR\CLSID\{CLSID of Your Handler}
+       DisableProcessIsolation=REG_DWORD:1
+
+Be sure to not ship your handler with this on as customers require the 
+security and robustness benefits of the isolated process feature.
+===== QUOTE END =====
+
+So, to debug a shell handler, you need to first make sure it's registered
+in the system first. 
+
+Then, edit the registry as mentioned above, or run the reg file
+	DisableHandlerProcessIsolation.reg
+	(to restore, run EnableHandlerProcessIsolation.reg)
+
+To debug the *thumbnail* handler dll, you need to attach the debugger to:
+	explorer.exe
+	
+To debug the *preview* handler dll, you need to attach the debugger to:
+	prevhost.exe
+	
+Note: if that didn't work, you might need to try one of these (or all of them):
+a, Terminate the host process accordingly.
+b, Figure out a way to update the modify date of the sample file (*.opju,*.ogg),
+such as edit the file with VS in hex mode, normally simply change a random byte
+would do the trick (just remember to restore it back).

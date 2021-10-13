@@ -1,0 +1,52 @@
+// EMFExplorerHandlers.idl : IDL source for EMFExplorerHandlers
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (EMFExplorerHandlers.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	object,
+	uuid(6eb4d2a3-a314-4b68-9a8a-4cafed5a7998),
+	pointer_default(unique)
+]
+interface IPreview : IUnknown
+{
+};
+
+[
+	object,
+	uuid(c8de2836-e240-4ea6-9bce-b838b461582f),
+	pointer_default(unique)
+]
+interface IThumbnail : IUnknown
+{
+};
+
+[
+	uuid(693d6890-e38c-4f15-b5da-6725175840a2),
+	version(1.0),
+]
+library EMFExplorerHandlersLib
+{
+	importlib("stdole2.tlb");
+	[
+		uuid(ccc77db6-7e7d-4439-8ee1-6be26960328e)
+	]
+	coclass Preview
+	{
+		[default] interface IPreviewHandler;
+	};
+	[
+		uuid(323e64b7-644c-4234-b8b2-39dade4c5a60)
+	]
+	coclass Thumbnail
+	{
+		[default] interface IThumbnailProvider;
+	};
+};
+
+import "shobjidl.idl";
+import "thumbcache.idl";

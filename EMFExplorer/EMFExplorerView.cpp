@@ -69,7 +69,7 @@ BOOL CEMFExplorerView::HasValidEMFInDoc() const
 
 // CEMFExplorerView drawing
 
-void CEMFExplorerView::OnDraw(CDC* /*pDC*/)
+void CEMFExplorerView::OnDraw(CDC* pDC)
 {
 	CEMFExplorerDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
@@ -77,6 +77,7 @@ void CEMFExplorerView::OnDraw(CDC* /*pDC*/)
 		return;
 
 	// TODO: add draw code for native data here
+	pDC->FillSolidRect(10, 10, 200, 100, RGB(255, 0, 0));
 }
 
 void CEMFExplorerView::OnRButtonUp(UINT /* nFlags */, CPoint point)
