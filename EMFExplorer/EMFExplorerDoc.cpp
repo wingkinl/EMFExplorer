@@ -16,9 +16,12 @@
 
 #pragma comment(lib, "GdiPlus.lib")
 
-#ifdef _DEBUG
-#define new DEBUG_NEW
-#endif
+// disable this to avoid the following compile error:
+// error C2660: 'Gdiplus::GdiplusBase::operator new': function does not take 3 arguments
+
+// #ifdef _DEBUG
+// #define new DEBUG_NEW
+// #endif
 
 static	int			l_nGdiplusRequire = 0;
 static	ULONG_PTR	l_lptrGdiplus = NULL;
@@ -91,7 +94,13 @@ void CEMFExplorerDoc::Serialize(CArchive& ar)
 	}
 	else
 	{
-		// TODO: add loading code here
+		// Memory leak?
+		ASSERT(!m_emf.get());
+		CFile* pFile = ar.GetFile();
+		auto nSize = (UINT)pFile->GetLength();
+		std::vector<BYTE> vBuffer(nSize);
+		pFile->Read(vBuffer.data(), nSize);
+		m_emf = std::make_shared<EMFAccess>(&vBuffer);
 	}
 }
 
@@ -106,22 +115,44 @@ void CEMFExplorerDoc::DeleteContents()
 // Support for thumbnails
 void CEMFExplorerDoc::OnDrawThumbnail(CDC& dc, LPRECT lprcBounds)
 {
-	// Modify this code to draw the document's data
 	dc.FillSolidRect(lprcBounds, RGB(255, 255, 255));
+	if (m_emf.get())
+	{
+		int nDPI = dc.GetDeviceCaps(LOGPIXELSX);
+		double dScale = (double)nDPI / 96;
+		const int nGrid = (int)dScale * 8;
+		const int nGrid2 = nGrid * 2;
+		CRect rcBounds = lprcBounds;
+		for (LONG yy = rcBounds.top, row = 0; yy < rcBounds.bottom; yy += nGrid, ++row)
+		{
+			for (LONG xx = rcBounds.left+((row&1)?0:nGrid); xx < rcBounds.right; xx += nGrid2)
+			{
+				dc.FillSolidRect(xx, yy, nGrid, nGrid, RGB(0xcc, 0xcc, 0xcc));
+			}
+		}
 
-	CString strText = _T("TODO: implement thumbnail drawing here");
-	LOGFONT lf;
+		CRect rcDraw = m_emf->GetFittingDrawRect(rcBounds);
+		Gdiplus::Graphics gg(dc.GetSafeHdc());
+		m_emf->DrawMetafile(gg, rcDraw);
+	}
+	else
+	{
+		CString strText = _T("EMFExplorer: failed to read EMF");
+		LOGFONT lf;
 
-	CFont* pDefaultGUIFont = CFont::FromHandle((HFONT) GetStockObject(DEFAULT_GUI_FONT));
-	pDefaultGUIFont->GetLogFont(&lf);
-	lf.lfHeight = 36;
+		CFont* pDefaultGUIFont = CFont::FromHandle((HFONT)GetStockObject(DEFAULT_GUI_FONT));
+		pDefaultGUIFont->GetLogFont(&lf);
+		lf.lfHeight = 36;
 
-	CFont fontDraw;
-	fontDraw.CreateFontIndirect(&lf);
+		CFont fontDraw;
+		fontDraw.CreateFontIndirect(&lf);
 
-	CFont* pOldFont = dc.SelectObject(&fontDraw);
-	dc.DrawText(strText, lprcBounds, DT_CENTER | DT_WORDBREAK);
-	dc.SelectObject(pOldFont);
+		CFont* pOldFont = dc.SelectObject(&fontDraw);
+		auto oldTxtColor = dc.SetTextColor(RGB(255, 0, 0));
+		dc.DrawText(strText, lprcBounds, DT_CENTER | DT_WORDBREAK);
+		dc.SetTextColor(oldTxtColor);
+		dc.SelectObject(pOldFont);
+	}
 }
 
 // Support for Search Handlers

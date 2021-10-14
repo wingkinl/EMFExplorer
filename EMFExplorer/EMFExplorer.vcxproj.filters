@@ -51,6 +51,12 @@
     <ClInclude Include="EMFRecAccess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EmfPlusStruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GdiplusEnums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EMFExplorer.cpp">
@@ -78,6 +84,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="EMFRecAccess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EmfPlusStruct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

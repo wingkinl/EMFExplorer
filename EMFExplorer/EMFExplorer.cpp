@@ -100,7 +100,17 @@ BOOL CEMFExplorerApp::InitInstance()
 		RUNTIME_CLASS(CEMFExplorerView));
 	if (!pDocTemplate)
 		return FALSE;
+
 	AddDocTemplate(pDocTemplate);
+
+	m_pSubDocTemplate = new CMultiDocTemplate(
+		IDR_MAINFRAME,
+		RUNTIME_CLASS(CEMFExplorerDoc),
+		RUNTIME_CLASS(CMainFrame),       // main SDI frame window
+		RUNTIME_CLASS(CEMFExplorerView));
+	if (!m_pSubDocTemplate)
+		return FALSE;
+	m_pSubDocTemplate->LoadTemplate();
 
 
 	// Parse command line for standard shell commands, DDE, file open
@@ -191,15 +201,65 @@ void CEMFExplorerApp::PreLoadState()
 	GetContextMenuManager()->AddMenu(strName, IDR_POPUP_EXPLORER);
 }
 
+const TCHAR szBackgroundDark[] = _T("BackgroundDark");
+
 void CEMFExplorerApp::LoadCustomState()
 {
+	m_bBackgroundDark = GetInt(szBackgroundDark, TRUE);
 }
 
 void CEMFExplorerApp::SaveCustomState()
 {
+	WriteInt(szBackgroundDark, m_bBackgroundDark);
 }
 
 // CEMFExplorerApp message handlers
 
+CEMFExplorerDoc* CEMFExplorerApp::CreateNewFrameForSubEMF()
+{
+	ASSERT(m_pSubDocTemplate != nullptr);
 
+	CDocument* pDoc = nullptr;
+	CFrameWnd* pFrame = nullptr;
 
+	// Create a new instance of the document referenced
+	// by the m_pDocTemplate member.
+	if (m_pSubDocTemplate != nullptr)
+		pDoc = m_pSubDocTemplate->CreateNewDocument();
+
+	if (pDoc != nullptr)
+	{
+		// If creation worked, use create a new frame for
+		// that document.
+		pFrame = m_pSubDocTemplate->CreateNewFrame(pDoc, nullptr);
+		if (pFrame != nullptr)
+		{
+			// Set the title, and initialize the document.
+			// If document initialization fails, clean-up
+			// the frame window and document.
+
+			m_pSubDocTemplate->SetDefaultTitle(pDoc);
+			if (!pDoc->OnNewDocument())
+			{
+				pFrame->DestroyWindow();
+				pFrame = nullptr;
+			}
+			else
+			{
+				// Otherwise, update the frame
+				m_pSubDocTemplate->InitialUpdateFrame(pFrame, pDoc, TRUE);
+			}
+		}
+	}
+
+	// If we failed, clean up the document and show a
+	// message to the user.
+
+	if (pFrame == nullptr || pDoc == nullptr)
+	{
+		delete pDoc;
+		pDoc = nullptr;
+		AfxMessageBox(AFX_IDP_FAILED_TO_CREATE_DOC);
+	}
+	return DYNAMIC_DOWNCAST(CEMFExplorerDoc, pDoc);
+}

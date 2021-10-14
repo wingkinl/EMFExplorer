@@ -6,7 +6,7 @@
 #include "FileView.h"
 #include "PropertiesWnd.h"
 
-//#define _ENABLE_STATUS_BAR
+#define _ENABLE_STATUS_BAR
 
 class CMainFrame : public CFrameWndEx
 {
@@ -20,7 +20,7 @@ public:
 
 // Operations
 public:
-
+	void SetViewBackgroundDark(BOOL bDark);
 // Overrides
 public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
@@ -37,9 +37,7 @@ public:
 protected:  // control bar embedded members
 	CMFCMenuBar       m_wndMenuBar;
 	CMFCToolBar       m_wndToolBar;
-#ifdef _ENABLE_STATUS_BAR
 	CMFCStatusBar     m_wndStatusBar;
-#endif // _ENABLE_STATUS_BAR
 	CMFCToolBarImages m_UserImages;
 	CFileView         m_wndFileView;
 	CPropertiesWnd    m_wndProperties;
@@ -48,6 +46,12 @@ protected:  // control bar embedded members
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnViewCustomize();
+	afx_msg void OnViewBackgroundDark();
+	afx_msg void OnViewBackgroundLight();
+	afx_msg void OnUpdateViewBackgroundDark(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateViewBackgroundLight(CCmdUI* pCmdUI);
+	afx_msg void OnViewTransparentBkGrid();
+	afx_msg void OnUpdateViewTransparentBkGrid(CCmdUI* pCmdUI);
 	afx_msg LRESULT OnToolbarCreateNew(WPARAM wp, LPARAM lp);
 	DECLARE_MESSAGE_MAP()
 

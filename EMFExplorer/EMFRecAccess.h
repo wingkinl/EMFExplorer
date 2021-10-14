@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include "GdiplusEnums.h"
 
 class EMFRecAccess
 {
@@ -16,14 +17,21 @@ public:
 class EMFAccess final
 {
 public:
-	EMFAccess();
+	EMFAccess(const std::vector<emfplus::u8t>* pData = nullptr);
 	~EMFAccess();
 public:
-protected:
-	using EmfRecArray	= std::vector<std::shared_ptr<EMFRecAccess>>;
+	const Gdiplus::MetafileHeader GetMetafileHeader() const { return m_hdr; }
 
-	std::shared_ptr<Gdiplus::Metafile>	m_metafile;
-	EmfRecArray		m_records;
+	CRect GetFittingDrawRect(const CRect& rect) const;
+
+	void DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const;
+protected:
+	using EmfRecArray	= std::vector<std::unique_ptr<EMFRecAccess>>;
+	using EMFPtr		= std::unique_ptr<Gdiplus::Metafile>;
+
+	EMFPtr					m_pMetafile;
+	EmfRecArray				m_EMFRecords;
+	Gdiplus::MetafileHeader	m_hdr;
 };
 
 #endif // EMF_REC_ACCESS_H

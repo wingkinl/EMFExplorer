@@ -36,8 +36,7 @@ END_MESSAGE_MAP()
 
 CEMFExplorerView::CEMFExplorerView() noexcept
 {
-	// TODO: add construction code here
-
+	
 }
 
 CEMFExplorerView::~CEMFExplorerView()
@@ -76,8 +75,38 @@ void CEMFExplorerView::OnDraw(CDC* pDC)
 	if (!pDoc)
 		return;
 
-	// TODO: add draw code for native data here
-	pDC->FillSolidRect(10, 10, 200, 100, RGB(255, 0, 0));
+	CRect rect;
+	GetClientRect(&rect);
+	
+	COLORREF crfBk = GetSysColor(COLOR_WINDOW);
+#ifndef SHARED_HANDLERS
+	if (theApp.m_bBackgroundDark)
+		crfBk = theApp.m_crfBkColorDark;
+#endif // SHARED_HANDLERS
+	pDC->FillSolidRect(rect, crfBk);
+
+
+// 	pDC->FillSolidRect(rect, GetSysColor(COLOR_WINDOW));
+// 
+// 	int nDPI = pDC->GetDeviceCaps(LOGPIXELSX);
+// 	double dScale = (double)nDPI / 96;
+// 	const int nGrid = (int)dScale * 8;
+// 	const int nGrid2 = nGrid * 2;
+// 	for (LONG yy = rect.top, row = 0; yy < rect.bottom; yy += nGrid, ++row)
+// 	{
+// 		for (LONG xx = rect.left+((row&1)?0:nGrid); xx < rect.right; xx += nGrid2)
+// 		{
+// 			pDC->FillSolidRect(xx, yy, nGrid, nGrid, RGB(0xcc, 0xcc, 0xcc));
+// 		}
+// 	}
+// 
+// 	EMFAccess* pEMF = pDoc->GetEMFAccess();
+// 	if (pEMF)
+// 	{
+// 		CRect rcDraw = pEMF->GetFittingDrawRect(rect);
+// 		Gdiplus::Graphics gg(pDC->GetSafeHdc());
+// 		pEMF->DrawMetafile(gg, rcDraw);
+// 	}
 }
 
 void CEMFExplorerView::OnRButtonUp(UINT /* nFlags */, CPoint point)

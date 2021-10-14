@@ -36,6 +36,7 @@
 #pragma warning(pop)
 
 
+#define _ENABLE_GDIPLUS_STRUCT
 
 
 #ifdef _UNICODE

@@ -93,7 +93,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PCH_FNAME="pch.h";WIN32;_WINDOWS;_DEBUG;_USRDLL;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -124,7 +124,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PCH_FNAME="pch.h";WIN32;_WINDOWS;_DEBUG;_USRDLL;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -154,7 +154,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PCH_FNAME="pch.h";WIN32;_WINDOWS;NDEBUG;_USRDLL;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -187,7 +187,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PCH_FNAME="pch.h";WIN32;_WINDOWS;NDEBUG;_USRDLL;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -216,6 +216,9 @@
   <ItemGroup>
     <ClInclude Include="..\EMFExplorer\EMFExplorerDoc.h" />
     <ClInclude Include="..\EMFExplorer\EMFExplorerView.h" />
+    <ClInclude Include="..\EMFExplorer\EmfPlusStruct.h" />
+    <ClInclude Include="..\EMFExplorer\EMFRecAccess.h" />
+    <ClInclude Include="..\EMFExplorer\GdiplusEnums.h" />
     <ClInclude Include="dllmain.h" />
     <ClInclude Include="EMFExplorerHandlers_i.h" />
     <ClInclude Include="framework.h" />
@@ -229,6 +232,8 @@
   <ItemGroup>
     <ClCompile Include="..\EMFExplorer\EMFExplorerDoc.cpp" />
     <ClCompile Include="..\EMFExplorer\EMFExplorerView.cpp" />
+    <ClCompile Include="..\EMFExplorer\EmfPlusStruct.cpp" />
+    <ClCompile Include="..\EMFExplorer\EMFRecAccess.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="EMFExplorerHandlers.cpp" />
     <ClCompile Include="EMFExplorerHandlers_i.c">

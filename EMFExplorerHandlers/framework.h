@@ -38,6 +38,8 @@
 
 #define ATL_NO_ASSERT_ON_DESTROY_NONEXISTENT_WINDOW
 
+#define _ENABLE_GDIPLUS_STRUCT
+
 #include "resource.h"
 #include <atlbase.h>
 #include <atlcom.h>

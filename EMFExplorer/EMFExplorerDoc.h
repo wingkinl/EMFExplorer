@@ -23,7 +23,7 @@ public:
 	};
 	inline EMFType GetEMFType() const { return m_type; }
 
-	inline std::shared_ptr<EMFAccess> GetEMFAccess() const { return m_emf; }
+	inline EMFAccess* GetEMFAccess() const { return m_emf.get(); }
 
 // Operations
 public:

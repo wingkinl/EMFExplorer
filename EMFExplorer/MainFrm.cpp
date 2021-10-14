@@ -24,9 +24,14 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_VIEW_CUSTOMIZE, &CMainFrame::OnViewCustomize)
 	ON_REGISTERED_MESSAGE(AFX_WM_CREATETOOLBAR, &CMainFrame::OnToolbarCreateNew)
+	ON_COMMAND(ID_BACKGROUND_DARK, &CMainFrame::OnViewBackgroundDark)
+	ON_COMMAND(ID_BACKGROUND_LIGHT, &CMainFrame::OnViewBackgroundLight)
+	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_DARK, &CMainFrame::OnUpdateViewBackgroundDark)
+	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_LIGHT, &CMainFrame::OnUpdateViewBackgroundLight)
+	ON_COMMAND(ID_BACKGROUND_TRANSPARENTGRID, &CMainFrame::OnViewTransparentBkGrid)
+	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_TRANSPARENTGRID, &CMainFrame::OnUpdateViewTransparentBkGrid)
 END_MESSAGE_MAP()
 
-#ifdef _ENABLE_STATUS_BAR
 static UINT indicators[] =
 {
 	ID_SEPARATOR,           // status line indicator
@@ -34,7 +39,6 @@ static UINT indicators[] =
 	ID_INDICATOR_NUM,
 	ID_INDICATOR_SCRL,
 };
-#endif // _ENABLE_STATUS_BAR
 
 // CMainFrame construction/destruction
 
@@ -78,21 +82,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndToolBar.SetWindowText(strToolBarName);
 
 	CString strCustomize;
-	bNameValid = strCustomize.LoadString(IDS_TOOLBAR_CUSTOMIZE);
-	ASSERT(bNameValid);
-	m_wndToolBar.EnableCustomizeButton(TRUE, ID_VIEW_CUSTOMIZE, strCustomize);
+	//bNameValid = strCustomize.LoadString(IDS_TOOLBAR_CUSTOMIZE);
+	//ASSERT(bNameValid);
+	//m_wndToolBar.EnableCustomizeButton(TRUE, ID_VIEW_CUSTOMIZE, strCustomize);
 
 	// Allow user-defined toolbars operations:
 	InitUserToolbars(nullptr, uiFirstUserToolBarId, uiLastUserToolBarId);
 
-#ifdef _ENABLE_STATUS_BAR
 	if (!m_wndStatusBar.Create(this))
 	{
 		TRACE0("Failed to create status bar\n");
 		return -1;      // fail to create
 	}
 	m_wndStatusBar.SetIndicators(indicators, sizeof(indicators)/sizeof(UINT));
-#endif // _ENABLE_STATUS_BAR
 
 	// TODO: Delete these five lines if you don't want the toolbar and menubar to be dockable
 	m_wndMenuBar.EnableDocking(CBRS_ALIGN_ANY);
@@ -131,7 +133,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CMFCVisualManagerOffice2007::SetStyle(CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
 
 	// Enable toolbar and docking window menu replacement
-	EnablePaneMenu(TRUE, ID_VIEW_CUSTOMIZE, strCustomize, ID_VIEW_TOOLBAR);
+	//EnablePaneMenu(TRUE, ID_VIEW_CUSTOMIZE, strCustomize, ID_VIEW_TOOLBAR);
+	EnablePaneMenu(TRUE, 0, strCustomize, ID_VIEW_TOOLBAR);
 
 	// enable quick (Alt+drag) toolbar customization
 	CMFCToolBar::EnableQuickCustomization();
@@ -241,6 +244,43 @@ void CMainFrame::OnViewCustomize()
 	pDlgCust->Create();
 }
 
+void CMainFrame::SetViewBackgroundDark(BOOL bDark)
+{
+	theApp.m_bBackgroundDark = bDark;
+	GetActiveView()->Invalidate();
+}
+
+void CMainFrame::OnViewBackgroundDark()
+{
+	SetViewBackgroundDark(TRUE);
+}
+
+void CMainFrame::OnViewBackgroundLight()
+{
+	SetViewBackgroundDark(FALSE);
+}
+
+void CMainFrame::OnUpdateViewBackgroundDark(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(theApp.m_bBackgroundDark);
+}
+
+void CMainFrame::OnUpdateViewBackgroundLight(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(!theApp.m_bBackgroundDark);
+}
+
+void CMainFrame::OnViewTransparentBkGrid()
+{
+	theApp.m_bShowTransparentBkGrid = !theApp.m_bShowTransparentBkGrid;
+	GetActiveView()->Invalidate();
+}
+
+void CMainFrame::OnUpdateViewTransparentBkGrid(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(theApp.m_bShowTransparentBkGrid);
+}
+
 LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)
 {
 	LRESULT lres = CFrameWndEx::OnToolbarCreateNew(wp,lp);
@@ -271,6 +311,9 @@ BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParent
 		return FALSE;
 	}
 
+	CWinApp* pApp = AfxGetApp();
+	if (pApp->m_pMainWnd == nullptr)
+		pApp->m_pMainWnd = this;
 
 	// enable customization button for all user toolbars
 	BOOL bNameValid;

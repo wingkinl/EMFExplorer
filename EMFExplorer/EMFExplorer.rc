@@ -193,6 +193,23 @@ BEGIN
         MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
         MENUITEM "&Paste\tCtrl+V",              ID_EDIT_PASTE
     END
+    POPUP "&View"
+    BEGIN
+        POPUP "&Toolbars"
+        BEGIN
+            MENUITEM "ID_VIEW_TOOLBAR",             ID_VIEW_TOOLBAR
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        POPUP "Background"
+        BEGIN
+            MENUITEM "&Dark",                       ID_BACKGROUND_DARK
+            MENUITEM "&Light",                      ID_BACKGROUND_LIGHT
+            MENUITEM SEPARATOR
+            MENUITEM "&Transparent Grid",           ID_BACKGROUND_TRANSPARENTGRID
+        END
+    END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About EMFExplorer...",       ID_APP_ABOUT
