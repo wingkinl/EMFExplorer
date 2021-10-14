@@ -30,6 +30,9 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CView)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_COPY, &CEMFExplorerView::OnUpdateNeedDoc)
 	ON_COMMAND(ID_EDIT_PASTE, &CEMFExplorerView::OnEditPaste)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CEMFExplorerView::OnUpdateNeedClip)
+#ifndef SHARED_HANDLERS
+	ON_COMMAND(ID_ZOOM_ACTUALSIZE, &CEMFExplorerView::OnZoomActualSize)
+#endif // SHARED_HANDLERS
 END_MESSAGE_MAP()
 
 // CEMFExplorerView construction/destruction
@@ -141,6 +144,11 @@ void CEMFExplorerView::OnEditPaste()
 void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(CheckClipboardForEMF());
+}
+
+void CEMFExplorerView::OnZoomActualSize()
+{
+	AfxMessageBox(_T("View"));
 }
 
 // CEMFExplorerView diagnostics

@@ -62,13 +62,35 @@
 #define ID_BACKGROUND_DARK              32773
 #define ID_BACKGROUND_LIGHT             32774
 #define ID_BACKGROUND_TRANSPARENTGRID   32777
+#define ID_ZOOM_IN                      32778
+#define ID_ZOOM_OUT                     32779
+#define ID_ZOOM_ACTUALSIZE              32780
+#define ID_ZOOM_FITTOWINDOW             32781
+#define ID_ZOOM_FITWIDTH                32782
+#define ID_ZOOM_FITHEIGHT               32783
+#define ID_ZOOM_1                       32784
+#define ID_ZOOM_5                       32785
+#define ID_ZOOM_10                      32786
+#define ID_ZOOM_20                      32787
+#define ID_ZOOM_25                      32788
+#define ID_ZOOM_33                      32789
+#define ID_ZOOM_50                      32790
+#define ID_ZOOM_66                      32791
+#define ID_ZOOM_75                      32792
+#define ID_ZOOM_100                     32793
+#define ID_ZOOM_150                     32794
+#define ID_ZOOM_200                     32795
+#define ID_ZOOM_400                     32796
+#define ID_ZOOM_800                     32797
+#define ID_ZOOM_1600                    32798
+#define ID_ZOOM_3200                    32799
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         32778
+#define _APS_NEXT_COMMAND_VALUE         32800
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

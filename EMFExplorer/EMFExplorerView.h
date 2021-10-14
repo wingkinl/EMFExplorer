@@ -45,6 +45,7 @@ protected:
 	afx_msg void OnUpdateNeedDoc(CCmdUI* pCmdUI);
 	afx_msg void OnEditPaste();
 	afx_msg void OnUpdateNeedClip(CCmdUI* pCmdUI);
+	afx_msg void OnZoomActualSize();
 	DECLARE_MESSAGE_MAP()
 };
 

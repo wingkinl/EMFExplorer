@@ -210,6 +210,33 @@ BEGIN
             MENUITEM "&Transparent Grid",           ID_BACKGROUND_TRANSPARENTGRID
         END
     END
+    POPUP "&Zoom"
+    BEGIN
+        MENUITEM "In\tCtrl++",                  ID_ZOOM_IN
+        MENUITEM "Out\tCtrl+-",                 ID_ZOOM_OUT
+        MENUITEM "Actual Size\tCtrl+0",         ID_ZOOM_ACTUALSIZE
+        MENUITEM SEPARATOR
+        MENUITEM "Fit to Window\tCtrl+Shift+0", ID_ZOOM_FITTOWINDOW
+        MENUITEM "Fit Width",                   ID_ZOOM_FITWIDTH
+        MENUITEM "Fit Height",                  ID_ZOOM_FITHEIGHT
+        MENUITEM SEPARATOR
+        MENUITEM "1%",                          ID_ZOOM_1
+        MENUITEM "5%",                          ID_ZOOM_5
+        MENUITEM "10%",                         ID_ZOOM_10
+        MENUITEM "20%",                         ID_ZOOM_20
+        MENUITEM "25%",                         ID_ZOOM_25
+        MENUITEM "33.3%",                       ID_ZOOM_33
+        MENUITEM "50%",                         ID_ZOOM_50
+        MENUITEM "66.7%",                       ID_ZOOM_66
+        MENUITEM "75%",                         ID_ZOOM_75
+        MENUITEM "100%",                        ID_ZOOM_100
+        MENUITEM "150%",                        ID_ZOOM_150
+        MENUITEM "200%",                        ID_ZOOM_200
+        MENUITEM "400%",                        ID_ZOOM_400
+        MENUITEM "800%",                        ID_ZOOM_800
+        MENUITEM "1600%",                       ID_ZOOM_1600
+        MENUITEM "3200%",                       ID_ZOOM_3200
+    END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About EMFExplorer...",       ID_APP_ABOUT
@@ -508,6 +535,36 @@ STRINGTABLE
 BEGIN
     IDS_EXPLORER            "Explorer"
     IDS_EDIT_MENU           "Edit"
+END
+
+STRINGTABLE
+BEGIN
+    ID_ZOOM_IN              "Zoom In"
+    ID_ZOOM_OUT             "Zoom Out"
+    ID_ZOOM_ACTUALSIZE      "View actual size"
+    ID_ZOOM_FITTOWINDOW     "Fit to window size"
+    ID_ZOOM_FITWIDTH        "Fit to window's width"
+    ID_ZOOM_FITHEIGHT       "Fit to window's height"
+END
+
+STRINGTABLE
+BEGIN
+    ID_ZOOM_1               "Zoom to 1%"
+    ID_ZOOM_5               "Zoom to 5%"
+    ID_ZOOM_10              "Zoom to 10%"
+    ID_ZOOM_20              "Zoom to 20%"
+    ID_ZOOM_25              "Zoom to 25%"
+    ID_ZOOM_33              "Zoom to 33.3%"
+    ID_ZOOM_50              "Zoom to 50%"
+    ID_ZOOM_66              "Zoom to 66.7%"
+    ID_ZOOM_75              "Zoom to 75%"
+    ID_ZOOM_100             "Zoom to 100%"
+    ID_ZOOM_150             "Zoom to 150%"
+    ID_ZOOM_200             "Zoom to 200%"
+    ID_ZOOM_400             "Zoom to 400%"
+    ID_ZOOM_800             "Zoom to 800%"
+    ID_ZOOM_1600            "Zoom to 1600%"
+    ID_ZOOM_3200            "Zoom to 3200%"
 END
 
 #endif    // English (United States) resources
