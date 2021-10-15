@@ -23,8 +23,9 @@ public:
 	};
 	inline EMFType GetEMFType() const { return m_type; }
 
-	inline EMFAccess* GetEMFAccess() const { return m_emf.get(); }
+	void UpdateEMFData(const std::vector<emfplus::u8t>& data);
 
+	std::shared_ptr<EMFAccess> GetEMFAccess() const { return m_emf; }
 // Operations
 public:
 // Overrides

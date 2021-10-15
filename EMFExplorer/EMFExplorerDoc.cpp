@@ -81,7 +81,10 @@ BOOL CEMFExplorerDoc::OnNewDocument()
 	return TRUE;
 }
 
-
+void CEMFExplorerDoc::UpdateEMFData(const std::vector<emfplus::u8t>& data)
+{
+	m_emf = std::make_shared<EMFAccess>(data);
+}
 
 
 // CEMFExplorerDoc serialization
@@ -100,7 +103,7 @@ void CEMFExplorerDoc::Serialize(CArchive& ar)
 		auto nSize = (UINT)pFile->GetLength();
 		std::vector<BYTE> vBuffer(nSize);
 		pFile->Read(vBuffer.data(), nSize);
-		m_emf = std::make_shared<EMFAccess>(&vBuffer);
+		m_emf = std::make_shared<EMFAccess>(vBuffer);
 	}
 }
 
@@ -118,22 +121,9 @@ void CEMFExplorerDoc::OnDrawThumbnail(CDC& dc, LPRECT lprcBounds)
 	dc.FillSolidRect(lprcBounds, RGB(255, 255, 255));
 	if (m_emf.get())
 	{
-		int nDPI = dc.GetDeviceCaps(LOGPIXELSX);
-		double dScale = (double)nDPI / 96;
-		const int nGrid = (int)dScale * 8;
-		const int nGrid2 = nGrid * 2;
-		CRect rcBounds = lprcBounds;
-		for (LONG yy = rcBounds.top, row = 0; yy < rcBounds.bottom; yy += nGrid, ++row)
-		{
-			for (LONG xx = rcBounds.left+((row&1)?0:nGrid); xx < rcBounds.right; xx += nGrid2)
-			{
-				dc.FillSolidRect(xx, yy, nGrid, nGrid, RGB(0xcc, 0xcc, 0xcc));
-			}
-		}
-
-		CRect rcDraw = m_emf->GetFittingDrawRect(rcBounds);
-		Gdiplus::Graphics gg(dc.GetSafeHdc());
-		m_emf->DrawMetafile(gg, rcDraw);
+// 		CRect rcDraw = m_emf->GetFittingDrawRect(rcBounds);
+// 		Gdiplus::Graphics gg(dc.GetSafeHdc());
+// 		m_emf->DrawMetafile(gg, rcDraw);
 	}
 	else
 	{

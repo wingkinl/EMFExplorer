@@ -20,9 +20,9 @@
 
 // CEMFExplorerView
 
-IMPLEMENT_DYNCREATE(CEMFExplorerView, CView)
+IMPLEMENT_DYNCREATE(CEMFExplorerView, CEMFExplorerViewBase)
 
-BEGIN_MESSAGE_MAP(CEMFExplorerView, CView)
+BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
 	ON_UPDATE_COMMAND_UI(ID_FILE_NEW, &CEMFExplorerView::OnUpdateFileNew)
@@ -51,7 +51,7 @@ BOOL CEMFExplorerView::PreCreateWindow(CREATESTRUCT& cs)
 	// TODO: Modify the Window class or styles here by modifying
 	//  the CREATESTRUCT cs
 
-	return CView::PreCreateWindow(cs);
+	return CEMFExplorerViewBase::PreCreateWindow(cs);
 }
 
 BOOL CEMFExplorerView::CheckClipboardForEMF() const
@@ -71,6 +71,23 @@ BOOL CEMFExplorerView::HasValidEMFInDoc() const
 
 // CEMFExplorerView drawing
 
+void CEMFExplorerView::DrawTransparentGrid(CDC* pDC, const CRect& rect)
+{
+	pDC->FillSolidRect(rect, GetSysColor(COLOR_WINDOW));
+
+	int nDPI = pDC->GetDeviceCaps(LOGPIXELSX);
+	double dScale = (double)nDPI / 96;
+	const int nGrid = (int)dScale * 8;
+	const int nGrid2 = nGrid * 2;
+	for (LONG yy = rect.top, row = 0; yy < rect.bottom; yy += nGrid, ++row)
+	{
+		for (LONG xx = rect.left+((row&1)?0:nGrid); xx < rect.right; xx += nGrid2)
+		{
+			pDC->FillSolidRect(xx, yy, nGrid, nGrid, RGB(0xcc, 0xcc, 0xcc));
+		}
+	}
+}
+
 void CEMFExplorerView::OnDraw(CDC* pDC)
 {
 	CEMFExplorerDoc* pDoc = GetDocument();
@@ -88,28 +105,21 @@ void CEMFExplorerView::OnDraw(CDC* pDC)
 #endif // SHARED_HANDLERS
 	pDC->FillSolidRect(rect, crfBk);
 
+ 	auto pEMF = pDoc->GetEMFAccess();
+	if (pEMF)
+	{
+#ifndef SHARED_HANDLERS
+		if (theApp.m_bShowTransparentBkGrid)
+		{
+			DrawTransparentGrid(pDC, rect);
+		}
+#endif // SHARED_HANDLERS
+		auto hdr = pEMF->GetMetafileHeader();
+		Gdiplus::Graphics gg(pDC->GetSafeHdc());
 
-// 	pDC->FillSolidRect(rect, GetSysColor(COLOR_WINDOW));
-// 
-// 	int nDPI = pDC->GetDeviceCaps(LOGPIXELSX);
-// 	double dScale = (double)nDPI / 96;
-// 	const int nGrid = (int)dScale * 8;
-// 	const int nGrid2 = nGrid * 2;
-// 	for (LONG yy = rect.top, row = 0; yy < rect.bottom; yy += nGrid, ++row)
-// 	{
-// 		for (LONG xx = rect.left+((row&1)?0:nGrid); xx < rect.right; xx += nGrid2)
-// 		{
-// 			pDC->FillSolidRect(xx, yy, nGrid, nGrid, RGB(0xcc, 0xcc, 0xcc));
-// 		}
-// 	}
-// 
-// 	EMFAccess* pEMF = pDoc->GetEMFAccess();
-// 	if (pEMF)
-// 	{
-// 		CRect rcDraw = pEMF->GetFittingDrawRect(rect);
-// 		Gdiplus::Graphics gg(pDC->GetSafeHdc());
-// 		pEMF->DrawMetafile(gg, rcDraw);
-// 	}
+		CRect rcEMF{ 0, 0, hdr.Width, hdr.Height };
+		pEMF->DrawMetafile(gg, rcEMF);
+	}
 }
 
 void CEMFExplorerView::OnRButtonUp(UINT /* nFlags */, CPoint point)
@@ -138,7 +148,40 @@ void CEMFExplorerView::OnUpdateNeedDoc(CCmdUI* pCmdUI)
 
 void CEMFExplorerView::OnEditPaste()
 {
-
+	CEMFExplorerDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
+	if (!OpenClipboard())
+	{
+		AfxMessageBox(_T("Failed to open clipboard!"), MB_ICONERROR);
+		return;
+	}
+	std::vector<BYTE> vBuffer;
+	BOOL bOK = FALSE;
+	auto hEMF = (HENHMETAFILE)GetClipboardData(CF_ENHMETAFILE);
+	if (hEMF)
+	{
+		UINT nSize = GetEnhMetaFileBits(hEMF, 0, nullptr);
+		vBuffer.resize((size_t)nSize);
+		auto nRead = GetEnhMetaFileBits(hEMF, nSize, vBuffer.data());
+		bOK = nRead == nSize;
+	}
+	else
+	{
+		AfxMessageBox(_T("Not an EMF format!"), MB_ICONERROR);
+	}
+	CloseClipboard();
+	if (bOK)
+	{
+		pDoc->UpdateEMFData(vBuffer);
+		auto pEMF = pDoc->GetEMFAccess();
+		if (pEMF)
+		{
+			auto hdr = pEMF->GetMetafileHeader();
+			SetScrollSizes(MM_ISOTROPIC, {hdr.Width, hdr.Height});
+		}
+	}
 }
 
 void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
@@ -156,12 +199,12 @@ void CEMFExplorerView::OnZoomActualSize()
 #ifdef _DEBUG
 void CEMFExplorerView::AssertValid() const
 {
-	CView::AssertValid();
+	CEMFExplorerViewBase::AssertValid();
 }
 
 void CEMFExplorerView::Dump(CDumpContext& dc) const
 {
-	CView::Dump(dc);
+	CEMFExplorerViewBase::Dump(dc);
 }
 
 CEMFExplorerDoc* CEMFExplorerView::GetDocument() const // non-debug version is inline

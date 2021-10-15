@@ -219,6 +219,7 @@
     <ClInclude Include="..\EMFExplorer\EmfPlusStruct.h" />
     <ClInclude Include="..\EMFExplorer\EMFRecAccess.h" />
     <ClInclude Include="..\EMFExplorer\GdiplusEnums.h" />
+    <ClInclude Include="..\EMFExplorer\ScrollZoomView.h" />
     <ClInclude Include="dllmain.h" />
     <ClInclude Include="EMFExplorerHandlers_i.h" />
     <ClInclude Include="framework.h" />
@@ -234,6 +235,7 @@
     <ClCompile Include="..\EMFExplorer\EMFExplorerView.cpp" />
     <ClCompile Include="..\EMFExplorer\EmfPlusStruct.cpp" />
     <ClCompile Include="..\EMFExplorer\EMFRecAccess.cpp" />
+    <ClCompile Include="..\EMFExplorer\ScrollZoomView.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="EMFExplorerHandlers.cpp" />
     <ClCompile Include="EMFExplorerHandlers_i.c">

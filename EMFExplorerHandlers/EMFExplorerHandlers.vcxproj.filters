@@ -61,6 +61,9 @@
     <ClInclude Include="..\EMFExplorer\GdiplusEnums.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\EMFExplorer\ScrollZoomView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EMFExplorerHandlers.cpp">
@@ -88,6 +91,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\EMFExplorer\EmfPlusStruct.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\EMFExplorer\ScrollZoomView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

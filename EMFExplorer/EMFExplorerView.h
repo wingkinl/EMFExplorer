@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include "ScrollZoomView.h"
 
-class CEMFExplorerView : public CView
+using CEMFExplorerViewBase = CScrollZoomView;
+
+class CEMFExplorerView : public CEMFExplorerViewBase
 {
 protected: // create from serialization only
 	CEMFExplorerView() noexcept;
@@ -26,6 +29,8 @@ protected:
 	BOOL CheckClipboardForEMF() const;
 
 	BOOL HasValidEMFInDoc() const;
+
+	void DrawTransparentGrid(CDC* pDC, const CRect& rect);
 // Implementation
 public:
 	virtual ~CEMFExplorerView();

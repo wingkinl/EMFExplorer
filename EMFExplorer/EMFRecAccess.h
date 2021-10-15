@@ -1723,12 +1723,10 @@ public:
 class EMFAccess final
 {
 public:
-	EMFAccess(const std::vector<emfplus::u8t>* pData = nullptr);
+	EMFAccess(const std::vector<emfplus::u8t>& vData);
 	~EMFAccess();
 public:
 	const Gdiplus::MetafileHeader GetMetafileHeader() const { return m_hdr; }
-
-	CRect GetFittingDrawRect(const CRect& rect) const;
 
 	void DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const;
 
