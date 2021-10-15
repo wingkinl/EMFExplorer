@@ -1,7 +1,8 @@
 
 #pragma once
 
-#include "ViewTree.h"
+#include "EMFRecAccess.h"
+#include "EMFRecListCtrl.h"
 
 class CFileViewToolBar : public CMFCToolBar
 {
@@ -25,7 +26,7 @@ public:
 // Attributes
 protected:
 
-	CViewTree m_wndFileView;
+	CEMFRecListCtrl m_wndFileView;
 	CImageList m_FileViewImages;
 	CFileViewToolBar m_wndToolBar;
 

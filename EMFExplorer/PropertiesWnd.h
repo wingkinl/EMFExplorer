@@ -28,6 +28,8 @@ public:
 		m_wndPropList.SetGroupNameFullWidth(bSet);
 	}
 
+	void OnChangeVisualStyle();
+
 protected:
 	CFont m_fntPropList;
 	CPropertiesToolBar m_wndToolBar;

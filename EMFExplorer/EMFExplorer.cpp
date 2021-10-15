@@ -84,6 +84,7 @@ BOOL CEMFExplorerApp::InitInstance()
 	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
 	LoadStdProfileSettings(4);  // Load standard INI file options (including MRU)
 
+	LoadCustomSettings();
 
 	InitContextMenuManager();
 
@@ -126,7 +127,6 @@ BOOL CEMFExplorerApp::InitInstance()
 	EnableShellOpen();
 	RegisterShellFileTypes(TRUE);
 
-
 	// Dispatch commands specified on the command line.  Will return FALSE if
 	// app was launched with /RegServer, /Register, /Unregserver or /Unregister.
 	if (!ProcessShellCommand(cmdInfo))
@@ -147,7 +147,18 @@ BOOL CEMFExplorerApp::InitInstance()
 
 int CEMFExplorerApp::ExitInstance()
 {
+	SaveCustomSettings();
 	return CWinAppEx::ExitInstance();
+}
+
+BOOL CEMFExplorerApp::IsDarkTheme() const
+{
+	return m_nStyle == CMFCVisualManagerOffice2007::Office2007_ObsidianBlack;
+}
+
+void CEMFExplorerApp::SetDarkTheme(BOOL bDark)
+{
+	m_nStyle = bDark ? CMFCVisualManagerOffice2007::Office2007_ObsidianBlack : CMFCVisualManagerOffice2007::Office2007_Silver;
 }
 
 // CEMFExplorerApp message handlers
@@ -206,16 +217,34 @@ void CEMFExplorerApp::PreLoadState()
 	GetContextMenuManager()->AddMenu(strName, IDR_POPUP_EXPLORER);
 }
 
-const TCHAR szBackgroundDark[] = _T("BackgroundDark");
-
 void CEMFExplorerApp::LoadCustomState()
 {
-	m_bBackgroundDark = GetInt(szBackgroundDark, TRUE);
+	
 }
 
 void CEMFExplorerApp::SaveCustomState()
 {
-	WriteInt(szBackgroundDark, m_bBackgroundDark);
+	
+}
+
+const TCHAR cszThemeStyle[] = _T("ThemeStyle");
+
+void CEMFExplorerApp::LoadCustomSettings()
+{
+	m_nStyle = GetInt(cszThemeStyle, CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
+}
+
+void CEMFExplorerApp::SaveCustomSettings()
+{
+	WriteInt(cszThemeStyle, m_nStyle);
+}
+
+CDocument* CEMFExplorerApp::OpenDocumentFile(LPCTSTR lpszFileName)
+{
+	ASSERT(m_pMainWnd && m_pMainWnd->IsKindOf(RUNTIME_CLASS(CMainFrame)));
+	// now we want to show the document name on the title
+	m_pMainWnd->ModifyStyle(0, FWS_ADDTOTITLE);
+	return CWinAppEx::OpenDocumentFile(lpszFileName);
 }
 
 // CEMFExplorerApp message handlers

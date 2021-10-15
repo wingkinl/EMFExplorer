@@ -30,15 +30,25 @@ public:
 	virtual BOOL InitInstance();
 	int ExitInstance() override;
 
+	BOOL IsDarkTheme() const;
+	void SetDarkTheme(BOOL bDark);
+
 // Implementation
 	BOOL m_bHiColorIcons;
-	BOOL m_bBackgroundDark = TRUE;
+	int m_nStyle = 0;
 	BOOL m_bShowTransparentBkGrid = TRUE;
-	const COLORREF m_crfBkColorDark = RGB(0x53, 0x53, 0x53);
+
+	const COLORREF m_crfDarkThemeBkColor = RGB(0x53, 0x53, 0x53);
+	const COLORREF m_crfDarkThemeTxtColor = RGB(0xf1,0xf1,0xf1);
 
 	virtual void PreLoadState();
 	virtual void LoadCustomState();
 	virtual void SaveCustomState();
+
+	void LoadCustomSettings();
+	void SaveCustomSettings();
+
+	CDocument* OpenDocumentFile(LPCTSTR lpszFileName) override;
 
 	afx_msg void OnAppAbout();
 	DECLARE_MESSAGE_MAP()

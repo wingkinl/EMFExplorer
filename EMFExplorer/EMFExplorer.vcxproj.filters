@@ -39,7 +39,7 @@
     <ClInclude Include="FileView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ViewTree.h">
+    <ClInclude Include="EMFRecListCtrl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PropertiesWnd.h">
@@ -74,7 +74,7 @@
     <ClCompile Include="FileView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ViewTree.cpp">
+    <ClCompile Include="EMFRecListCtrl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PropertiesWnd.cpp">

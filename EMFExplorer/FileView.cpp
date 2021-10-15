@@ -23,6 +23,8 @@ CFileView::~CFileView()
 {
 }
 
+#define IDC_FILE_VIEW_CTRL	4
+
 BEGIN_MESSAGE_MAP(CFileView, CDockablePane)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
@@ -50,9 +52,9 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	rectDummy.SetRectEmpty();
 
 	// Create view:
-	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS;
+	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SHOWSELALWAYS;
 
-	if (!m_wndFileView.Create(dwViewStyle, rectDummy, this, 4))
+	if (!m_wndFileView.Create(dwViewStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
 	{
 		TRACE0("Failed to create file view\n");
 		return -1;      // fail to create
@@ -61,6 +63,12 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// Load view images:
 	m_FileViewImages.Create(IDB_FILE_VIEW, 16, 0, RGB(255, 0, 255));
 	m_wndFileView.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
+
+	m_wndFileView.InsertColumn(0, _T("dummy"));
+	m_wndFileView.InsertItem(0, _T("Item 1"));
+	m_wndFileView.InsertItem(1, _T("Item 2"));
+	m_wndFileView.InsertItem(2, _T("Item 3"));
+	m_wndFileView.InsertItem(3, _T("Item 4"));
 
 	m_wndToolBar.Create(this, AFX_DEFAULT_TOOLBAR_STYLE, IDR_EXPLORER);
 	m_wndToolBar.LoadToolBar(IDR_EXPLORER, 0, 0, TRUE /* Is locked */);
@@ -91,45 +99,12 @@ void CFileView::OnSize(UINT nType, int cx, int cy)
 
 void CFileView::FillFileView()
 {
-	HTREEITEM hRoot = m_wndFileView.InsertItem(_T("FakeApp files"), 0, 0);
-	m_wndFileView.SetItemState(hRoot, TVIS_BOLD, TVIS_BOLD);
-
-	HTREEITEM hSrc = m_wndFileView.InsertItem(_T("FakeApp Source Files"), 0, 0, hRoot);
-
-	m_wndFileView.InsertItem(_T("FakeApp.cpp"), 1, 1, hSrc);
-	m_wndFileView.InsertItem(_T("FakeApp.rc"), 1, 1, hSrc);
-	m_wndFileView.InsertItem(_T("FakeAppDoc.cpp"), 1, 1, hSrc);
-	m_wndFileView.InsertItem(_T("FakeAppView.cpp"), 1, 1, hSrc);
-	m_wndFileView.InsertItem(_T("MainFrm.cpp"), 1, 1, hSrc);
-	m_wndFileView.InsertItem(_T("pch.cpp"), 1, 1, hSrc);
-
-	HTREEITEM hInc = m_wndFileView.InsertItem(_T("FakeApp Header Files"), 0, 0, hRoot);
-
-	m_wndFileView.InsertItem(_T("FakeApp.h"), 2, 2, hInc);
-	m_wndFileView.InsertItem(_T("FakeAppDoc.h"), 2, 2, hInc);
-	m_wndFileView.InsertItem(_T("FakeAppView.h"), 2, 2, hInc);
-	m_wndFileView.InsertItem(_T("Resource.h"), 2, 2, hInc);
-	m_wndFileView.InsertItem(_T("MainFrm.h"), 2, 2, hInc);
-	m_wndFileView.InsertItem(_T("pch.h"), 2, 2, hInc);
-
-	HTREEITEM hRes = m_wndFileView.InsertItem(_T("FakeApp Resource Files"), 0, 0, hRoot);
-
-	m_wndFileView.InsertItem(_T("FakeApp.ico"), 2, 2, hRes);
-	m_wndFileView.InsertItem(_T("FakeApp.rc2"), 2, 2, hRes);
-	m_wndFileView.InsertItem(_T("FakeAppDoc.ico"), 2, 2, hRes);
-	m_wndFileView.InsertItem(_T("FakeToolbar.bmp"), 2, 2, hRes);
-
-	m_wndFileView.Expand(hRoot, TVE_EXPAND);
-	m_wndFileView.Expand(hSrc, TVE_EXPAND);
-	m_wndFileView.Expand(hInc, TVE_EXPAND);
+	
 }
 
 void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
 {
-	CTreeCtrl* pWndTree = (CTreeCtrl*) &m_wndFileView;
-	ASSERT_VALID(pWndTree);
-
-	if (pWnd != pWndTree)
+	if (pWnd->GetSafeHwnd() != m_wndFileView.GetSafeHwnd())
 	{
 		CDockablePane::OnContextMenu(pWnd, point);
 		return;
@@ -138,18 +113,11 @@ void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
 	if (point != CPoint(-1, -1))
 	{
 		// Select clicked item:
-		CPoint ptTree = point;
-		pWndTree->ScreenToClient(&ptTree);
-
-		UINT flags = 0;
-		HTREEITEM hTreeItem = pWndTree->HitTest(ptTree, &flags);
-		if (hTreeItem != nullptr)
-		{
-			pWndTree->SelectItem(hTreeItem);
-		}
+		CPoint ptItem = point;
+		m_wndFileView.ScreenToClient(&ptItem);
 	}
 
-	pWndTree->SetFocus();
+	m_wndFileView.SetFocus();
 	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EXPLORER, point.x, point.y, this, TRUE);
 }
 
@@ -252,6 +220,7 @@ void CFileView::OnChangeVisualStyle()
 	m_FileViewImages.Add(&bmp, RGB(255, 0, 255));
 
 	m_wndFileView.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
+	m_wndFileView.OnChangeVisualStyle();
 }
 
 

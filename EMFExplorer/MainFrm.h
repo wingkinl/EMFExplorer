@@ -34,6 +34,8 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
+	void OnChangeTheme();
+
 protected:  // control bar embedded members
 	CMFCMenuBar       m_wndMenuBar;
 	CMFCToolBar       m_wndToolBar;

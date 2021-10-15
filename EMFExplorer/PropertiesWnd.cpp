@@ -58,6 +58,29 @@ void CPropertiesWnd::AdjustLayout()
 	m_wndPropList.SetWindowPos(nullptr, rectClient.left, rectClient.top + cyTlb, rectClient.Width(), rectClient.Height() -cyTlb, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
+void CPropertiesWnd::OnChangeVisualStyle()
+{
+	COLORREF clrBackground = (COLORREF)-1;
+	COLORREF clrText = (COLORREF)-1;
+	COLORREF clrGroupBackground = (COLORREF)-1;
+	COLORREF clrGroupText = (COLORREF)-1;
+	COLORREF clrDescriptionBackground = (COLORREF)-1;
+	COLORREF clrDescriptionText = (COLORREF)-1;
+	COLORREF clrLine = (COLORREF)-1;
+
+	if (theApp.IsDarkTheme())
+	{
+		clrBackground = theApp.m_crfDarkThemeBkColor;
+		clrText = theApp.m_crfDarkThemeTxtColor;
+		clrGroupBackground = clrBackground;
+		clrGroupText = clrText;
+		clrDescriptionBackground = clrBackground;
+		clrDescriptionText = clrText;
+		clrLine = RGB(0x8d,0x8d,0x8d);
+	}
+	m_wndPropList.SetCustomColors(clrBackground, clrText, clrGroupBackground, clrGroupText, clrDescriptionBackground, clrDescriptionText, clrLine);
+}
+
 int CPropertiesWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CDockablePane::OnCreate(lpCreateStruct) == -1)
@@ -73,6 +96,8 @@ int CPropertiesWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	}
 
 	InitPropList();
+
+	OnChangeVisualStyle();
 
 	m_wndToolBar.Create(this, AFX_DEFAULT_TOOLBAR_STYLE, IDR_PROPERTIES);
 	m_wndToolBar.LoadToolBar(IDR_PROPERTIES, 0, 0, TRUE /* Is locked */);
@@ -140,9 +165,9 @@ void CPropertiesWnd::InitPropList()
 	SetPropListFont();
 
 	m_wndPropList.EnableHeaderCtrl(FALSE);
-	m_wndPropList.EnableDescriptionArea();
+	//m_wndPropList.EnableDescriptionArea();
 	m_wndPropList.SetVSDotNetLook();
-	m_wndPropList.MarkModifiedProperties();
+	//m_wndPropList.MarkModifiedProperties();
 
 	CMFCPropertyGridProperty* pGroup1 = new CMFCPropertyGridProperty(_T("Appearance"));
 
@@ -156,7 +181,9 @@ void CPropertiesWnd::InitPropList()
 	pProp->AllowEdit(FALSE);
 
 	pGroup1->AddSubItem(pProp);
-	pGroup1->AddSubItem(new CMFCPropertyGridProperty(_T("Caption"), (_variant_t) _T("About"), _T("Specifies the text that will be displayed in the window's title bar")));
+	pProp = new CMFCPropertyGridProperty(_T("Caption"), (_variant_t)_T("About"), _T("Specifies the text that will be displayed in the window's title bar"));
+	pProp->AllowEdit(FALSE);
+	pGroup1->AddSubItem(pProp);
 
 	m_wndPropList.AddProperty(pGroup1);
 

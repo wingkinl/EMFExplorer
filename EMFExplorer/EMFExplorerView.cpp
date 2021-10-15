@@ -83,8 +83,8 @@ void CEMFExplorerView::OnDraw(CDC* pDC)
 	
 	COLORREF crfBk = GetSysColor(COLOR_WINDOW);
 #ifndef SHARED_HANDLERS
-	if (theApp.m_bBackgroundDark)
-		crfBk = theApp.m_crfBkColorDark;
+	if (theApp.IsDarkTheme())
+		crfBk = theApp.m_crfDarkThemeBkColor;
 #endif // SHARED_HANDLERS
 	pDC->FillSolidRect(rect, crfBk);
 

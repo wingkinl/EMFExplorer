@@ -244,10 +244,42 @@ void CMainFrame::OnViewCustomize()
 	pDlgCust->Create();
 }
 
+void CMainFrame::OnChangeTheme()
+{
+	m_wndFileView.OnChangeVisualStyle();
+	m_wndProperties.OnChangeVisualStyle();
+
+	// Reload toolbar images:
+	CMFCToolBar::ResetAllImages();
+
+	m_wndToolBar.LoadBitmap(theApp.m_bHiColorIcons ? IDR_MAINFRAME_256 : IDR_MAINFRAME);
+
+	CMFCToolBar::AddToolBarForImageCollection(IDR_MENU_IMAGES, theApp.m_bHiColorIcons ? IDB_MENU_IMAGES_24 : 0);
+
+	CDockingManager* pDockManager = GetDockingManager();
+	ASSERT_VALID(pDockManager);
+
+	pDockManager->AdjustPaneFrames();
+
+	RecalcLayout();
+	RedrawWindow(NULL, NULL, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
+}
+
 void CMainFrame::SetViewBackgroundDark(BOOL bDark)
 {
-	theApp.m_bBackgroundDark = bDark;
-	GetActiveView()->Invalidate();
+	CWaitCursor wait;
+	
+	LockWindowUpdate();
+
+	theApp.SetDarkTheme(bDark);
+	CMFCVisualManagerOffice2007::SetStyle((CMFCVisualManagerOffice2007::Style)theApp.m_nStyle);
+	
+	CTabbedPane::ResetTabs();
+
+	OnChangeTheme();
+
+	UnlockWindowUpdate();
+	RedrawWindow();
 }
 
 void CMainFrame::OnViewBackgroundDark()
@@ -262,12 +294,12 @@ void CMainFrame::OnViewBackgroundLight()
 
 void CMainFrame::OnUpdateViewBackgroundDark(CCmdUI* pCmdUI)
 {
-	pCmdUI->SetCheck(theApp.m_bBackgroundDark);
+	pCmdUI->SetRadio(theApp.IsDarkTheme());
 }
 
 void CMainFrame::OnUpdateViewBackgroundLight(CCmdUI* pCmdUI)
 {
-	pCmdUI->SetCheck(!theApp.m_bBackgroundDark);
+	pCmdUI->SetRadio(!theApp.IsDarkTheme());
 }
 
 void CMainFrame::OnViewTransparentBkGrid()
@@ -306,6 +338,8 @@ BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParent
 {
 	// base class does the real work
 
+	// do not show the title with document name (because there's none)
+	dwDefaultStyle &= ~FWS_ADDTOTITLE;
 	if (!CFrameWndEx::LoadFrame(nIDResource, dwDefaultStyle, pParentWnd, pContext))
 	{
 		return FALSE;
