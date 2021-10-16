@@ -19,9 +19,10 @@ class CEMFExplorerApp : public CWinAppEx
 {
 public:
 	CEMFExplorerApp() noexcept;
+	~CEMFExplorerApp();
 
 protected:
-	CMultiDocTemplate* m_pSubDocTemplate;
+	CMultiDocTemplate* m_pSubDocTemplate = nullptr;
 public:
 	CEMFExplorerDoc* CreateNewFrameForSubEMF();
 // Overrides

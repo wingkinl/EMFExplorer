@@ -42,6 +42,11 @@ CEMFExplorerApp::CEMFExplorerApp() noexcept
 	// Place all significant initialization in InitInstance
 }
 
+CEMFExplorerApp::~CEMFExplorerApp()
+{
+	delete m_pSubDocTemplate;
+}
+
 // The one and only CEMFExplorerApp object
 
 CEMFExplorerApp theApp;

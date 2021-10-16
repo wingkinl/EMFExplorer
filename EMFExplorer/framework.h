@@ -4,6 +4,7 @@
 #define VC_EXTRALEAN            // Exclude rarely-used stuff from Windows headers
 #endif
 
+
 #include "targetver.h"
 
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS      // some CString constructors will be explicit
@@ -15,8 +16,18 @@
 #include <afxext.h>         // MFC extensions
 
 
+#ifdef GDIPVER
+	#undef GDIPVER
+#endif
+#define GDIPVER 0x0110
+
+#pragma warning(push)
+#pragma warning(disable:4458)
+#include <GdiPlus.h>
+#pragma warning(pop)
 
 
+#define _ENABLE_GDIPLUS_STRUCT
 
 #ifndef _AFX_NO_OLE_SUPPORT
 #include <afxdtctl.h>           // MFC support for Internet Explorer 4 Common Controls
@@ -26,17 +37,6 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include <afxcontrolbars.h>     // MFC support for ribbons and control bars
-
-
-
-
-#pragma warning(push)
-#pragma warning(disable:4458)
-#include <GdiPlus.h>
-#pragma warning(pop)
-
-
-#define _ENABLE_GDIPLUS_STRUCT
 
 
 #ifdef _UNICODE

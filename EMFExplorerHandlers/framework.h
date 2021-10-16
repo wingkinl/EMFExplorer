@@ -21,6 +21,12 @@
 
 #define SHARED_HANDLERS
 
+#ifdef GDIPVER
+	#undef GDIPVER
+#endif
+#define GDIPVER 0x0110
+#define _ENABLE_GDIPLUS_STRUCT
+
 #include <afxwin.h>
 #include <afxext.h>
 #include <afxole.h>
@@ -37,8 +43,6 @@
 #endif // _AFX_NO_OLE_SUPPORT
 
 #define ATL_NO_ASSERT_ON_DESTROY_NONEXISTENT_WINDOW
-
-#define _ENABLE_GDIPLUS_STRUCT
 
 #include "resource.h"
 #include <atlbase.h>
