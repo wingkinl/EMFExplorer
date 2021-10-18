@@ -7,6 +7,7 @@
 #include "EMFExplorer.h"
 
 #include "MainFrm.h"
+#include "EMFExplorerView.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -305,7 +306,8 @@ void CMainFrame::OnUpdateViewBackgroundLight(CCmdUI* pCmdUI)
 void CMainFrame::OnViewTransparentBkGrid()
 {
 	theApp.m_bShowTransparentBkGrid = !theApp.m_bShowTransparentBkGrid;
-	GetActiveView()->Invalidate();
+	CEMFExplorerView* pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	pView->SetShowTransparentGrid(theApp.m_bShowTransparentBkGrid);
 }
 
 void CMainFrame::OnUpdateViewTransparentBkGrid(CCmdUI* pCmdUI)

@@ -23,6 +23,8 @@
 IMPLEMENT_DYNCREATE(CEMFExplorerView, CEMFExplorerViewBase)
 
 BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
+	ON_WM_ERASEBKGND()
+	ON_WM_PAINT()
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
 	ON_UPDATE_COMMAND_UI(ID_FILE_NEW, &CEMFExplorerView::OnUpdateFileNew)
@@ -32,6 +34,21 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CEMFExplorerView::OnUpdateNeedClip)
 #ifndef SHARED_HANDLERS
 	ON_COMMAND(ID_ZOOM_ACTUALSIZE, &CEMFExplorerView::OnZoomActualSize)
+	ON_UPDATE_COMMAND_UI(ID_ZOOM_ACTUALSIZE, &CEMFExplorerView::OnUpdateZoomActualSize)
+	ON_COMMAND(ID_ZOOM_IN, &CEMFExplorerView::OnZoomIn)
+	ON_UPDATE_COMMAND_UI(ID_ZOOM_IN, &CEMFExplorerView::OnUpdateZoomIn)
+	ON_COMMAND(ID_ZOOM_OUT, &CEMFExplorerView::OnZoomOut)
+	ON_UPDATE_COMMAND_UI(ID_ZOOM_OUT, &CEMFExplorerView::OnUpdateZoomOut)
+	ON_COMMAND(ID_ZOOM_CENTER, &CEMFExplorerView::OnZoomCenter)
+	ON_UPDATE_COMMAND_UI(ID_ZOOM_CENTER, &CEMFExplorerView::OnUpdateZoomCenter)
+	ON_COMMAND(ID_ZOOM_FITTOWINDOW, &CEMFExplorerView::OnZoomFitToWindow)
+	ON_UPDATE_COMMAND_UI(ID_ZOOM_FITTOWINDOW, &CEMFExplorerView::OnUpdateZoomFitToWindow)
+	ON_COMMAND(ID_ZOOM_FITWIDTH, &CEMFExplorerView::OnZoomFitWidth)
+	ON_UPDATE_COMMAND_UI(ID_ZOOM_FITWIDTH, &CEMFExplorerView::OnUpdateZoomFitWidth)
+	ON_COMMAND(ID_ZOOM_FITHEIGHT, &CEMFExplorerView::OnZoomFitHeight)
+	ON_UPDATE_COMMAND_UI(ID_ZOOM_FITHEIGHT, &CEMFExplorerView::OnUpdateZoomFitHeight)
+	ON_COMMAND_RANGE(ID_ZOOM_1, ID_ZOOM_3200, &CEMFExplorerView::OnZoomPresetFactor)
+	ON_UPDATE_COMMAND_UI_RANGE(ID_ZOOM_1, ID_ZOOM_3200, &CEMFExplorerView::OnUpdateZoomPresetFactor)
 #endif // SHARED_HANDLERS
 END_MESSAGE_MAP()
 
@@ -39,7 +56,9 @@ END_MESSAGE_MAP()
 
 CEMFExplorerView::CEMFExplorerView() noexcept
 {
-	
+#ifndef SHARED_HANDLERS
+	m_bShowTransparentGrid = theApp.m_bShowTransparentBkGrid;
+#endif // SHARED_HANDLERS
 }
 
 CEMFExplorerView::~CEMFExplorerView()
@@ -50,6 +69,8 @@ BOOL CEMFExplorerView::PreCreateWindow(CREATESTRUCT& cs)
 {
 	// TODO: Modify the Window class or styles here by modifying
 	//  the CREATESTRUCT cs
+	// double buffer
+	cs.dwExStyle |= WS_EX_COMPOSITED;
 
 	return CEMFExplorerViewBase::PreCreateWindow(cs);
 }
@@ -75,6 +96,9 @@ void CEMFExplorerView::DrawTransparentGrid(CDC* pDC, const CRect& rect)
 {
 	pDC->FillSolidRect(rect, GetSysColor(COLOR_WINDOW));
 
+	int nSavedDC = pDC->SaveDC();
+	pDC->IntersectClipRect(rect);
+
 	int nDPI = pDC->GetDeviceCaps(LOGPIXELSX);
 	double dScale = (double)nDPI / 96;
 	const int nGrid = (int)dScale * 8;
@@ -86,40 +110,91 @@ void CEMFExplorerView::DrawTransparentGrid(CDC* pDC, const CRect& rect)
 			pDC->FillSolidRect(xx, yy, nGrid, nGrid, RGB(0xcc, 0xcc, 0xcc));
 		}
 	}
+	pDC->RestoreDC(nSavedDC);
 }
 
-void CEMFExplorerView::OnDraw(CDC* pDC)
+void CEMFExplorerView::SetShowTransparentGrid(bool val)
+{
+	m_bShowTransparentGrid = val;
+	Invalidate();
+}
+
+CSize CEMFExplorerView::GetViewSize() const
 {
 	CEMFExplorerDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
-	if (!pDoc)
-		return;
+	if (pDoc)
+	{
+		auto pEMF = pDoc->GetEMFAccess();
+		if (pEMF)
+		{
+			auto hdr = pEMF->GetMetafileHeader();
+			return CSize(hdr.Width, hdr.Height);
+		}
+	}
+	return CEMFExplorerViewBase::GetViewSize();
+}
+
+BOOL CEMFExplorerView::OnEraseBkgnd(CDC* /*pDC*/)
+{
+	return TRUE;
+}
+
+void CEMFExplorerView::OnPaint()
+{
+	CPaintDC dc(this);
+	//CMemDC dcMem(dc, this);
+	//CDC* pDCDraw = &dcMem.GetDC();
+	CDC* pDCDraw = &dc;
 
 	CRect rect;
 	GetClientRect(&rect);
-	
+
 	COLORREF crfBk = GetSysColor(COLOR_WINDOW);
 #ifndef SHARED_HANDLERS
 	if (theApp.IsDarkTheme())
 		crfBk = theApp.m_crfDarkThemeBkColor;
 #endif // SHARED_HANDLERS
-	pDC->FillSolidRect(rect, crfBk);
+	pDCDraw->FillSolidRect(rect, crfBk);
 
- 	auto pEMF = pDoc->GetEMFAccess();
-	if (pEMF)
+	if (m_bInitialRedraw)
+		return;
+
+	CEMFExplorerDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
+	auto pEMF = pDoc->GetEMFAccess();
+	if (!pEMF)
+		return;
+	CSize szImage = GetViewSize();
+	float factor = GetRealZoomFactor();
+	CSize szImageScaled;
+	szImageScaled.cx = (int)(szImage.cx * factor);
+	szImageScaled.cy = (int)(szImage.cy * factor);
+	CPoint ptImg(0, 0);
+	ptImg = -GetDeviceScrollPosition();
+
+	ptImg.x = (int)(ptImg.x * factor);
+	ptImg.y = (int)(ptImg.y * factor);
+
+	if (GetCenter())
 	{
-#ifndef SHARED_HANDLERS
-		if (theApp.m_bShowTransparentBkGrid)
-		{
-			DrawTransparentGrid(pDC, rect);
-		}
-#endif // SHARED_HANDLERS
-		auto hdr = pEMF->GetMetafileHeader();
-		Gdiplus::Graphics gg(pDC->GetSafeHdc());
-
-		CRect rcEMF{ 0, 0, hdr.Width, hdr.Height };
-		pEMF->DrawMetafile(gg, rcEMF);
+		if (szImageScaled.cx < rect.Width())
+			ptImg.x = (rect.Width() - szImageScaled.cx) / 2;
+		if (szImageScaled.cy < rect.Height())
+			ptImg.y = (rect.Height() - szImageScaled.cy) / 2;
 	}
+
+	CRect rcImg(ptImg, szImageScaled);
+
+	if (GetShowTransparentGrid())
+	{
+		DrawTransparentGrid(pDCDraw, rcImg);
+	}
+
+	Gdiplus::Graphics gg(pDCDraw->GetSafeHdc());
+	pEMF->DrawMetafile(gg, rcImg);
 }
 
 void CEMFExplorerView::OnRButtonUp(UINT /* nFlags */, CPoint point)
@@ -189,10 +264,100 @@ void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
 	pCmdUI->Enable(CheckClipboardForEMF());
 }
 
+#ifndef SHARED_HANDLERS
+void CEMFExplorerView::OnZoomIn()
+{
+	m_nLastSelPresetFactorID = 0;
+	SetZoom(true);
+}
+
+void CEMFExplorerView::OnUpdateZoomIn(CCmdUI* pCmdUI)
+{
+	pCmdUI->Enable(CanDoZoom(true));
+}
+
+void CEMFExplorerView::OnZoomOut()
+{
+	m_nLastSelPresetFactorID = 0;
+	SetZoom(false);
+}
+
+void CEMFExplorerView::OnUpdateZoomOut(CCmdUI* pCmdUI)
+{
+	pCmdUI->Enable(CanDoZoom(false));
+}
+
 void CEMFExplorerView::OnZoomActualSize()
 {
-	AfxMessageBox(_T("View"));
+	m_nLastSelPresetFactorID = 0;
+	SetFitToWindow(FitToNone);
 }
+
+void CEMFExplorerView::OnUpdateZoomActualSize(CCmdUI* pCmdUI)
+{
+	BOOL bActualSize = GetFitToWindow() == FitToNone && GetZoomFactor() == 1.0f;
+	pCmdUI->SetCheck(bActualSize);
+}
+
+void CEMFExplorerView::OnZoomCenter()
+{
+	SetCenter(!GetCenter());
+}
+
+void CEMFExplorerView::OnUpdateZoomCenter(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(GetCenter());
+}
+
+void CEMFExplorerView::OnZoomFitToWindow()
+{
+	m_nLastSelPresetFactorID = 0;
+	SetFitToWindow(FitToBoth);
+}
+
+void CEMFExplorerView::OnUpdateZoomFitToWindow(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetRadio(GetFitToWindow() == FitToBoth);
+}
+
+void CEMFExplorerView::OnZoomFitWidth()
+{
+	m_nLastSelPresetFactorID = 0;
+	SetFitToWindow(FitToWidth);
+}
+
+void CEMFExplorerView::OnUpdateZoomFitWidth(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetRadio(GetFitToWindow() == FitToWidth);
+}
+
+void CEMFExplorerView::OnZoomFitHeight()
+{
+	m_nLastSelPresetFactorID = 0;
+	SetFitToWindow(FitToHeight);
+}
+
+void CEMFExplorerView::OnUpdateZoomFitHeight(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetRadio(GetFitToWindow() == FitToHeight);
+}
+
+void CEMFExplorerView::OnZoomPresetFactor(UINT nID)
+{
+	const float factors[]{
+		0.01f, 0.05f, 0.10f, 0.20f, 0.25f, 1.0f/3, 0.5f, 2.0f/3, 3.0f/4, 
+		1.0f, 1.5f, 2.0f, 4.0f, 8.0f, 16.0f, 32.0f
+	};
+	m_nLastSelPresetFactorID = nID;
+	auto nIdx = nID - ID_ZOOM_1;
+	SetZoomFactor(factors[nIdx]);
+}
+
+void CEMFExplorerView::OnUpdateZoomPresetFactor(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetRadio(m_nLastSelPresetFactorID == pCmdUI->m_nID);
+}
+#endif // SHARED_HANDLERS
 
 // CEMFExplorerView diagnostics
 

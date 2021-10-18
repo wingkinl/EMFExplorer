@@ -228,15 +228,18 @@ void CEMFExplorerApp::SaveCustomState()
 }
 
 const TCHAR cszThemeStyle[] = _T("ThemeStyle");
+const TCHAR cszTransparentGrid[] = _T("TransparentGrid");
 
 void CEMFExplorerApp::LoadCustomSettings()
 {
 	m_nStyle = GetInt(cszThemeStyle, CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
+	m_bShowTransparentBkGrid = GetInt(cszTransparentGrid, TRUE);
 }
 
 void CEMFExplorerApp::SaveCustomSettings()
 {
 	WriteInt(cszThemeStyle, m_nStyle);
+	WriteInt(cszTransparentGrid, m_bShowTransparentBkGrid);
 }
 
 CDocument* CEMFExplorerApp::OpenDocumentFile(LPCTSTR lpszFileName)

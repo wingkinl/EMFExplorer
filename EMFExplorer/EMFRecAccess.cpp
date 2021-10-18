@@ -6,6 +6,32 @@
 #include <Shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 
+using namespace emfplus;
+
+CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter)
+{
+	CRect rcFit = rcDest;
+	CSize szDest = rcDest.Size();
+	auto fScaleDst = (float)szDest.cy / szDest.cx;
+	auto fScaleSrc = (float)szSrc.cy / szSrc.cx;
+	if (fScaleSrc <= fScaleDst)
+	{
+		// source image is flatter than the target rectangle, so we fit the width
+		szDest.cy	= (int)(szSrc.cy * (float)szDest.cx / szSrc.cx);
+		rcFit.bottom = rcFit.top + szDest.cy;
+		if (bCenter)
+			rcFit.OffsetRect(0, (rcFit.Height() - rcDest.Height()) / 2);
+	}
+	else
+	{
+		szDest.cx	= (int)(szSrc.cx * (float)szDest.cy / szSrc.cy);
+		rcFit.right = rcFit.left + szDest.cx;
+		if (bCenter)
+			rcFit.OffsetRect((rcFit.Width() - rcDest.Width()) / 2, 0);
+	}
+	return rcFit;
+}
+
 EMFAccess::EMFAccess(const std::vector<emfplus::u8t>& vData)
 {
 	ATL::CComPtr<IStream> stream;
@@ -18,27 +44,6 @@ EMFAccess::~EMFAccess()
 {
 
 }
-
-// CRect EMFAccess::GetFittingDrawRect(const CRect& rect) const
-// {
-// 	CSize szSrc{ m_hdr.Width, m_hdr.Height };
-// 	CRect rcDraw = rect;
-// 	CSize szDest = rect.Size();
-// 	auto fScaleDst = (float)szDest.cy / szDest.cx;
-// 	auto fScaleDIB = (float)szSrc.cy / szSrc.cx;
-// 	if (fScaleDIB <= fScaleDst)
-// 	{
-// 		// source image is flatter than the target rectangle, so we fit the width
-// 		szDest.cy	= (int)(szSrc.cy * (float)szDest.cx / szSrc.cx);
-// 		rcDraw.bottom = rcDraw.top + szDest.cy;
-// 	}
-// 	else
-// 	{
-// 		szDest.cx	= (int)(szSrc.cx * (float)szDest.cy / szSrc.cy);
-// 		rcDraw.right = rcDraw.left + szDest.cx;
-// 	}
-// 	return rcDraw;
-// }
 
 void EMFAccess::DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const
 {

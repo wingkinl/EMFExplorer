@@ -1719,6 +1719,8 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetTSClip; }
 };
 
+CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter = false);
+
 
 class EMFAccess final
 {

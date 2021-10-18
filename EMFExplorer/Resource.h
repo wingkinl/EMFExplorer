@@ -84,13 +84,14 @@
 #define ID_ZOOM_800                     32797
 #define ID_ZOOM_1600                    32798
 #define ID_ZOOM_3200                    32799
+#define ID_ZOOM_CENTER                  32800
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         32800
+#define _APS_NEXT_COMMAND_VALUE         32808
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

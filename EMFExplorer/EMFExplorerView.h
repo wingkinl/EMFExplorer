@@ -23,8 +23,12 @@ public:
 
 // Overrides
 public:
-	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
+	CSize GetViewSize() const override;
+
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+public:
+	bool GetShowTransparentGrid() const { return m_bShowTransparentGrid; }
+	void SetShowTransparentGrid(bool val);
 protected:
 	BOOL CheckClipboardForEMF() const;
 
@@ -40,9 +44,11 @@ public:
 #endif
 
 protected:
-
+	bool	m_bShowTransparentGrid = true;
 // Generated message map functions
 protected:
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnPaint();
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
@@ -50,7 +56,26 @@ protected:
 	afx_msg void OnUpdateNeedDoc(CCmdUI* pCmdUI);
 	afx_msg void OnEditPaste();
 	afx_msg void OnUpdateNeedClip(CCmdUI* pCmdUI);
+
+#ifndef SHARED_HANDLERS
+	afx_msg void OnZoomIn();
+	afx_msg void OnUpdateZoomIn(CCmdUI* pCmdUI);
+	afx_msg void OnZoomOut();
+	afx_msg void OnUpdateZoomOut(CCmdUI* pCmdUI);
 	afx_msg void OnZoomActualSize();
+	afx_msg void OnUpdateZoomActualSize(CCmdUI* pCmdUI);
+	afx_msg void OnZoomCenter();
+	afx_msg void OnUpdateZoomCenter(CCmdUI* pCmdUI);
+	afx_msg void OnZoomFitToWindow();
+	afx_msg void OnUpdateZoomFitToWindow(CCmdUI* pCmdUI);
+	afx_msg void OnZoomFitWidth();
+	afx_msg void OnUpdateZoomFitWidth(CCmdUI* pCmdUI);
+	afx_msg void OnZoomFitHeight();
+	afx_msg void OnUpdateZoomFitHeight(CCmdUI* pCmdUI);
+	UINT m_nLastSelPresetFactorID = 0;
+	afx_msg void OnZoomPresetFactor(UINT nID);
+	afx_msg void OnUpdateZoomPresetFactor(CCmdUI* pCmdUI);
+#endif
 	DECLARE_MESSAGE_MAP()
 };
 
