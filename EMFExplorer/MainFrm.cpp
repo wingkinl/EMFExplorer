@@ -369,3 +369,14 @@ BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParent
 	return TRUE;
 }
 
+BOOL CMainFrame::LoadFromData(const std::vector<emfplus::u8t>& data, CEMFExplorerDoc::EMFType type)
+{
+	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	auto pDoc = pView->GetDocument();
+	pDoc->UpdateEMFData(data, type);
+	pView->SetFitToWindow(CScrollZoomView::FitToBoth);
+	pView->Invalidate();
+
+	return TRUE;
+}
+

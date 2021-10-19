@@ -1,5 +1,7 @@
 
 #pragma once
+#include <memory>
+#include "EMFRecAccess.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CEMFRecListCtrl window
@@ -13,13 +15,14 @@ public:
 	CEMFRecListCtrl() noexcept;
 public:
 	void OnChangeVisualStyle();
+
+	void SetEMFAccess(std::shared_ptr<EMFAccess> emf);
 // Overrides
 protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 
 	COLORREF OnGetCellTextColor(int nRow, int nColum) override;
 	COLORREF OnGetCellBkColor(int nRow, int nColum) override;
-
 // Implementation
 public:
 	virtual ~CEMFRecListCtrl();
@@ -28,6 +31,7 @@ protected:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 protected:
 	COLORREF m_crfDefaultBkColor = (COLORREF)-1;
+	std::shared_ptr<EMFAccess>	m_emf;
 protected:
 	DECLARE_MESSAGE_MAP()
 };

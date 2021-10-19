@@ -19,14 +19,15 @@ class CFileView : public CDockablePane
 // Construction
 public:
 	CFileView() noexcept;
-
+public:
 	void AdjustLayout();
 	void OnChangeVisualStyle();
-
+public:
+	void SetEMFAccess(std::shared_ptr<EMFAccess> emf);
 // Attributes
 protected:
 
-	CEMFRecListCtrl m_wndFileView;
+	CEMFRecListCtrl m_wndRecList;
 	CImageList m_FileViewImages;
 	CFileViewToolBar m_wndToolBar;
 
@@ -42,12 +43,7 @@ protected:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnProperties();
-	afx_msg void OnFileOpen();
-	afx_msg void OnFileOpenWith();
-	afx_msg void OnDummyCompile();
-	afx_msg void OnEditCut();
 	afx_msg void OnEditCopy();
-	afx_msg void OnEditClear();
 	afx_msg void OnPaint();
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
 

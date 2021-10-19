@@ -73,13 +73,10 @@ bool CEMFDocTemplate::OpenFromClipboardData(const std::vector<emfplus::u8t>& dat
 		return false;
 	}
 	pDoc->SetTitle(_T("Clipboard"));
-	pDoc->UpdateEMFData(data, CEMFExplorerDoc::EMFType::FromClipboard);
-	POSITION pos = pDoc->GetFirstViewPosition();
-	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, pDoc->GetNextView(pos));
-	pView->SetFitToWindow(CScrollZoomView::FitToBoth);
-	pView->Invalidate();
-	auto pFrame = (CFrameWnd*)AfxGetMainWnd();
-	InitialUpdateFrame(pFrame, pDoc);
+	auto pMainFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
+	if (!pMainFrame->LoadFromData(data, CEMFExplorerDoc::EMFType::FromClipboard))
+		return false;
+	InitialUpdateFrame(pMainFrame, pDoc);
 	return true;
 }
 
@@ -282,17 +279,23 @@ void CEMFExplorerApp::SaveCustomState()
 
 const TCHAR cszThemeStyle[] = _T("ThemeStyle");
 const TCHAR cszTransparentGrid[] = _T("TransparentGrid");
+const TCHAR cszViewCenter[] = _T("ViewCenter");
+const TCHAR cszFitWinType[] = _T("FitWinType");
 
 void CEMFExplorerApp::LoadCustomSettings()
 {
 	m_nStyle = GetInt(cszThemeStyle, CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
 	m_bShowTransparentBkGrid = GetInt(cszTransparentGrid, TRUE);
+	m_bViewCenter = GetInt(cszViewCenter, TRUE);
+	m_nFitWinType = GetInt(cszFitWinType, CScrollZoomView::FitToBoth);
 }
 
 void CEMFExplorerApp::SaveCustomSettings()
 {
 	WriteInt(cszThemeStyle, m_nStyle);
 	WriteInt(cszTransparentGrid, m_bShowTransparentBkGrid);
+	WriteInt(cszViewCenter, m_bViewCenter);
+	WriteInt(cszFitWinType, m_nFitWinType);
 }
 
 CDocument* CEMFExplorerApp::OpenDocumentFile(LPCTSTR lpszFileName)

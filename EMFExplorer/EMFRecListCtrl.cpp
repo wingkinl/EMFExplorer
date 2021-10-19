@@ -117,6 +117,11 @@ COLORREF CEMFRecListCtrl::OnGetCellBkColor(int nRow, int nColum)
 	return CEMFRecListCtrlBase::OnGetCellBkColor(nRow, nColum);
 }
 
+void CEMFRecListCtrl::SetEMFAccess(std::shared_ptr<EMFAccess> emf)
+{
+	m_emf = emf;
+}
+
 void CEMFRecListCtrl::OnChangeVisualStyle()
 {
 	BOOL bDark = theApp.IsDarkTheme();

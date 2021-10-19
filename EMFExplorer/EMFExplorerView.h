@@ -40,6 +40,8 @@ protected:
 	void DrawTransparentGrid(CDC* pDC, const CRect& rect);
 
 	bool IsZoomAllowed() const override;
+
+	bool PutBitmapToClipboard(Gdiplus::Image* pImg);
 // Implementation
 public:
 	virtual ~CEMFExplorerView();

@@ -37,6 +37,8 @@ public:
 	BOOL m_bHiColorIcons;
 	int m_nStyle = 0;
 	BOOL m_bShowTransparentBkGrid = TRUE;
+	BOOL m_bViewCenter = TRUE;
+	int m_nFitWinType = 0;
 
 	const COLORREF m_crfDarkThemeBkColor = RGB(0x53, 0x53, 0x53);
 	const COLORREF m_crfDarkThemeTxtColor = RGB(0xf1,0xf1,0xf1);

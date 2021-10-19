@@ -30,12 +30,7 @@ BEGIN_MESSAGE_MAP(CFileView, CDockablePane)
 	ON_WM_SIZE()
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_PROPERTIES, OnProperties)
-	ON_COMMAND(ID_OPEN, OnFileOpen)
-	ON_COMMAND(ID_OPEN_WITH, OnFileOpenWith)
-	ON_COMMAND(ID_DUMMY_COMPILE, OnDummyCompile)
-	ON_COMMAND(ID_EDIT_CUT, OnEditCut)
 	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
-	ON_COMMAND(ID_EDIT_CLEAR, OnEditClear)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
 END_MESSAGE_MAP()
@@ -54,7 +49,7 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// Create view:
 	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SHOWSELALWAYS;
 
-	if (!m_wndFileView.Create(dwViewStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
+	if (!m_wndRecList.Create(dwViewStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
 	{
 		TRACE0("Failed to create file view\n");
 		return -1;      // fail to create
@@ -62,13 +57,13 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// Load view images:
 	m_FileViewImages.Create(IDB_FILE_VIEW, 16, 0, RGB(255, 0, 255));
-	m_wndFileView.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
+	m_wndRecList.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
 
-	m_wndFileView.InsertColumn(0, _T("dummy"));
-	m_wndFileView.InsertItem(0, _T("Item 1"));
-	m_wndFileView.InsertItem(1, _T("Item 2"));
-	m_wndFileView.InsertItem(2, _T("Item 3"));
-	m_wndFileView.InsertItem(3, _T("Item 4"));
+	m_wndRecList.InsertColumn(0, _T("dummy"));
+	m_wndRecList.InsertItem(0, _T("Item 1"));
+	m_wndRecList.InsertItem(1, _T("Item 2"));
+	m_wndRecList.InsertItem(2, _T("Item 3"));
+	m_wndRecList.InsertItem(3, _T("Item 4"));
 
 	m_wndToolBar.Create(this, AFX_DEFAULT_TOOLBAR_STYLE, IDR_EXPLORER);
 	m_wndToolBar.LoadToolBar(IDR_EXPLORER, 0, 0, TRUE /* Is locked */);
@@ -104,7 +99,7 @@ void CFileView::FillFileView()
 
 void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
 {
-	if (pWnd->GetSafeHwnd() != m_wndFileView.GetSafeHwnd())
+	if (pWnd->GetSafeHwnd() != m_wndRecList.GetSafeHwnd())
 	{
 		CDockablePane::OnContextMenu(pWnd, point);
 		return;
@@ -114,10 +109,10 @@ void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
 	{
 		// Select clicked item:
 		CPoint ptItem = point;
-		m_wndFileView.ScreenToClient(&ptItem);
+		m_wndRecList.ScreenToClient(&ptItem);
 	}
 
-	m_wndFileView.SetFocus();
+	m_wndRecList.SetFocus();
 	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EXPLORER, point.x, point.y, this, TRUE);
 }
 
@@ -134,7 +129,7 @@ void CFileView::AdjustLayout()
 	int cyTlb = m_wndToolBar.CalcFixedLayout(FALSE, TRUE).cy;
 
 	m_wndToolBar.SetWindowPos(nullptr, rectClient.left, rectClient.top, rectClient.Width(), cyTlb, SWP_NOACTIVATE | SWP_NOZORDER);
-	m_wndFileView.SetWindowPos(nullptr, rectClient.left + 1, rectClient.top + cyTlb + 1, rectClient.Width() - 2, rectClient.Height() - cyTlb - 2, SWP_NOACTIVATE | SWP_NOZORDER);
+	m_wndRecList.SetWindowPos(nullptr, rectClient.left + 1, rectClient.top + cyTlb + 1, rectClient.Width() - 2, rectClient.Height() - cyTlb - 2, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 void CFileView::OnProperties()
@@ -143,32 +138,7 @@ void CFileView::OnProperties()
 
 }
 
-void CFileView::OnFileOpen()
-{
-	// TODO: Add your command handler code here
-}
-
-void CFileView::OnFileOpenWith()
-{
-	// TODO: Add your command handler code here
-}
-
-void CFileView::OnDummyCompile()
-{
-	// TODO: Add your command handler code here
-}
-
-void CFileView::OnEditCut()
-{
-	// TODO: Add your command handler code here
-}
-
 void CFileView::OnEditCopy()
-{
-	// TODO: Add your command handler code here
-}
-
-void CFileView::OnEditClear()
 {
 	// TODO: Add your command handler code here
 }
@@ -178,7 +148,7 @@ void CFileView::OnPaint()
 	CPaintDC dc(this); // device context for painting
 
 	CRect rectTree;
-	m_wndFileView.GetWindowRect(rectTree);
+	m_wndRecList.GetWindowRect(rectTree);
 	ScreenToClient(rectTree);
 
 	rectTree.InflateRect(1, 1);
@@ -189,7 +159,7 @@ void CFileView::OnSetFocus(CWnd* pOldWnd)
 {
 	CDockablePane::OnSetFocus(pOldWnd);
 
-	m_wndFileView.SetFocus();
+	m_wndRecList.SetFocus();
 }
 
 void CFileView::OnChangeVisualStyle()
@@ -219,8 +189,12 @@ void CFileView::OnChangeVisualStyle()
 	m_FileViewImages.Create(16, bmpObj.bmHeight, nFlags, 0, 0);
 	m_FileViewImages.Add(&bmp, RGB(255, 0, 255));
 
-	m_wndFileView.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
-	m_wndFileView.OnChangeVisualStyle();
+	m_wndRecList.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
+	m_wndRecList.OnChangeVisualStyle();
 }
 
+void CFileView::SetEMFAccess(std::shared_ptr<EMFAccess> emf)
+{
+	m_wndRecList.SetEMFAccess(emf);
+}
 

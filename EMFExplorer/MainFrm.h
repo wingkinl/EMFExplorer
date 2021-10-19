@@ -5,6 +5,7 @@
 #pragma once
 #include "FileView.h"
 #include "PropertiesWnd.h"
+#include "EMFExplorerDoc.h"
 
 #define _ENABLE_STATUS_BAR
 
@@ -25,6 +26,8 @@ public:
 public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	virtual BOOL LoadFrame(UINT nIDResource, DWORD dwDefaultStyle = WS_OVERLAPPEDWINDOW | FWS_ADDTOTITLE, CWnd* pParentWnd = nullptr, CCreateContext* pContext = nullptr);
+
+	BOOL LoadFromData(const std::vector<emfplus::u8t>& data, CEMFExplorerDoc::EMFType type);
 
 // Implementation
 public:

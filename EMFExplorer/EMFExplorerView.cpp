@@ -180,9 +180,19 @@ void CEMFExplorerView::OnPaint()
 	auto pEMF = pDoc->GetEMFAccess();
 	if (!pEMF)
 		return;
-	CPoint ptImg = -GetScrollPosition();
-	CSize szImg = GetFitToWindow() ? GetRealViewSize() : m_totalDev;
-	ASSERT(GetFitToWindow() || GetRealViewSize() == m_totalDev);
+	auto fitToWin = GetFitToWindow();
+	CSize szImg = fitToWin ? GetRealViewSize() : m_totalDev;
+	ASSERT(fitToWin || GetRealViewSize() == m_totalDev);
+
+	CPoint ptImg = -GetDeviceScrollPosition();
+	if (GetCenter())
+	{
+		if (szImg.cx < rect.Width())
+			ptImg.x = (rect.Width() - szImg.cx) / 2;
+		if (szImg.cy < rect.Height())
+			ptImg.y = (rect.Height() - szImg.cy) / 2;
+	}
+
 	CRect rcImg(ptImg, szImg);
 
 	if (GetShowTransparentGrid())
@@ -226,6 +236,37 @@ void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
 	pCmdUI->Enable(CheckClipboardForEMF());
 }
 
+bool CEMFExplorerView::PutBitmapToClipboard(Gdiplus::Image* pImg)
+{
+	Gdiplus::Bitmap bmpPlus(pImg->GetWidth(), pImg->GetHeight(), PixelFormat32bppARGB);
+	Gdiplus::Graphics gg(&bmpPlus);
+	gg.DrawImage(pImg, 0, 0);
+
+	HBITMAP hBitmap;
+	auto status = bmpPlus.GetHBITMAP(Gdiplus::Color::White, &hBitmap);
+	if(status != Gdiplus::Ok)
+		return false;
+	CBitmap bmp; bmp.Attach(hBitmap);
+	BITMAP bm;
+	GetObject(hBitmap, sizeof bm, &bm);
+
+	BITMAPINFOHEADER bi =
+	{ sizeof bi, bm.bmWidth, bm.bmHeight, 1, bm.bmBitsPixel, BI_RGB };
+
+	std::vector<BYTE> vec(bm.bmWidthBytes * bm.bmHeight);
+	auto hDC = ::GetDC(NULL);
+	GetDIBits(hDC, hBitmap, 0, bi.biHeight, vec.data(), (BITMAPINFO*)&bi, 0);
+	::ReleaseDC(NULL, hDC);
+
+	auto hMem = GlobalAlloc(GMEM_MOVEABLE, sizeof bi + vec.size());
+	auto buffer = (BYTE*)GlobalLock(hMem);
+	memcpy(buffer, &bi, sizeof bi);
+	memcpy(buffer + sizeof bi, vec.data(), vec.size());
+	GlobalUnlock(hMem);
+	SetClipboardData(CF_DIB, hMem);
+	return true;
+}
+
 void CEMFExplorerView::OnEditCopy()
 {
 	CEMFExplorerDoc* pDoc = GetDocument();
@@ -246,7 +287,12 @@ void CEMFExplorerView::OnEditCopy()
 		AfxMessageBox( _T("Cannot open the Clipboard") );
 		return;
 	}
+	EmptyClipboard();
+
 	std::unique_ptr<Gdiplus::Image> pImg(pEMF->CloneMetafile());
+	
+	PutBitmapToClipboard(pImg.get());
+
 	auto pNewEMF = (Gdiplus::Metafile*)pImg.get();
 	auto hEMF = pNewEMF->GetHENHMETAFILE();
 	if (!SetClipboardData(CF_ENHMETAFILE, hEMF))
