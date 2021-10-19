@@ -60,6 +60,8 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_FileViewImages.Create(IDB_FILE_VIEW, 16, 0, RGB(255, 0, 255));
 	m_wndRecList.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
 
+	m_wndRecList.InsertColumn(0, _T("Record Name"));
+
 	m_wndToolBar.Create(this, AFX_DEFAULT_TOOLBAR_STYLE, IDR_EXPLORER);
 	m_wndToolBar.LoadToolBar(IDR_EXPLORER, 0, 0, TRUE /* Is locked */);
 
@@ -185,4 +187,16 @@ void CFileView::SetEMFAccess(std::shared_ptr<EMFAccess> emf)
 {
 	m_wndRecList.SetEMFAccess(emf);
 }
+
+void CFileView::LoadEMFDataEvent(bool bBefore)
+{
+	if (IsWindowVisible())
+	{
+		m_wndRecList.SetRedraw(!bBefore);
+		if (!bBefore)
+			m_wndRecList.Invalidate();
+	}
+}
+
+
 

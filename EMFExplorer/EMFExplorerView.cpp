@@ -94,6 +94,19 @@ BOOL CEMFExplorerView::HasValidEMFInDoc() const
 	return pDoc->GetEMFType() != CEMFExplorerDoc::EMFType::Invalid;
 }
 
+void CEMFExplorerView::LoadEMFDataEvent(bool bBefore)
+{
+	SetRedraw(!bBefore);
+	if (bBefore)
+	{
+
+	}
+	else
+	{
+		SetFitToWindow(FitToBoth);
+	}
+}
+
 // CEMFExplorerView drawing
 
 void CEMFExplorerView::DrawTransparentGrid(CDC* pDC, const CRect& rect)
@@ -197,7 +210,18 @@ void CEMFExplorerView::OnPaint()
 
 	if (GetShowTransparentGrid())
 	{
-		DrawTransparentGrid(pDCDraw, rcImg);
+		CRect rcClient;
+		GetClientRect(rcClient);
+		CRect rcGrid(rcImg);
+		if (rcGrid.left < 0)
+			rcGrid.left = 0;
+		if (rcGrid.top < 0)
+			rcGrid.top = 0;
+		if (rcGrid.right > rcClient.right)
+			rcGrid.right = rcClient.right;
+		if (rcGrid.bottom > rcClient.bottom)
+			rcGrid.bottom = rcClient.bottom;
+		DrawTransparentGrid(pDCDraw, rcGrid);
 	}
 
 	Gdiplus::Graphics gg(pDCDraw->GetSafeHdc());

@@ -58,6 +58,7 @@ CEMFRecListCtrl::~CEMFRecListCtrl()
 BEGIN_MESSAGE_MAP(CEMFRecListCtrl, CEMFRecListCtrlBase)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
+	ON_NOTIFY_REFLECT(LVN_GETDISPINFO, &CEMFRecListCtrl::OnGetDispInfo)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -101,6 +102,30 @@ void CEMFRecListCtrl::OnSize(UINT nType, int cx, int cy)
 {
 	SetColumnWidth(0, cx);
 	CEMFRecListCtrlBase::OnSize(nType, cx, cy);
+}
+
+void CEMFRecListCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LV_DISPINFO* pDispInfo = (LV_DISPINFO*)pNMHDR;
+	ASSERT(pDispInfo);
+	LVITEM& item = pDispInfo->item;
+
+	if (item.mask & LVIF_TEXT)
+	{
+		// See document for LVITEM:
+		// the list-view control allows any length string to be stored as item text, only the first 260 TCHARs are displayed.
+		// so better truncate the text here instead of leaving junk/gibberish string
+		auto pRec = m_emf->GetRecord((size_t)item.iItem);
+		auto szText = pRec->GetRecordName();
+		_tcsncpy_s(item.pszText, item.cchTextMax, szText, item.cchTextMax);
+	}
+
+	if (item.mask & LVIF_IMAGE)
+	{
+		//item.iImage = GetItemIconIndex(item.iItem);
+	}
+
+	*pResult = 0;
 }
 
 COLORREF CEMFRecListCtrl::OnGetCellTextColor(int nRow, int nColum)

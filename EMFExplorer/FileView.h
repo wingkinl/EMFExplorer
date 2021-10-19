@@ -24,6 +24,9 @@ public:
 	void OnChangeVisualStyle();
 public:
 	void SetEMFAccess(std::shared_ptr<EMFAccess> emf);
+
+	void LoadEMFDataEvent(bool bBefore);
+
 // Attributes
 protected:
 

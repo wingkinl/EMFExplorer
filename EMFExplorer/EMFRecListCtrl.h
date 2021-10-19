@@ -29,6 +29,7 @@ public:
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 protected:
 	COLORREF m_crfDefaultBkColor = (COLORREF)-1;
 	std::shared_ptr<EMFAccess>	m_emf;

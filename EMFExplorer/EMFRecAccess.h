@@ -1736,6 +1736,8 @@ public:
 
 	inline size_t GetRecordCount() const { return m_EMFRecords.size(); }
 
+	EMFRecAccess* GetRecord(size_t index) const;
+
 	bool GetRecords();
 
 	bool HandleEMFRecord(emfplus::OEmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data);

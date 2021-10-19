@@ -61,6 +61,8 @@ public:
 	using CSingleDocTemplate::CSingleDocTemplate;
 public:
 	bool OpenFromClipboardData(const std::vector<emfplus::u8t>& data);
+public:
+	CDocument* OpenDocumentFile(LPCTSTR lpszPathName, BOOL bAddToMRU, BOOL bMakeVisible) override;
 };
 
 bool CEMFDocTemplate::OpenFromClipboardData(const std::vector<emfplus::u8t>& data)
@@ -74,10 +76,21 @@ bool CEMFDocTemplate::OpenFromClipboardData(const std::vector<emfplus::u8t>& dat
 	}
 	pDoc->SetTitle(_T("Clipboard"));
 	auto pMainFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
-	if (!pMainFrame->LoadFromData(data, CEMFExplorerDoc::EMFType::FromClipboard))
+	if (!pMainFrame->LoadEMFFromData(data, CEMFExplorerDoc::EMFType::FromClipboard))
 		return false;
 	InitialUpdateFrame(pMainFrame, pDoc);
 	return true;
+}
+
+CDocument* CEMFDocTemplate::OpenDocumentFile(LPCTSTR lpszPathName, BOOL bAddToMRU, BOOL bMakeVisible)
+{
+	auto pMainFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
+	if (pMainFrame)
+		pMainFrame->LoadEMFDataEvent(true);
+	auto pDoc = CSingleDocTemplate::OpenDocumentFile(lpszPathName, bAddToMRU, bMakeVisible);
+	if (pMainFrame)
+		pMainFrame->LoadEMFDataEvent(false);
+	return pDoc;
 }
 
 BOOL CEMFExplorerApp::InitInstance()

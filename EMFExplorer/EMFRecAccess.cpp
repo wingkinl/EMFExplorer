@@ -42,7 +42,6 @@ EMFAccess::EMFAccess(const std::vector<emfplus::u8t>& vData)
 
 EMFAccess::~EMFAccess()
 {
-
 }
 
 void EMFAccess::DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const
@@ -645,4 +644,10 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 	pRecAccess->SetRecInfo(rec);
 	m_EMFRecords.push_back(std::move(pRecAccess));
 	return true;
+}
+
+EMFRecAccess* EMFAccess::GetRecord(size_t index) const
+{
+	ASSERT(index < GetRecordCount());
+	return m_EMFRecords[index].get();
 }

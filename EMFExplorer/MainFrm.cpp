@@ -369,31 +369,33 @@ BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParent
 	return TRUE;
 }
 
-BOOL CMainFrame::LoadFromData(const std::vector<emfplus::u8t>& data, CEMFExplorerDoc::EMFType type)
+BOOL CMainFrame::LoadEMFFromData(const std::vector<emfplus::u8t>& data, CEMFExplorerDoc::EMFType type)
 {
 	CWaitCursor wait;
 
-	LockWindowUpdate();
-
-	m_wndFileView.SetRedraw(FALSE);
+	LoadEMFDataEvent(true);
 
 	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
 	auto pDoc = pView->GetDocument();
 
 	pDoc->UpdateEMFData(data, type);
 
-	auto emf = pDoc->GetEMFAccess();
-
-	m_wndFileView.SetEMFAccess(emf);
-
-	pView->SetFitToWindow(CScrollZoomView::FitToBoth);
-
-
-	m_wndFileView.SetRedraw(TRUE);
-
-	UnlockWindowUpdate();
-	RedrawWindow();
+	LoadEMFDataEvent(false);
 
 	return TRUE;
+}
+
+void CMainFrame::LoadEMFDataEvent(bool bBefore)
+{
+	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	pView->LoadEMFDataEvent(bBefore);
+	if (!bBefore)
+	{
+		auto pDoc = pView->GetDocument();
+		auto emf = pDoc->GetEMFAccess();
+		emf->GetRecords();
+		m_wndFileView.SetEMFAccess(emf);
+	}
+	m_wndFileView.LoadEMFDataEvent(bBefore);
 }
 

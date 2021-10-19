@@ -23,7 +23,7 @@ public:
 
 // Operations
 public:
-
+	void LoadEMFDataEvent(bool bBefore);
 // Overrides
 public:
 	CSize GetViewSize() const override;
