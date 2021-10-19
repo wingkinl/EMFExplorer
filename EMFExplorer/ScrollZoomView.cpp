@@ -32,18 +32,24 @@ void CScrollZoomView::OnInitialUpdate()
 
 CSize CScrollZoomView::GetViewSize() const
 {
-	return CSize(1, 1);
+	return CSize(0, 0);
+}
+
+CSize CScrollZoomView::GetRealViewSize() const
+{
+	CSize szImage = GetViewSize();
+	float factor = GetRealZoomFactor();
+	CSize szImageScaled;
+	szImageScaled.cx = (int)(szImage.cx * factor);
+	szImageScaled.cy = (int)(szImage.cy * factor);
+	return szImageScaled;
 }
 
 void CScrollZoomView::UpdateViewSize()
 {
 	CSize szScroll(0, 0);
 	if (m_fitWndType == FitToNone)
-	{
-		CSize szImage = GetViewSize();
-		szScroll.cx = (int)(szImage.cx * m_fZoomFactor);
-		szScroll.cy = (int)(szImage.cy * m_fZoomFactor);
-	}
+		szScroll = GetRealViewSize();
 	SetScrollSizes(MM_TEXT, szScroll);
 }
 
@@ -66,7 +72,7 @@ void CScrollZoomView::OnDraw(CDC* pDC)
 
 void CScrollZoomView::OnDrawZoomedView(CDC* pDC, const CRect& rect)
 {
-
+	// overridden by derived objects
 }
 
 BOOL CScrollZoomView::OnMouseWheel(UINT fFlags, short zDelta, CPoint point)

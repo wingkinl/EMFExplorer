@@ -39,6 +39,8 @@ public:
 
 	virtual CSize GetViewSize() const;
 
+	CSize GetRealViewSize() const;
+
 	virtual bool IsZoomAllowed() const { return true; }
 protected:
 	void UpdateViewSize();

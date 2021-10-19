@@ -180,26 +180,10 @@ void CEMFExplorerView::OnPaint()
 	auto pEMF = pDoc->GetEMFAccess();
 	if (!pEMF)
 		return;
-	CSize szImage = GetViewSize();
-	float factor = GetRealZoomFactor();
-	CSize szImageScaled;
-	szImageScaled.cx = (int)(szImage.cx * factor);
-	szImageScaled.cy = (int)(szImage.cy * factor);
-	CPoint ptImg(0, 0);
-	ptImg = -GetDeviceScrollPosition();
-
-	ptImg.x = (int)(ptImg.x * factor);
-	ptImg.y = (int)(ptImg.y * factor);
-
-	if (GetCenter())
-	{
-		if (szImageScaled.cx < rect.Width())
-			ptImg.x = (rect.Width() - szImageScaled.cx) / 2;
-		if (szImageScaled.cy < rect.Height())
-			ptImg.y = (rect.Height() - szImageScaled.cy) / 2;
-	}
-
-	CRect rcImg(ptImg, szImageScaled);
+	CPoint ptImg = -GetScrollPosition();
+	CSize szImg = GetFitToWindow() ? GetRealViewSize() : m_totalDev;
+	ASSERT(GetFitToWindow() || GetRealViewSize() == m_totalDev);
+	CRect rcImg(ptImg, szImg);
 
 	if (GetShowTransparentGrid())
 	{
@@ -207,6 +191,9 @@ void CEMFExplorerView::OnPaint()
 	}
 
 	Gdiplus::Graphics gg(pDCDraw->GetSafeHdc());
+	gg.SetCompositingQuality(Gdiplus::CompositingQualityHighQuality);
+	gg.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+	gg.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias8x8);
 	pEMF->DrawMetafile(gg, rcImg);
 }
 
