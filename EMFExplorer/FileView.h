@@ -27,6 +27,7 @@ public:
 
 	void LoadEMFDataEvent(bool bBefore);
 
+	int GetCurSelRecIndex() const;
 // Attributes
 protected:
 
@@ -48,6 +49,7 @@ protected:
 	afx_msg void OnEditCopy();
 	afx_msg void OnPaint();
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg void OnListItemChange(NMHDR* pNMHDR, LRESULT* pResult);
 
 	DECLARE_MESSAGE_MAP()
 };

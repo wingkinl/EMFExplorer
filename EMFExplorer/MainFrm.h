@@ -9,6 +9,11 @@
 
 #define _ENABLE_STATUS_BAR
 
+enum MainFrameMsg
+{
+	MainFrameMsgOnSelectRecordItem = WM_APP + 100,
+};
+
 class CMainFrame : public CFrameWndEx
 {
 	
@@ -40,7 +45,8 @@ public:
 #endif
 
 	void OnChangeTheme();
-
+private:
+	void UpdateRecordProperty(int index);
 protected:  // control bar embedded members
 	CMFCMenuBar       m_wndMenuBar;
 	CMFCToolBar       m_wndToolBar;
@@ -60,6 +66,7 @@ protected:
 	afx_msg void OnViewTransparentBkGrid();
 	afx_msg void OnUpdateViewTransparentBkGrid(CCmdUI* pCmdUI);
 	afx_msg LRESULT OnToolbarCreateNew(WPARAM wp, LPARAM lp);
+	afx_msg LRESULT OnSelectRecordItem(WPARAM wp, LPARAM lp);
 	DECLARE_MESSAGE_MAP()
 
 	BOOL CreateDockingWindows();

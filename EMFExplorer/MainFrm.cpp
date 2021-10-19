@@ -31,6 +31,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_LIGHT, &CMainFrame::OnUpdateViewBackgroundLight)
 	ON_COMMAND(ID_BACKGROUND_TRANSPARENTGRID, &CMainFrame::OnViewTransparentBkGrid)
 	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_TRANSPARENTGRID, &CMainFrame::OnUpdateViewTransparentBkGrid)
+	ON_MESSAGE(MainFrameMsgOnSelectRecordItem, &CMainFrame::OnSelectRecordItem)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -335,6 +336,24 @@ LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)
 	return lres;
 }
 
+void CMainFrame::UpdateRecordProperty(int index)
+{
+	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	auto pDoc = pView->GetDocument();
+	auto pEMF = pDoc->GetEMFAccess();
+	auto pRec = pEMF->GetRecord((size_t)index);
+	auto& props = pRec->GetProperties(pEMF.get());
+	m_wndProperties.SetPropList(props);
+}
+
+LRESULT CMainFrame::OnSelectRecordItem(WPARAM wp, LPARAM lp)
+{
+	if (m_wndProperties.IsWindowVisible())
+	{
+		UpdateRecordProperty((int)wp);
+	}
+	return 0;
+}
 
 BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParentWnd, CCreateContext* pContext)
 {
@@ -389,12 +408,21 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 {
 	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
 	pView->LoadEMFDataEvent(bBefore);
-	if (!bBefore)
+	if (bBefore)
+	{
+		m_wndProperties.Reset();
+	}
+	else
 	{
 		auto pDoc = pView->GetDocument();
 		auto emf = pDoc->GetEMFAccess();
 		emf->GetRecords();
 		m_wndFileView.SetEMFAccess(emf);
+		int nCurSelRecIdx = m_wndFileView.GetCurSelRecIndex();
+		if (nCurSelRecIdx >= 0)
+		{
+			UpdateRecordProperty(nCurSelRecIdx);
+		}
 	}
 	m_wndFileView.LoadEMFDataEvent(bBefore);
 }

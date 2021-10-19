@@ -33,6 +33,7 @@ BEGIN_MESSAGE_MAP(CFileView, CDockablePane)
 	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_FILE_VIEW_CTRL, &CFileView::OnListItemChange)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -152,6 +153,16 @@ void CFileView::OnSetFocus(CWnd* pOldWnd)
 	m_wndRecList.SetFocus();
 }
 
+void CFileView::OnListItemChange(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NM_LISTVIEW* pNMLV = (NM_LISTVIEW*)pNMHDR;
+	if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVIS_SELECTED))
+	{
+		auto pMainWnd = AfxGetMainWnd();
+		pMainWnd->SendMessage(MainFrameMsgOnSelectRecordItem, pNMLV->iItem);
+	}
+}
+
 void CFileView::OnChangeVisualStyle()
 {
 	m_wndToolBar.CleanUpLockedImages();
@@ -198,5 +209,11 @@ void CFileView::LoadEMFDataEvent(bool bBefore)
 	}
 }
 
+int CFileView::GetCurSelRecIndex() const
+{
+	if (!IsWindowVisible())
+		return -1;
+	return m_wndRecList.GetNextItem(-1, LVNI_SELECTED);
+}
 
 

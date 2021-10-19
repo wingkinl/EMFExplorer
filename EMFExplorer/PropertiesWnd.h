@@ -1,6 +1,8 @@
 
 #pragma once
 
+struct PropertyNode;
+
 class CPropertiesToolBar : public CMFCToolBar
 {
 public:
@@ -30,6 +32,11 @@ public:
 
 	void OnChangeVisualStyle();
 
+	void Reset();
+
+	void SetPropList(const PropertyNode& props);
+private:
+	CMFCPropertyGridProperty* AddPropList(const PropertyNode& prop);
 protected:
 	CFont m_fntPropList;
 	CPropertiesToolBar m_wndToolBar;

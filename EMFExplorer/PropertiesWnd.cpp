@@ -6,6 +6,7 @@
 #include "Resource.h"
 #include "MainFrm.h"
 #include "EMFExplorer.h"
+#include "PropertyTree.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -79,6 +80,58 @@ void CPropertiesWnd::OnChangeVisualStyle()
 		clrLine = RGB(0x8d,0x8d,0x8d);
 	}
 	m_wndPropList.SetCustomColors(clrBackground, clrText, clrGroupBackground, clrGroupText, clrDescriptionBackground, clrDescriptionText, clrLine);
+}
+
+void CPropertiesWnd::Reset()
+{
+	m_wndPropList.RemoveAll();
+	m_wndPropList.Invalidate();
+}
+
+void CPropertiesWnd::SetPropList(const PropertyNode& props)
+{
+	CWaitCursor wait;
+	Reset();
+	m_wndPropList.SetRedraw(FALSE);
+	for (auto& sub : props.sub)
+	{
+		auto pGridProp = AddPropList(*sub);
+		if (pGridProp)
+		{
+			pGridProp->AllowEdit(FALSE);
+			m_wndPropList.AddProperty(pGridProp);
+		}
+	}
+	m_wndPropList.SetRedraw(TRUE);
+	m_wndPropList.Invalidate();
+}
+
+CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& prop)
+{
+	CMFCPropertyGridProperty* pGridProp = nullptr;
+	switch (prop.type)
+	{
+	case PropertyNode::NodeTypeBranch:
+		pGridProp = new CMFCPropertyGridProperty(prop.name);
+		for (auto& sub : prop.sub)
+		{
+			auto pSubGridProp = AddPropList(*sub);
+			if (pSubGridProp)
+			{
+				pSubGridProp->AllowEdit(FALSE);
+				pGridProp->AddSubItem(pSubGridProp);
+			}
+		}
+		break;
+	case PropertyNode::NodeTypeText:
+		pGridProp = new CMFCPropertyGridProperty(prop.name, CString(prop.text));
+		break;
+	case PropertyNode::NodeTypeColor:
+		break;
+	case PropertyNode::NodeTypeFont:
+		break;
+	}
+	return pGridProp;
 }
 
 int CPropertiesWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)

@@ -5,7 +5,9 @@
 #include <vector>
 #include "GdiplusEnums.h"
 #include "EmfPlusStruct.h"
+#include "PropertyTree.h"
 
+class EMFAccess;
 
 class EMFRecAccess
 {
@@ -45,20 +47,29 @@ public:
 
 	const emfplus::OEmfPlusRecInfo& GetRecInfo() const { return m_recInfo; }
 
+	const PropertyNode& GetProperties(EMFAccess* pEMF);
+
 	inline size_t GetIndex() const { return m_nIndex; }
 protected:
 	void SetIndex(size_t nIndex) { m_nIndex = nIndex; }
+
+	virtual void CacheProperties(EMFAccess* pEMF);
 protected:
 	friend class EMFAccess;
 	emfplus::OEmfPlusRecInfo	m_recInfo;
 	size_t						m_nIndex = 0;
 	bool						m_bRecDataCached = false;
+	PropertyNode				m_propsCached{PropertyNode::NodeTypeBranch};
 };
 
 class EMFRecAccessGDIRec : public EMFRecAccess
 {
 public:
 	bool IsGDIRecord() const override { return true; }
+
+	void CacheProperties(EMFAccess* pEMF) override;
+
+	virtual void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pRec) {}
 };
 
 class EMFRecAccessGDIBitmapRec : public EMFRecAccessGDIRec
@@ -133,6 +144,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_HEADER"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeHeader; }
+
+	void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pRec) override;
 };
 
 class EMFRecAccessGDIRecPolyBezier : public EMFRecAccessGDIDrawingRec
@@ -1119,6 +1132,8 @@ class EMFRecAccessGDIPlusRec : public EMFRecAccess
 {
 public:
 	bool IsGDIRecord() const override { return false; }
+
+	void CacheProperties(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIPlusClippingRec : public EMFRecAccessGDIPlusRec

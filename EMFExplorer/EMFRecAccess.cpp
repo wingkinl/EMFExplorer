@@ -32,6 +32,55 @@ CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter)
 	return rcFit;
 }
 
+const PropertyNode& EMFRecAccess::GetProperties(EMFAccess* pEMF)
+{
+	if (!m_bRecDataCached)
+	{
+		CacheProperties(pEMF);
+		m_bRecDataCached = true;
+	}
+	return m_propsCached;
+}
+
+void EMFRecAccess::CacheProperties(EMFAccess* pEMF)
+{
+	m_propsCached.Add(L"Type", std::to_wstring(m_recInfo.Type).c_str());
+	m_propsCached.Add(L"DataSize", std::to_wstring(m_recInfo.DataSize).c_str());
+}
+
+void EMFRecAccessGDIRec::CacheProperties(EMFAccess* pEMF)
+{
+	EMFRecAccess::CacheProperties(pEMF);
+	ENHMETARECORD recTemp{ 0 };
+	const ENHMETARECORD* pRec = nullptr;
+	if (m_recInfo.Data)
+	{
+		// I can't find any document for this, but it seems that this is the way to go (based on observation)
+		pRec = (const ENHMETARECORD*)(m_recInfo.Data - sizeof(EMR));
+	}
+	else
+	{
+		recTemp.iType = m_recInfo.Type;
+		recTemp.nSize = sizeof(EMR);
+		pRec = &recTemp;
+	}
+	CachePropertiesFromGDI(pEMF, pRec);
+}
+
+void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pRec)
+{
+	auto pHeader = (const ENHMETAHEADER*)pRec;
+	CStringW str;
+	str.Format(L"%08X", pHeader->dSignature);
+	m_propsCached.Add(L"Signature", str);
+}
+
+void EMFRecAccessGDIPlusRec::CacheProperties(EMFAccess* pEMF)
+{
+	EMFRecAccess::CacheProperties(pEMF);
+	m_propsCached.Add(L"Flags", std::to_wstring(m_recInfo.Flags).c_str());
+}
+
 EMFAccess::EMFAccess(const std::vector<emfplus::u8t>& vData)
 {
 	ATL::CComPtr<IStream> stream;
@@ -651,3 +700,6 @@ EMFRecAccess* EMFAccess::GetRecord(size_t index) const
 	ASSERT(index < GetRecordCount());
 	return m_EMFRecords[index].get();
 }
+
+
+

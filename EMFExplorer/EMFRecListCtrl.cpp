@@ -117,7 +117,8 @@ void CEMFRecListCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 		// so better truncate the text here instead of leaving junk/gibberish string
 		auto pRec = m_emf->GetRecord((size_t)item.iItem);
 		auto szText = pRec->GetRecordName();
-		_tcsncpy_s(item.pszText, item.cchTextMax, szText, item.cchTextMax);
+		//_tcsncpy_s(item.pszText, item.cchTextMax, szText, item.cchTextMax);
+		_sntprintf_s(item.pszText, item.cchTextMax, item.cchTextMax, _T("%ld %s"), item.iItem+1, szText);
 	}
 
 	if (item.mask & LVIF_IMAGE)
