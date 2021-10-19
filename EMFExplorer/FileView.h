@@ -32,7 +32,6 @@ protected:
 	CFileViewToolBar m_wndToolBar;
 
 protected:
-	void FillFileView();
 
 // Implementation
 public:

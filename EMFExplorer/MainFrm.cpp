@@ -371,11 +371,28 @@ BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParent
 
 BOOL CMainFrame::LoadFromData(const std::vector<emfplus::u8t>& data, CEMFExplorerDoc::EMFType type)
 {
+	CWaitCursor wait;
+
+	LockWindowUpdate();
+
+	m_wndFileView.SetRedraw(FALSE);
+
 	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
 	auto pDoc = pView->GetDocument();
+
 	pDoc->UpdateEMFData(data, type);
+
+	auto emf = pDoc->GetEMFAccess();
+
+	m_wndFileView.SetEMFAccess(emf);
+
 	pView->SetFitToWindow(CScrollZoomView::FitToBoth);
-	pView->Invalidate();
+
+
+	m_wndFileView.SetRedraw(TRUE);
+
+	UnlockWindowUpdate();
+	RedrawWindow();
 
 	return TRUE;
 }

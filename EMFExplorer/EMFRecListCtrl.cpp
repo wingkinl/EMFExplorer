@@ -120,6 +120,7 @@ COLORREF CEMFRecListCtrl::OnGetCellBkColor(int nRow, int nColum)
 void CEMFRecListCtrl::SetEMFAccess(std::shared_ptr<EMFAccess> emf)
 {
 	m_emf = emf;
+	SetItemCount((int)m_emf->GetRecordCount());
 }
 
 void CEMFRecListCtrl::OnChangeVisualStyle()

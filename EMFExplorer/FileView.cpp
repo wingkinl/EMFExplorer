@@ -47,7 +47,8 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	rectDummy.SetRectEmpty();
 
 	// Create view:
-	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SHOWSELALWAYS;
+	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_REPORT 
+		| LVS_NOCOLUMNHEADER | LVS_SHOWSELALWAYS | LVS_OWNERDATA;
 
 	if (!m_wndRecList.Create(dwViewStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
 	{
@@ -58,12 +59,6 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// Load view images:
 	m_FileViewImages.Create(IDB_FILE_VIEW, 16, 0, RGB(255, 0, 255));
 	m_wndRecList.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
-
-	m_wndRecList.InsertColumn(0, _T("dummy"));
-	m_wndRecList.InsertItem(0, _T("Item 1"));
-	m_wndRecList.InsertItem(1, _T("Item 2"));
-	m_wndRecList.InsertItem(2, _T("Item 3"));
-	m_wndRecList.InsertItem(3, _T("Item 4"));
 
 	m_wndToolBar.Create(this, AFX_DEFAULT_TOOLBAR_STYLE, IDR_EXPLORER);
 	m_wndToolBar.LoadToolBar(IDR_EXPLORER, 0, 0, TRUE /* Is locked */);
@@ -79,8 +74,6 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// All commands will be routed via this control , not via the parent frame:
 	m_wndToolBar.SetRouteCommandsViaFrame(FALSE);
 
-	// Fill in some static tree view data (dummy code, nothing magic here)
-	FillFileView();
 	AdjustLayout();
 
 	return 0;
@@ -90,11 +83,6 @@ void CFileView::OnSize(UINT nType, int cx, int cy)
 {
 	CDockablePane::OnSize(nType, cx, cy);
 	AdjustLayout();
-}
-
-void CFileView::FillFileView()
-{
-	
 }
 
 void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
