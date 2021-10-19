@@ -38,6 +38,8 @@ public:
 	void OnInitialUpdate() override;
 
 	virtual CSize GetViewSize() const;
+
+	virtual bool IsZoomAllowed() const { return true; }
 protected:
 	void UpdateViewSize();
 

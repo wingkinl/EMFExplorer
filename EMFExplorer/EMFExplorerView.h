@@ -8,6 +8,9 @@
 
 using CEMFExplorerViewBase = CScrollZoomView;
 
+// It seems that WS_EX_COMPOSITED is enough
+//#define HANDLE_PAINT_WITH_DOUBLE_BUFFER
+
 class CEMFExplorerView : public CEMFExplorerViewBase
 {
 protected: // create from serialization only
@@ -35,6 +38,8 @@ protected:
 	BOOL HasValidEMFInDoc() const;
 
 	void DrawTransparentGrid(CDC* pDC, const CRect& rect);
+
+	bool IsZoomAllowed() const override;
 // Implementation
 public:
 	virtual ~CEMFExplorerView();
@@ -47,14 +52,15 @@ protected:
 	bool	m_bShowTransparentGrid = true;
 // Generated message map functions
 protected:
+#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
 	afx_msg void OnPaint();
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnUpdateFileNew(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNeedDoc(CCmdUI* pCmdUI);
-	afx_msg void OnEditPaste();
 	afx_msg void OnUpdateNeedClip(CCmdUI* pCmdUI);
 
 #ifndef SHARED_HANDLERS
@@ -72,7 +78,6 @@ protected:
 	afx_msg void OnUpdateZoomFitWidth(CCmdUI* pCmdUI);
 	afx_msg void OnZoomFitHeight();
 	afx_msg void OnUpdateZoomFitHeight(CCmdUI* pCmdUI);
-	UINT m_nLastSelPresetFactorID = 0;
 	afx_msg void OnZoomPresetFactor(UINT nID);
 	afx_msg void OnUpdateZoomPresetFactor(CCmdUI* pCmdUI);
 #endif

@@ -71,7 +71,7 @@ void CScrollZoomView::OnDrawZoomedView(CDC* pDC, const CRect& rect)
 
 BOOL CScrollZoomView::OnMouseWheel(UINT fFlags, short zDelta, CPoint point)
 {
-	if (fFlags & (MK_CONTROL))
+	if ((fFlags & MK_CONTROL) && IsZoomAllowed())
 	{
 		CWaitCursor wait;
 		SetZoom(zDelta > 0);
@@ -183,17 +183,20 @@ float CScrollZoomView::GetRealZoomFactor() const
 
 void CScrollZoomView::SetZoom(bool bIn)
 {
+	if (!CanDoZoom(bIn))
+		return;
 	float factor = GetRealZoomFactor();
 	if (bIn)
 		factor *= 1.1f;
 	else
 		factor *= 0.9f;
-	m_fitWndType = FitToNone;
 	SetZoomFactor(factor);
 }
 
 bool CScrollZoomView::CanDoZoom(bool bIn) const
 {
+	if (!IsZoomAllowed())
+		return false;
 	if (m_fitWndType)
 		return true;
 	if (bIn)
@@ -203,6 +206,8 @@ bool CScrollZoomView::CanDoZoom(bool bIn) const
 
 void CScrollZoomView::SetZoomFactor(float factor)
 {
+	if (!IsZoomAllowed())
+		return;
 	if (factor < m_fMinZoomFactor)
 		factor = m_fMinZoomFactor;
 	else if (factor > m_fMaxZoomFactor)

@@ -23,14 +23,16 @@
 IMPLEMENT_DYNCREATE(CEMFExplorerView, CEMFExplorerViewBase)
 
 BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
+#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
 	ON_WM_ERASEBKGND()
+#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
 	ON_WM_PAINT()
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
 	ON_UPDATE_COMMAND_UI(ID_FILE_NEW, &CEMFExplorerView::OnUpdateFileNew)
 	ON_UPDATE_COMMAND_UI(ID_FILE_SAVE, &CEMFExplorerView::OnUpdateNeedDoc)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_COPY, &CEMFExplorerView::OnUpdateNeedDoc)
-	ON_COMMAND(ID_EDIT_PASTE, &CEMFExplorerView::OnEditPaste)
+	//ON_COMMAND(ID_EDIT_PASTE, &CEMFExplorerView::OnEditPaste)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CEMFExplorerView::OnUpdateNeedClip)
 #ifndef SHARED_HANDLERS
 	ON_COMMAND(ID_ZOOM_ACTUALSIZE, &CEMFExplorerView::OnZoomActualSize)
@@ -70,7 +72,9 @@ BOOL CEMFExplorerView::PreCreateWindow(CREATESTRUCT& cs)
 	// TODO: Modify the Window class or styles here by modifying
 	//  the CREATESTRUCT cs
 	// double buffer
+#ifndef HANDLE_PAINT_WITH_DOUBLE_BUFFER
 	cs.dwExStyle |= WS_EX_COMPOSITED;
+#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
 
 	return CEMFExplorerViewBase::PreCreateWindow(cs);
 }
@@ -113,6 +117,11 @@ void CEMFExplorerView::DrawTransparentGrid(CDC* pDC, const CRect& rect)
 	pDC->RestoreDC(nSavedDC);
 }
 
+bool CEMFExplorerView::IsZoomAllowed() const
+{
+	return !!HasValidEMFInDoc();
+}
+
 void CEMFExplorerView::SetShowTransparentGrid(bool val)
 {
 	m_bShowTransparentGrid = val;
@@ -135,16 +144,20 @@ CSize CEMFExplorerView::GetViewSize() const
 	return CEMFExplorerViewBase::GetViewSize();
 }
 
+#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
 BOOL CEMFExplorerView::OnEraseBkgnd(CDC* /*pDC*/)
 {
 	return TRUE;
 }
+#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
 
 void CEMFExplorerView::OnPaint()
 {
 	CPaintDC dc(this);
-	//CMemDC dcMem(dc, this);
-	//CDC* pDCDraw = &dcMem.GetDC();
+#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
+	CMemDC dcMem(dc, this);
+	CDC* pDCDraw = &dcMem.GetDC();
+#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
 	CDC* pDCDraw = &dc;
 
 	CRect rect;
@@ -221,44 +234,6 @@ void CEMFExplorerView::OnUpdateNeedDoc(CCmdUI* pCmdUI)
 	pCmdUI->Enable(HasValidEMFInDoc());
 }
 
-void CEMFExplorerView::OnEditPaste()
-{
-	CEMFExplorerDoc* pDoc = GetDocument();
-	ASSERT_VALID(pDoc);
-	if (!pDoc)
-		return;
-	if (!OpenClipboard())
-	{
-		AfxMessageBox(_T("Failed to open clipboard!"), MB_ICONERROR);
-		return;
-	}
-	std::vector<BYTE> vBuffer;
-	BOOL bOK = FALSE;
-	auto hEMF = (HENHMETAFILE)GetClipboardData(CF_ENHMETAFILE);
-	if (hEMF)
-	{
-		UINT nSize = GetEnhMetaFileBits(hEMF, 0, nullptr);
-		vBuffer.resize((size_t)nSize);
-		auto nRead = GetEnhMetaFileBits(hEMF, nSize, vBuffer.data());
-		bOK = nRead == nSize;
-	}
-	else
-	{
-		AfxMessageBox(_T("Not an EMF format!"), MB_ICONERROR);
-	}
-	CloseClipboard();
-	if (bOK)
-	{
-		pDoc->UpdateEMFData(vBuffer);
-		auto pEMF = pDoc->GetEMFAccess();
-		if (pEMF)
-		{
-			auto hdr = pEMF->GetMetafileHeader();
-			SetScrollSizes(MM_ISOTROPIC, {hdr.Width, hdr.Height});
-		}
-	}
-}
-
 void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(CheckClipboardForEMF());
@@ -267,7 +242,6 @@ void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
 #ifndef SHARED_HANDLERS
 void CEMFExplorerView::OnZoomIn()
 {
-	m_nLastSelPresetFactorID = 0;
 	SetZoom(true);
 }
 
@@ -278,7 +252,6 @@ void CEMFExplorerView::OnUpdateZoomIn(CCmdUI* pCmdUI)
 
 void CEMFExplorerView::OnZoomOut()
 {
-	m_nLastSelPresetFactorID = 0;
 	SetZoom(false);
 }
 
@@ -289,7 +262,6 @@ void CEMFExplorerView::OnUpdateZoomOut(CCmdUI* pCmdUI)
 
 void CEMFExplorerView::OnZoomActualSize()
 {
-	m_nLastSelPresetFactorID = 0;
 	SetFitToWindow(FitToNone);
 }
 
@@ -297,6 +269,7 @@ void CEMFExplorerView::OnUpdateZoomActualSize(CCmdUI* pCmdUI)
 {
 	BOOL bActualSize = GetFitToWindow() == FitToNone && GetZoomFactor() == 1.0f;
 	pCmdUI->SetCheck(bActualSize);
+	pCmdUI->Enable(IsZoomAllowed());
 }
 
 void CEMFExplorerView::OnZoomCenter()
@@ -311,7 +284,6 @@ void CEMFExplorerView::OnUpdateZoomCenter(CCmdUI* pCmdUI)
 
 void CEMFExplorerView::OnZoomFitToWindow()
 {
-	m_nLastSelPresetFactorID = 0;
 	SetFitToWindow(FitToBoth);
 }
 
@@ -322,7 +294,6 @@ void CEMFExplorerView::OnUpdateZoomFitToWindow(CCmdUI* pCmdUI)
 
 void CEMFExplorerView::OnZoomFitWidth()
 {
-	m_nLastSelPresetFactorID = 0;
 	SetFitToWindow(FitToWidth);
 }
 
@@ -333,7 +304,6 @@ void CEMFExplorerView::OnUpdateZoomFitWidth(CCmdUI* pCmdUI)
 
 void CEMFExplorerView::OnZoomFitHeight()
 {
-	m_nLastSelPresetFactorID = 0;
 	SetFitToWindow(FitToHeight);
 }
 
@@ -342,20 +312,28 @@ void CEMFExplorerView::OnUpdateZoomFitHeight(CCmdUI* pCmdUI)
 	pCmdUI->SetRadio(GetFitToWindow() == FitToHeight);
 }
 
+const float zoomFactors[]{
+	0.01f, 0.05f, 0.10f, 0.20f, 0.25f, 1.0f/3, 0.5f, 2.0f/3, 3.0f/4, 
+	1.0f, 1.5f, 2.0f, 4.0f, 8.0f, 16.0f, 32.0f
+};
+
 void CEMFExplorerView::OnZoomPresetFactor(UINT nID)
 {
-	const float factors[]{
-		0.01f, 0.05f, 0.10f, 0.20f, 0.25f, 1.0f/3, 0.5f, 2.0f/3, 3.0f/4, 
-		1.0f, 1.5f, 2.0f, 4.0f, 8.0f, 16.0f, 32.0f
-	};
-	m_nLastSelPresetFactorID = nID;
 	auto nIdx = nID - ID_ZOOM_1;
-	SetZoomFactor(factors[nIdx]);
+	SetZoomFactor(zoomFactors[nIdx]);
 }
 
 void CEMFExplorerView::OnUpdateZoomPresetFactor(CCmdUI* pCmdUI)
 {
-	pCmdUI->SetRadio(m_nLastSelPresetFactorID == pCmdUI->m_nID);
+	BOOL bCheck = FALSE;
+	if (GetFitToWindow() == FitToNone)
+	{
+		auto factor = GetZoomFactor();
+		auto nIdx = pCmdUI->m_nID - ID_ZOOM_1;
+		bCheck = zoomFactors[nIdx] == factor;
+	}
+	pCmdUI->SetRadio(bCheck);
+	pCmdUI->Enable(IsZoomAllowed());
 }
 #endif // SHARED_HANDLERS
 

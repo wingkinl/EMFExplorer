@@ -51,6 +51,7 @@ public:
 	CDocument* OpenDocumentFile(LPCTSTR lpszFileName) override;
 
 	afx_msg void OnAppAbout();
+	afx_msg void OnEditPaste();
 	DECLARE_MESSAGE_MAP()
 };
 

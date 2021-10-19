@@ -81,9 +81,10 @@ BOOL CEMFExplorerDoc::OnNewDocument()
 	return TRUE;
 }
 
-void CEMFExplorerDoc::UpdateEMFData(const std::vector<emfplus::u8t>& data)
+void CEMFExplorerDoc::UpdateEMFData(const std::vector<emfplus::u8t>& data, EMFType type)
 {
 	m_emf = std::make_shared<EMFAccess>(data);
+	m_type = type;
 }
 
 
@@ -103,7 +104,7 @@ void CEMFExplorerDoc::Serialize(CArchive& ar)
 		auto nSize = (UINT)pFile->GetLength();
 		std::vector<BYTE> vBuffer(nSize);
 		pFile->Read(vBuffer.data(), nSize);
-		m_emf = std::make_shared<EMFAccess>(vBuffer);
+		UpdateEMFData(vBuffer, EMFType::FromFile);
 	}
 }
 

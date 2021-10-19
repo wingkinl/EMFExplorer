@@ -24,6 +24,7 @@ BEGIN_MESSAGE_MAP(CEMFExplorerApp, CWinAppEx)
 	// Standard file based document commands
 	ON_COMMAND(ID_FILE_NEW, &CWinAppEx::OnFileNew)
 	ON_COMMAND(ID_FILE_OPEN, &CWinAppEx::OnFileOpen)
+	ON_COMMAND(ID_EDIT_PASTE, &CEMFExplorerApp::OnEditPaste)
 END_MESSAGE_MAP()
 
 
@@ -53,6 +54,34 @@ CEMFExplorerApp theApp;
 
 
 // CEMFExplorerApp initialization
+
+class CEMFDocTemplate : public CSingleDocTemplate
+{
+public:
+	using CSingleDocTemplate::CSingleDocTemplate;
+public:
+	bool OpenFromClipboardData(const std::vector<emfplus::u8t>& data);
+};
+
+bool CEMFDocTemplate::OpenFromClipboardData(const std::vector<emfplus::u8t>& data)
+{
+	ASSERT(m_pOnlyDoc);
+	CEMFExplorerDoc* pDoc = DYNAMIC_DOWNCAST(CEMFExplorerDoc, m_pOnlyDoc);
+	if (!pDoc->OnNewDocument())
+	{
+		TRACE(traceAppMsg, 0, "CEMFDocTemplate::OpenFromClipboardData returned FALSE.\n");
+		return false;
+	}
+	pDoc->SetTitle(_T("Clipboard"));
+	pDoc->UpdateEMFData(data, CEMFExplorerDoc::EMFType::FromClipboard);
+	POSITION pos = pDoc->GetFirstViewPosition();
+	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, pDoc->GetNextView(pos));
+	pView->SetFitToWindow(CScrollZoomView::FitToBoth);
+	pView->Invalidate();
+	auto pFrame = (CFrameWnd*)AfxGetMainWnd();
+	InitialUpdateFrame(pFrame, pDoc);
+	return true;
+}
 
 BOOL CEMFExplorerApp::InitInstance()
 {
@@ -98,8 +127,8 @@ BOOL CEMFExplorerApp::InitInstance()
 
 	// Register the application's document templates.  Document templates
 	//  serve as the connection between documents, frame windows and views
-	CSingleDocTemplate* pDocTemplate;
-	pDocTemplate = new CSingleDocTemplate(
+	CEMFDocTemplate* pDocTemplate;
+	pDocTemplate = new CEMFDocTemplate(
 		IDR_MAINFRAME,
 		RUNTIME_CLASS(CEMFExplorerDoc),
 		RUNTIME_CLASS(CMainFrame),       // main SDI frame window
@@ -108,15 +137,6 @@ BOOL CEMFExplorerApp::InitInstance()
 		return FALSE;
 
 	AddDocTemplate(pDocTemplate);
-
-	m_pSubDocTemplate = new CMultiDocTemplate(
-		IDR_MAINFRAME,
-		RUNTIME_CLASS(CEMFExplorerDoc),
-		RUNTIME_CLASS(CMainFrame),       // main SDI frame window
-		RUNTIME_CLASS(CEMFExplorerView));
-	if (!m_pSubDocTemplate)
-		return FALSE;
-	m_pSubDocTemplate->LoadTemplate();
 
 
 	// Parse command line for standard shell commands, DDE, file open
@@ -203,6 +223,39 @@ void CEMFExplorerApp::OnAppAbout()
 	aboutDlg.DoModal();
 }
 
+void CEMFExplorerApp::OnEditPaste()
+{
+	if (!m_pMainWnd->OpenClipboard())
+	{
+		AfxMessageBox(_T("Failed to open clipboard!"), MB_ICONERROR);
+		return;
+	}
+	std::vector<emfplus::u8t> vBuffer;
+	BOOL bOK = FALSE;
+	auto hEMF = (HENHMETAFILE)GetClipboardData(CF_ENHMETAFILE);
+	if (hEMF)
+	{
+		UINT nSize = GetEnhMetaFileBits(hEMF, 0, nullptr);
+		vBuffer.resize((size_t)nSize);
+		auto nRead = GetEnhMetaFileBits(hEMF, nSize, vBuffer.data());
+		bOK = nRead == nSize;
+	}
+	else
+	{
+		AfxMessageBox(_T("Not an EMF format!"), MB_ICONERROR);
+	}
+	CloseClipboard();
+	if (bOK)
+	{
+		// now we want to show the document name on the title
+		m_pMainWnd->ModifyStyle(0, FWS_ADDTOTITLE);
+		ASSERT(m_pDocManager);
+		POSITION pos = m_pDocManager->GetFirstDocTemplatePosition();
+		auto pDocTemp = DYNAMIC_DOWNCAST(CEMFDocTemplate, m_pDocManager->GetNextDocTemplate(pos));
+		pDocTemp->OpenFromClipboardData(vBuffer);
+	}
+}
+
 // CEMFExplorerApp customization load/save methods
 
 void CEMFExplorerApp::PreLoadState()
@@ -252,9 +305,39 @@ CDocument* CEMFExplorerApp::OpenDocumentFile(LPCTSTR lpszFileName)
 
 // CEMFExplorerApp message handlers
 
+class CSubEMFDocTemplate : public CMultiDocTemplate
+{
+public:
+	using CMultiDocTemplate::CMultiDocTemplate;
+public:
+	void SetDefaultTitle(CDocument* pDocument) override
+	{
+		CEMFExplorerDoc* pDoc = DYNAMIC_DOWNCAST(CEMFExplorerDoc, pDocument);
+		if (pDoc)
+		{
+			ASSERT(pDoc->GetEMFType() == CEMFExplorerDoc::EMFType::FromEMFRecord);
+			// TODO
+			pDocument->SetTitle(_T("Sub EMF"));
+			return;
+		}
+		CMultiDocTemplate::SetDefaultTitle(pDocument);
+	}
+private:
+};
+
 CEMFExplorerDoc* CEMFExplorerApp::CreateNewFrameForSubEMF()
 {
-	ASSERT(m_pSubDocTemplate != nullptr);
+	if (!m_pSubDocTemplate)
+	{
+		m_pSubDocTemplate = new CSubEMFDocTemplate(
+			IDR_MAINFRAME,
+			RUNTIME_CLASS(CEMFExplorerDoc),
+			RUNTIME_CLASS(CMainFrame),       // main SDI frame window
+			RUNTIME_CLASS(CEMFExplorerView));
+		if (!m_pSubDocTemplate)
+			return nullptr;
+		m_pSubDocTemplate->LoadTemplate();
+	}
 
 	CDocument* pDoc = nullptr;
 	CFrameWnd* pFrame = nullptr;
