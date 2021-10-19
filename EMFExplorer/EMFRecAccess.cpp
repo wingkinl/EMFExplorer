@@ -52,6 +52,12 @@ void EMFAccess::DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const
 	gg.DrawImage(m_pMetafile.get(), rcDrawP);
 }
 
+Gdiplus::Image* EMFAccess::CloneMetafile() const
+{
+	ASSERT(m_pMetafile.get());
+	return m_pMetafile->Clone();
+}
+
 struct EnumEmfPlusContext
 {
 	Gdiplus::Metafile*	pMetafile;

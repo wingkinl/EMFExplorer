@@ -1732,6 +1732,8 @@ public:
 
 	void DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const;
 
+	Gdiplus::Image* CloneMetafile() const;
+
 	inline size_t GetRecordCount() const { return m_EMFRecords.size(); }
 
 	bool GetRecords();

@@ -32,7 +32,7 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_UPDATE_COMMAND_UI(ID_FILE_NEW, &CEMFExplorerView::OnUpdateFileNew)
 	ON_UPDATE_COMMAND_UI(ID_FILE_SAVE, &CEMFExplorerView::OnUpdateNeedDoc)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_COPY, &CEMFExplorerView::OnUpdateNeedDoc)
-	//ON_COMMAND(ID_EDIT_PASTE, &CEMFExplorerView::OnEditPaste)
+	ON_COMMAND(ID_EDIT_COPY, &CEMFExplorerView::OnEditCopy)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CEMFExplorerView::OnUpdateNeedClip)
 #ifndef SHARED_HANDLERS
 	ON_COMMAND(ID_ZOOM_ACTUALSIZE, &CEMFExplorerView::OnZoomActualSize)
@@ -224,6 +224,36 @@ void CEMFExplorerView::OnUpdateNeedDoc(CCmdUI* pCmdUI)
 void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(CheckClipboardForEMF());
+}
+
+void CEMFExplorerView::OnEditCopy()
+{
+	CEMFExplorerDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+	{
+		ASSERT(0);
+		return;
+	}
+	auto pEMF = pDoc->GetEMFAccess();
+	if (!pEMF)
+	{
+		ASSERT(0);
+		return;
+	}
+	if (!OpenClipboard())
+	{
+		AfxMessageBox( _T("Cannot open the Clipboard") );
+		return;
+	}
+	std::unique_ptr<Gdiplus::Image> pImg(pEMF->CloneMetafile());
+	auto pNewEMF = (Gdiplus::Metafile*)pImg.get();
+	auto hEMF = pNewEMF->GetHENHMETAFILE();
+	if (!SetClipboardData(CF_ENHMETAFILE, hEMF))
+	{
+		::DeleteEnhMetaFile(hEMF);
+	}
+	CloseClipboard();
 }
 
 #ifndef SHARED_HANDLERS

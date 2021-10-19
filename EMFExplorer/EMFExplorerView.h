@@ -62,6 +62,7 @@ protected:
 	afx_msg void OnUpdateFileNew(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNeedDoc(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNeedClip(CCmdUI* pCmdUI);
+	afx_msg void OnEditCopy();
 
 #ifndef SHARED_HANDLERS
 	afx_msg void OnZoomIn();
