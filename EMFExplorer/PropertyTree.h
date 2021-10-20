@@ -76,6 +76,14 @@ struct PropertyNodeRectInt : public PropertyNode
 
 struct PropertyNodeSizeInt : public PropertyNode
 {
+	template <typename T>
+	PropertyNodeSizeInt(LPCWSTR szName, T cx, T cy)
+	{
+		type = NodeTypeSizeInt;
+		name = szName;
+		size.cx = cx;
+		size.cy = cy;
+	}
 	SIZE	size;
 };
 

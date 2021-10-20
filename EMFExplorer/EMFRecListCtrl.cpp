@@ -174,11 +174,20 @@ void CEMFRecListCtrl::SetEMFAccess(std::shared_ptr<EMFAccess> emf)
 
 void CEMFRecListCtrl::LoadEMFDataEvent(bool bBefore)
 {
-	if (IsWindowVisible())
-		SetRedraw(!bBefore);
 	if (bBefore)
+	{
+		SetRedraw(FALSE);
 		m_emf = nullptr;
-	SetItemCount((bBefore || !m_emf) ? 0 : (int)m_emf->GetRecordCount());
+	}
+	else
+	{
+		int nCount = m_emf ? (int)m_emf->GetRecordCount() : 0;
+		SetItemCount(nCount);
+		// EnsureVisible helps fix the repaint issue when the list control was previously scrolled
+		EnsureVisible(0, FALSE);
+		Invalidate();
+		SetRedraw(TRUE);
+	}
 }
 
 void CEMFRecListCtrl::OnChangeVisualStyle()

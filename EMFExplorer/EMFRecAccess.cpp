@@ -72,15 +72,28 @@ void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENH
 {
 	auto pRec = (const ENHMETAHEADER*)pEMFRec;
 	ASSERT(pRec->dSignature == ENHMETA_SIGNATURE);
-	m_propsCached.Add(new PropertyNodeRectInt{L"rclBounds", pRec->rclBounds});
-	m_propsCached.Add(new PropertyNodeRectInt{L"rclFrame", pRec->rclFrame});
+	m_propsCached.Add(new PropertyNodeRectInt(L"rclBounds", pRec->rclBounds));
+	m_propsCached.Add(new PropertyNodeRectInt(L"rclFrame", pRec->rclFrame));
 	CStringW str;
 	str.Format(L"%08X", pRec->dSignature);
 	m_propsCached.AddText(L"Signature", str);
-	m_propsCached.AddValue(L"nVersion", (unsigned int)pRec->nVersion);
-	m_propsCached.AddValue(L"nBytes", (unsigned int)pRec->nBytes);
-	m_propsCached.AddValue(L"nRecords", (unsigned int)pRec->nRecords);
-	m_propsCached.AddValue(L"nHandles", (unsigned int)pRec->nHandles);
+	m_propsCached.AddValue(L"nVersion", pRec->nVersion);
+	m_propsCached.AddValue(L"nBytes", pRec->nBytes);
+	m_propsCached.AddValue(L"nRecords", pRec->nRecords);
+	m_propsCached.AddValue(L"nHandles", pRec->nHandles);
+	if (pRec->nDescription && pRec->offDescription)
+	{
+		m_propsCached.AddText(L"Description", (LPCWSTR)((const char*)pRec + pRec->offDescription));
+	}
+	m_propsCached.AddValue(L"nPalEntries", pRec->nPalEntries);
+	m_propsCached.Add(new PropertyNodeSizeInt(L"szlDevice", pRec->szlDevice.cx, pRec->szlDevice.cy));
+	m_propsCached.Add(new PropertyNodeSizeInt(L"szlMillimeters", pRec->szlMillimeters.cx, pRec->szlMillimeters.cy));
+	if (pRec->cbPixelFormat && pRec->offPixelFormat)
+	{
+		// TODO, ENHMETAHEADER::offPixelFormat
+	}
+	m_propsCached.AddValue(L"bOpenGL", pRec->bOpenGL);
+	m_propsCached.Add(new PropertyNodeSizeInt(L"szlMicrometers", pRec->szlMicrometers.cx, pRec->szlMicrometers.cy));
 }
 
 void EMFRecAccessGDIRecGdiComment::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec)

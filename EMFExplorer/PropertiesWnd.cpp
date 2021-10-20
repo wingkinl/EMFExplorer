@@ -148,6 +148,18 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& prop)
 			}
 		}
 		break;
+	case PropertyNode::NodeTypeSizeInt:
+		pGridProp = new CMFCPropertyGridProperty(prop.name, 0, TRUE);
+		{
+			auto& data = (const PropertyNodeSizeInt&)prop;
+			pSubProp = new CMFCPropertyGridProperty(L"width", (_variant_t)data.size.cx, nullptr);
+			pSubProp->AllowEdit(FALSE);
+			pGridProp->AddSubItem(pSubProp);
+			pSubProp = new CMFCPropertyGridProperty(L"height", (_variant_t)data.size.cy, nullptr);
+			pSubProp->AllowEdit(FALSE);
+			pGridProp->AddSubItem(pSubProp);
+		}
+		break;
 	case PropertyNode::NodeTypeColor:
 		break;
 	case PropertyNode::NodeTypeFont:
