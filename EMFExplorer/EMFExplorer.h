@@ -36,7 +36,7 @@ public:
 // Implementation
 	BOOL m_bHiColorIcons;
 	int m_nStyle = 0;
-	BOOL m_bShowTransparentBkGrid = TRUE;
+	int m_nImgBackgroundType = 0;
 	BOOL m_bViewCenter = TRUE;
 	int m_nFitWinType = 0;
 

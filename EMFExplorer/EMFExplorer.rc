@@ -204,10 +204,14 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Background"
         BEGIN
-            MENUITEM "&Dark",                       ID_BACKGROUND_DARK
-            MENUITEM "&Light",                      ID_BACKGROUND_LIGHT
-            MENUITEM SEPARATOR
+            MENUITEM "None",                        ID_BACKGROUND_NONE
             MENUITEM "&Transparent Grid",           ID_BACKGROUND_TRANSPARENTGRID
+            MENUITEM "White",                       ID_BACKGROUND_WHITE
+        END
+        POPUP "Theme"
+        BEGIN
+            MENUITEM "&Dark",                       ID_VIEW_THEME_DARK
+            MENUITEM "&Light",                      ID_VIEW_THEME_LIGHT
         END
     END
     POPUP "&Zoom"

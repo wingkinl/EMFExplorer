@@ -30,8 +30,15 @@ public:
 
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 public:
-	bool GetShowTransparentGrid() const { return m_bShowTransparentGrid; }
-	void SetShowTransparentGrid(bool val);
+	enum ImgBackgroundType
+	{
+		ImgBackgroundTypeNone,
+		ImgBackgroundTypeTransparentGrid,
+		ImgBackgroundTypeWhite,
+	};
+
+	ImgBackgroundType GetImgBackgroundType() const { return m_nImgBackgroundType; }
+	void SetImgBackgroundType(ImgBackgroundType val);
 protected:
 	BOOL CheckClipboardForEMF() const;
 
@@ -51,7 +58,7 @@ public:
 #endif
 
 protected:
-	bool	m_bShowTransparentGrid = true;
+	ImgBackgroundType	m_nImgBackgroundType = ImgBackgroundTypeTransparentGrid;
 // Generated message map functions
 protected:
 #ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER

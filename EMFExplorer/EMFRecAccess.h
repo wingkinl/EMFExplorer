@@ -69,7 +69,7 @@ public:
 
 	void CacheProperties(EMFAccess* pEMF) override;
 
-	virtual void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pRec) {}
+	virtual void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec) {}
 };
 
 class EMFRecAccessGDIBitmapRec : public EMFRecAccessGDIRec
@@ -145,7 +145,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeHeader; }
 
-	void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pRec) override;
+	void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec) override;
 };
 
 class EMFRecAccessGDIRecPolyBezier : public EMFRecAccessGDIDrawingRec
@@ -702,6 +702,8 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeGdiComment; }
 
 	RecCategory GetRecordCategory() const override { return RecCategoryComment; }
+
+	void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec) override;
 };
 
 class EMFRecAccessGDIRecFillRgn : public EMFRecAccessGDIDrawingRec

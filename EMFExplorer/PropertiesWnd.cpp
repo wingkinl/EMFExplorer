@@ -106,25 +106,47 @@ void CPropertiesWnd::SetPropList(const PropertyNode& props)
 	m_wndPropList.Invalidate();
 }
 
+#include <tuple>
+
 CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& prop)
 {
 	CMFCPropertyGridProperty* pGridProp = nullptr;
+	CMFCPropertyGridProperty* pSubProp = nullptr;
 	switch (prop.type)
 	{
 	case PropertyNode::NodeTypeBranch:
 		pGridProp = new CMFCPropertyGridProperty(prop.name);
 		for (auto& sub : prop.sub)
 		{
-			auto pSubGridProp = AddPropList(*sub);
-			if (pSubGridProp)
+			pSubProp = AddPropList(*sub);
+			if (pSubProp)
 			{
-				pSubGridProp->AllowEdit(FALSE);
-				pGridProp->AddSubItem(pSubGridProp);
+				pSubProp->AllowEdit(FALSE);
+				pGridProp->AddSubItem(pSubProp);
 			}
 		}
 		break;
 	case PropertyNode::NodeTypeText:
 		pGridProp = new CMFCPropertyGridProperty(prop.name, CString(prop.text));
+		break;
+	case PropertyNode::NodeTypeRectInt:
+		pGridProp = new CMFCPropertyGridProperty(prop.name, 0, TRUE);
+		{
+			auto& data = (const PropertyNodeRectInt&)prop;
+			std::vector<std::tuple<LPCWSTR, LONG>> vals;
+			vals.emplace_back(L"left", data.rect.left);
+			vals.emplace_back(L"top", data.rect.top);
+			vals.emplace_back(L"right", data.rect.right);
+			vals.emplace_back(L"bottom", data.rect.bottom);
+			vals.emplace_back(L"width", ((CRect&)data.rect).Width());
+			vals.emplace_back(L"height", ((CRect&)data.rect).Height());
+			for (auto& v : vals)
+			{
+				pSubProp = new CMFCPropertyGridProperty(std::get<0>(v), (_variant_t)std::get<1>(v), nullptr);
+				pSubProp->AllowEdit(FALSE);
+				pGridProp->AddSubItem(pSubProp);
+			}
+		}
 		break;
 	case PropertyNode::NodeTypeColor:
 		break;

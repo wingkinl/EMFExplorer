@@ -291,14 +291,14 @@ void CEMFExplorerApp::SaveCustomState()
 }
 
 const TCHAR cszThemeStyle[] = _T("ThemeStyle");
-const TCHAR cszTransparentGrid[] = _T("TransparentGrid");
+const TCHAR cszImgBackgroundType[] = _T("BackgroundType");
 const TCHAR cszViewCenter[] = _T("ViewCenter");
 const TCHAR cszFitWinType[] = _T("FitWinType");
 
 void CEMFExplorerApp::LoadCustomSettings()
 {
 	m_nStyle = GetInt(cszThemeStyle, CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
-	m_bShowTransparentBkGrid = GetInt(cszTransparentGrid, TRUE);
+	m_nImgBackgroundType = GetInt(cszImgBackgroundType, CEMFExplorerView::ImgBackgroundTypeTransparentGrid);
 	m_bViewCenter = GetInt(cszViewCenter, TRUE);
 	m_nFitWinType = GetInt(cszFitWinType, CScrollZoomView::FitToBoth);
 }
@@ -306,7 +306,7 @@ void CEMFExplorerApp::LoadCustomSettings()
 void CEMFExplorerApp::SaveCustomSettings()
 {
 	WriteInt(cszThemeStyle, m_nStyle);
-	WriteInt(cszTransparentGrid, m_bShowTransparentBkGrid);
+	WriteInt(cszImgBackgroundType, m_nImgBackgroundType);
 	WriteInt(cszViewCenter, m_bViewCenter);
 	WriteInt(cszFitWinType, m_nFitWinType);
 }

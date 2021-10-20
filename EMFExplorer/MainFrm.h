@@ -26,7 +26,7 @@ public:
 
 // Operations
 public:
-	void SetViewBackgroundDark(BOOL bDark);
+	void SetTheme(BOOL bDark);
 // Overrides
 public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
@@ -59,12 +59,13 @@ protected:  // control bar embedded members
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnViewCustomize();
-	afx_msg void OnViewBackgroundDark();
-	afx_msg void OnViewBackgroundLight();
-	afx_msg void OnUpdateViewBackgroundDark(CCmdUI* pCmdUI);
-	afx_msg void OnUpdateViewBackgroundLight(CCmdUI* pCmdUI);
-	afx_msg void OnViewTransparentBkGrid();
-	afx_msg void OnUpdateViewTransparentBkGrid(CCmdUI* pCmdUI);
+	afx_msg void OnViewThemeDark();
+	afx_msg void OnViewThemeLight();
+	afx_msg void OnUpdateViewThemeDark(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateViewThemeLight(CCmdUI* pCmdUI);
+	afx_msg void OnViewImgBk(UINT nID);
+	afx_msg void OnUpdateViewImgBk(CCmdUI* pCmdUI);
+
 	afx_msg LRESULT OnToolbarCreateNew(WPARAM wp, LPARAM lp);
 	afx_msg LRESULT OnSelectRecordItem(WPARAM wp, LPARAM lp);
 	DECLARE_MESSAGE_MAP()

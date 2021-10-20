@@ -160,12 +160,64 @@ struct OEmfPlusRecInfo
 	u8t*	Data;
 };
 
-struct EMRCOMMENT_EMFPLUS 
+// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/929b78e1-b848-44a5-9fac-327cae5c2ae5
+enum {
+	EMR_COMMENT_EMFPLUS				= 0x2B464D45,	// "+FME"
+	EMR_COMMENT_EMFSPOOL			= 0x00000000,
+	EMR_COMMENT_EMFSPOOL_RECORD_ID	= 0x544F4E46,	// "TONE"
+	EMR_COMMENT_PUBLIC				= 0x43494447,	// "CIDG"
+	EMR_COMMENT_WINDOWS_METAFILE	= 0x80000001,
+	EMR_COMMENT_BEGINGROUP			= 0x00000002,
+	EMR_COMMENT_ENDGROUP			= 0x00000003,
+	EMR_COMMENT_MULTIFORMATS		= 0x40000004,
+	EMR_COMMENT_UNICODE_STRING		= 0x00000040,
+	EMR_COMMENT_UNICODE_END			= 0x00000080,
+};
+
+struct EMRCOMMENT_BASE
 {
-	EMR			emr;
+	u32t		Type;
+	u32t		Size;
 	u32t		DataSize;
 	u32t		CommentIdentifier;
-	OEmfPlusRec	rec;
+};
+
+struct EMRCOMMENT_EMFPLUS : public EMRCOMMENT_BASE
+{
+	OEmfPlusRec		rec;
+};
+
+static_assert(sizeof(EMRCOMMENT_EMFPLUS) == sizeof(EMRCOMMENT_BASE)+sizeof(OEmfPlusRec), "EMRCOMMENT_EMFPLUS has incorrect size");
+
+struct EMRCOMMENT_PUBLIC : public EMRCOMMENT_BASE
+{
+	u32t	PublicCommentIdentifier;
+};
+
+struct EMRCOMMENT_BEGINGROUP : public EMRCOMMENT_PUBLIC
+{
+	RECTL	Rectangle;
+	u32t	DescriptionLen;
+	wchar_t	Description[1];
+};
+
+using EMRCOMMENT_ENDGROUP = EMRCOMMENT_PUBLIC;
+
+struct EMRCOMMENT_MULTIFORMATS : public  EMRCOMMENT_PUBLIC
+{
+	RECTL		OutputRect;
+	u32t		CountFormats;
+	EMRFORMAT	Formats[1];
+};
+
+struct EMRCOMMENT_WINDOWS_METAFILE : public EMRCOMMENT_PUBLIC
+{
+	u16t	Version;
+	u16t	Reserved;
+	u32t	Checksum;
+	u32t	Flags;
+	u32t	WinMetafileSize;
+	u8t		WinMetafile[1];
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/fa7c00e7-ef14-4070-b12a-cb047d964ebe
@@ -195,11 +247,6 @@ struct OEmfPlusHeaderEx
 {
 	const ENHMETAHEADER*	pEMF = nullptr;
 	const OEmfPlusHeader*	pPlus = nullptr;
-};
-
-// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/929b78e1-b848-44a5-9fac-327cae5c2ae5
-enum {
-	EMR_COMMENT_EMFPLUS = 0x2B464D45,
 };
 
 #define GSOptional

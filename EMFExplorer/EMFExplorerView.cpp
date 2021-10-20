@@ -59,7 +59,7 @@ END_MESSAGE_MAP()
 CEMFExplorerView::CEMFExplorerView() noexcept
 {
 #ifndef SHARED_HANDLERS
-	m_bShowTransparentGrid = theApp.m_bShowTransparentBkGrid;
+	m_nImgBackgroundType = (ImgBackgroundType)theApp.m_nImgBackgroundType;
 #endif // SHARED_HANDLERS
 }
 
@@ -135,9 +135,9 @@ bool CEMFExplorerView::IsZoomAllowed() const
 	return !!HasValidEMFInDoc();
 }
 
-void CEMFExplorerView::SetShowTransparentGrid(bool val)
+void CEMFExplorerView::SetImgBackgroundType(ImgBackgroundType val)
 {
-	m_bShowTransparentGrid = val;
+	m_nImgBackgroundType = val;
 	Invalidate();
 }
 
@@ -208,7 +208,7 @@ void CEMFExplorerView::OnPaint()
 
 	CRect rcImg(ptImg, szImg);
 
-	if (GetShowTransparentGrid())
+	if (GetImgBackgroundType() != ImgBackgroundTypeNone)
 	{
 		CRect rcClient;
 		GetClientRect(rcClient);
@@ -221,7 +221,15 @@ void CEMFExplorerView::OnPaint()
 			rcGrid.right = rcClient.right;
 		if (rcGrid.bottom > rcClient.bottom)
 			rcGrid.bottom = rcClient.bottom;
-		DrawTransparentGrid(pDCDraw, rcGrid);
+		switch (GetImgBackgroundType())
+		{
+		case ImgBackgroundTypeTransparentGrid:
+			DrawTransparentGrid(pDCDraw, rcGrid);
+			break;
+		case ImgBackgroundTypeWhite:
+			pDCDraw->FillSolidRect(rcGrid, RGB(255,255,255));
+			break;
+		}
 	}
 
 	Gdiplus::Graphics gg(pDCDraw->GetSafeHdc());

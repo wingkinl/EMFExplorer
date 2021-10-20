@@ -59,9 +59,11 @@
 #define IDC_GITHUB_LINK                 1000
 #define ID_VIEW_                        32771
 #define ID_VIEW_BACKGROUND              32772
-#define ID_BACKGROUND_DARK              32773
-#define ID_BACKGROUND_LIGHT             32774
-#define ID_BACKGROUND_TRANSPARENTGRID   32777
+#define ID_VIEW_THEME_DARK              32773
+#define ID_VIEW_THEME_LIGHT             32774
+#define ID_BACKGROUND_NONE              32775
+#define ID_BACKGROUND_TRANSPARENTGRID   32776
+#define ID_BACKGROUND_WHITE             32777
 #define ID_ZOOM_IN                      32778
 #define ID_ZOOM_OUT                     32779
 #define ID_ZOOM_ACTUALSIZE              32780
@@ -85,13 +87,14 @@
 #define ID_ZOOM_1600                    32798
 #define ID_ZOOM_3200                    32799
 #define ID_ZOOM_CENTER                  32800
+#define ID_VIEW_THEME                   32810
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         32808
+#define _APS_NEXT_COMMAND_VALUE         32811
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

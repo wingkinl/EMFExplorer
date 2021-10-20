@@ -44,8 +44,9 @@ const PropertyNode& EMFRecAccess::GetProperties(EMFAccess* pEMF)
 
 void EMFRecAccess::CacheProperties(EMFAccess* pEMF)
 {
-	m_propsCached.Add(L"Type", std::to_wstring(m_recInfo.Type).c_str());
-	m_propsCached.Add(L"DataSize", std::to_wstring(m_recInfo.DataSize).c_str());
+	m_propsCached.AddText(L"Name", GetRecordName());
+	m_propsCached.AddValue(L"Type", m_recInfo.Type);
+	m_propsCached.AddValue(L"DataSize", m_recInfo.DataSize);
 }
 
 void EMFRecAccessGDIRec::CacheProperties(EMFAccess* pEMF)
@@ -67,21 +68,84 @@ void EMFRecAccessGDIRec::CacheProperties(EMFAccess* pEMF)
 	CachePropertiesFromGDI(pEMF, pRec);
 }
 
-void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pRec)
+void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec)
 {
-	auto pHeader = (const ENHMETAHEADER*)pRec;
+	auto pRec = (const ENHMETAHEADER*)pEMFRec;
+	ASSERT(pRec->dSignature == ENHMETA_SIGNATURE);
+	m_propsCached.Add(new PropertyNodeRectInt{L"rclBounds", pRec->rclBounds});
+	m_propsCached.Add(new PropertyNodeRectInt{L"rclFrame", pRec->rclFrame});
 	CStringW str;
-	str.Format(L"%08X", pHeader->dSignature);
-	m_propsCached.Add(L"Signature", str);
+	str.Format(L"%08X", pRec->dSignature);
+	m_propsCached.AddText(L"Signature", str);
+	m_propsCached.AddValue(L"nVersion", (unsigned int)pRec->nVersion);
+	m_propsCached.AddValue(L"nBytes", (unsigned int)pRec->nBytes);
+	m_propsCached.AddValue(L"nRecords", (unsigned int)pRec->nRecords);
+	m_propsCached.AddValue(L"nHandles", (unsigned int)pRec->nHandles);
+}
+
+void EMFRecAccessGDIRecGdiComment::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec)
+{
+	auto pRec = (const EMRCOMMENT_BASE*)pEMFRec;
+	CStringW str;
+	str.Format(L"%08X", pRec->CommentIdentifier);
+	m_propsCached.AddText(L"Identifier", str);
+	str = L"Unknown";
+	CString strText;
+	switch (pRec->CommentIdentifier)
+	{
+	case EMR_COMMENT_EMFPLUS:
+		str = L"EMF+";
+		break;
+	case EMR_COMMENT_EMFSPOOL:
+		str = L"EMF Spool";
+		break;
+	case EMR_COMMENT_PUBLIC:
+		{
+			auto pPublicRec = (EMRCOMMENT_PUBLIC*)pRec;
+			switch (pPublicRec->PublicCommentIdentifier)
+			{
+			case EMR_COMMENT_BEGINGROUP:
+				str = L"Public: Begin group";
+				break;
+			case EMR_COMMENT_ENDGROUP:
+				str = L"Public: End group";
+				break;
+			case EMR_COMMENT_WINDOWS_METAFILE:
+				str = L"Public: End Windows Metafile";
+				break;
+			case EMR_COMMENT_MULTIFORMATS:
+				str = L"Public: Multiformats";
+				break;
+			case EMR_COMMENT_UNICODE_STRING:
+				str = L"Public: Unicode String";
+				break;
+			case EMR_COMMENT_UNICODE_END:
+				str = L"Public: Unicode End";
+				break;
+			}
+		}
+		break;
+	default:
+		if (pRec->DataSize)
+		{
+			char szBuffer[100]{0};
+			strncpy_s(szBuffer, _countof(szBuffer), (char*)&pRec->CommentIdentifier, _countof(szBuffer));
+			strText = szBuffer;
+		}
+		break;
+	}
+	m_propsCached.AddText(L"CommentType", str);
+	if (!strText.IsEmpty())
+		m_propsCached.AddText(L"Text", strText);
 }
 
 void EMFRecAccessGDIPlusRec::CacheProperties(EMFAccess* pEMF)
 {
 	EMFRecAccess::CacheProperties(pEMF);
-	m_propsCached.Add(L"Flags", std::to_wstring(m_recInfo.Flags).c_str());
+	m_propsCached.AddValue(L"Flags", m_recInfo.Flags, PropertyNode::NodeTypeText, true);
 }
 
-EMFAccess::EMFAccess(const std::vector<emfplus::u8t>& vData)
+EMFAccess::EMFAccess(const std::vector<u8t>& vData)
 {
 	ATL::CComPtr<IStream> stream;
 	stream.Attach(SHCreateMemStream(vData.data(), (UINT)vData.size()));

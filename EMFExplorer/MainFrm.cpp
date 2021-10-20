@@ -25,12 +25,12 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_VIEW_CUSTOMIZE, &CMainFrame::OnViewCustomize)
 	ON_REGISTERED_MESSAGE(AFX_WM_CREATETOOLBAR, &CMainFrame::OnToolbarCreateNew)
-	ON_COMMAND(ID_BACKGROUND_DARK, &CMainFrame::OnViewBackgroundDark)
-	ON_COMMAND(ID_BACKGROUND_LIGHT, &CMainFrame::OnViewBackgroundLight)
-	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_DARK, &CMainFrame::OnUpdateViewBackgroundDark)
-	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_LIGHT, &CMainFrame::OnUpdateViewBackgroundLight)
-	ON_COMMAND(ID_BACKGROUND_TRANSPARENTGRID, &CMainFrame::OnViewTransparentBkGrid)
-	ON_UPDATE_COMMAND_UI(ID_BACKGROUND_TRANSPARENTGRID, &CMainFrame::OnUpdateViewTransparentBkGrid)
+	ON_COMMAND(ID_VIEW_THEME_DARK, &CMainFrame::OnViewThemeDark)
+	ON_COMMAND(ID_VIEW_THEME_LIGHT, &CMainFrame::OnViewThemeLight)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_THEME_DARK, &CMainFrame::OnUpdateViewThemeDark)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_THEME_LIGHT, &CMainFrame::OnUpdateViewThemeLight)
+	ON_COMMAND_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CMainFrame::OnViewImgBk)
+	ON_UPDATE_COMMAND_UI_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CMainFrame::OnUpdateViewImgBk)
 	ON_MESSAGE(MainFrameMsgOnSelectRecordItem, &CMainFrame::OnSelectRecordItem)
 END_MESSAGE_MAP()
 
@@ -267,7 +267,7 @@ void CMainFrame::OnChangeTheme()
 	RedrawWindow(NULL, NULL, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
 }
 
-void CMainFrame::SetViewBackgroundDark(BOOL bDark)
+void CMainFrame::SetTheme(BOOL bDark)
 {
 	CWaitCursor wait;
 	
@@ -284,36 +284,36 @@ void CMainFrame::SetViewBackgroundDark(BOOL bDark)
 	RedrawWindow();
 }
 
-void CMainFrame::OnViewBackgroundDark()
+void CMainFrame::OnViewThemeDark()
 {
-	SetViewBackgroundDark(TRUE);
+	SetTheme(TRUE);
 }
 
-void CMainFrame::OnViewBackgroundLight()
+void CMainFrame::OnViewThemeLight()
 {
-	SetViewBackgroundDark(FALSE);
+	SetTheme(FALSE);
 }
 
-void CMainFrame::OnUpdateViewBackgroundDark(CCmdUI* pCmdUI)
+void CMainFrame::OnUpdateViewThemeDark(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetRadio(theApp.IsDarkTheme());
 }
 
-void CMainFrame::OnUpdateViewBackgroundLight(CCmdUI* pCmdUI)
+void CMainFrame::OnUpdateViewThemeLight(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetRadio(!theApp.IsDarkTheme());
 }
 
-void CMainFrame::OnViewTransparentBkGrid()
+void CMainFrame::OnViewImgBk(UINT nID)
 {
-	theApp.m_bShowTransparentBkGrid = !theApp.m_bShowTransparentBkGrid;
+	theApp.m_nImgBackgroundType = nID - ID_BACKGROUND_NONE;
 	CEMFExplorerView* pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
-	pView->SetShowTransparentGrid(theApp.m_bShowTransparentBkGrid);
+	pView->SetImgBackgroundType((CEMFExplorerView::ImgBackgroundType)theApp.m_nImgBackgroundType);
 }
 
-void CMainFrame::OnUpdateViewTransparentBkGrid(CCmdUI* pCmdUI)
+void CMainFrame::OnUpdateViewImgBk(CCmdUI* pCmdUI)
 {
-	pCmdUI->SetCheck(theApp.m_bShowTransparentBkGrid);
+	pCmdUI->SetRadio(theApp.m_nImgBackgroundType == pCmdUI->m_nID - ID_BACKGROUND_NONE);
 }
 
 LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)

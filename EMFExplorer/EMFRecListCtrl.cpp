@@ -64,6 +64,12 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CEMFRecListCtrl message handlers
 
+enum ColumnType
+{
+	ColumnTypeIndex,
+	ColumnTypeName,
+};
+
 BOOL CEMFRecListCtrl::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	BOOL bRes = CEMFRecListCtrlBase::OnNotify(wParam, lParam, pResult);
@@ -93,6 +99,9 @@ int CEMFRecListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		if (theApp.IsDarkTheme())
 			SetBkColor(theApp.m_crfDarkThemeBkColor);
 
+		InsertColumn(ColumnTypeIndex, _T("Index"));
+		InsertColumn(ColumnTypeName, _T("Record Name"));
+
 		_EnableListCtrlExplorerVisualStyles(GetSafeHwnd(), TRUE);
 	}
 	return nRet;
@@ -100,7 +109,9 @@ int CEMFRecListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CEMFRecListCtrl::OnSize(UINT nType, int cx, int cy)
 {
-	SetColumnWidth(0, cx);
+	SetColumnWidth(ColumnTypeIndex, LVSCW_AUTOSIZE);
+	int cxIdx = GetColumnWidth(ColumnTypeIndex);
+	SetColumnWidth(ColumnTypeName, cx - cxIdx);
 	CEMFRecListCtrlBase::OnSize(nType, cx, cy);
 }
 
@@ -116,9 +127,18 @@ void CEMFRecListCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 		// the list-view control allows any length string to be stored as item text, only the first 260 TCHARs are displayed.
 		// so better truncate the text here instead of leaving junk/gibberish string
 		auto pRec = m_emf->GetRecord((size_t)item.iItem);
-		auto szText = pRec->GetRecordName();
-		//_tcsncpy_s(item.pszText, item.cchTextMax, szText, item.cchTextMax);
-		_sntprintf_s(item.pszText, item.cchTextMax, item.cchTextMax, _T("%ld %s"), item.iItem+1, szText);
+		switch (item.iSubItem)
+		{
+		case ColumnTypeIndex:
+			_sntprintf_s(item.pszText, item.cchTextMax, item.cchTextMax, _T("%ld"), item.iItem+1);
+			break;
+		case ColumnTypeName:
+			{
+				auto szText = pRec->GetRecordName();
+				_tcsncpy_s(item.pszText, item.cchTextMax, szText, item.cchTextMax);
+			}
+			break;
+		}
 	}
 
 	if (item.mask & LVIF_IMAGE)
@@ -138,15 +158,27 @@ COLORREF CEMFRecListCtrl::OnGetCellTextColor(int nRow, int nColum)
 
 COLORREF CEMFRecListCtrl::OnGetCellBkColor(int nRow, int nColum)
 {
-	if (theApp.IsDarkTheme())
-		return theApp.m_crfDarkThemeBkColor;
+	auto pRec = m_emf->GetRecord((size_t)nRow);
+	switch (pRec->GetRecordCategory())
+	{
+	case EMFRecAccess::RecCategoryDrawing:
+		return theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
+	}
 	return CEMFRecListCtrlBase::OnGetCellBkColor(nRow, nColum);
 }
 
 void CEMFRecListCtrl::SetEMFAccess(std::shared_ptr<EMFAccess> emf)
 {
 	m_emf = emf;
-	SetItemCount((int)m_emf->GetRecordCount());
+}
+
+void CEMFRecListCtrl::LoadEMFDataEvent(bool bBefore)
+{
+	if (IsWindowVisible())
+		SetRedraw(!bBefore);
+	if (bBefore)
+		m_emf = nullptr;
+	SetItemCount((bBefore || !m_emf) ? 0 : (int)m_emf->GetRecordCount());
 }
 
 void CEMFRecListCtrl::OnChangeVisualStyle()

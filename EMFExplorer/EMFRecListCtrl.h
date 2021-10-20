@@ -17,6 +17,8 @@ public:
 	void OnChangeVisualStyle();
 
 	void SetEMFAccess(std::shared_ptr<EMFAccess> emf);
+
+	void LoadEMFDataEvent(bool bBefore);
 // Overrides
 protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
