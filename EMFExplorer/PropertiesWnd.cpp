@@ -8,6 +8,9 @@
 #include "EMFExplorer.h"
 #include "PropertyTree.h"
 
+#undef min
+#undef max
+
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
@@ -88,12 +91,12 @@ void CPropertiesWnd::Reset()
 	m_wndPropList.Invalidate();
 }
 
-void CPropertiesWnd::SetPropList(const PropertyNode& props)
+void CPropertiesWnd::SetPropList(std::shared_ptr<PropertyNode> props)
 {
 	CWaitCursor wait;
 	Reset();
 	m_wndPropList.SetRedraw(FALSE);
-	for (auto& sub : props.sub)
+	for (auto& sub : props->sub)
 	{
 		auto pGridProp = AddPropList(*sub);
 		if (pGridProp)
@@ -148,6 +151,24 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& prop)
 			}
 		}
 		break;
+	case PropertyNode::NodeTypeRectFloat:
+		pGridProp = new CMFCPropertyGridProperty(prop.name, 0, TRUE);
+		{
+			auto& data = (const PropertyNodeRectFloat&)prop;
+			std::vector<std::tuple<LPCWSTR, emfplus::Float>> vals;
+			vals.emplace_back(L"X", data.rect.X);
+			vals.emplace_back(L"Y", data.rect.Y);
+			vals.emplace_back(L"width", data.rect.Width);
+			vals.emplace_back(L"height", data.rect.Height);
+			for (auto& v : vals)
+			{
+				pSubProp = new CMFCPropertyGridProperty(std::get<0>(v), (_variant_t)std::get<1>(v), nullptr);
+				pSubProp->AllowEdit(FALSE);
+				pGridProp->AddSubItem(pSubProp);
+			}
+			pGridProp->Expand();
+		}
+		break;
 	case PropertyNode::NodeTypeSizeInt:
 		pGridProp = new CMFCPropertyGridProperty(prop.name, 0, TRUE);
 		{
@@ -158,6 +179,28 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& prop)
 			pSubProp = new CMFCPropertyGridProperty(L"height", (_variant_t)data.size.cy, nullptr);
 			pSubProp->AllowEdit(FALSE);
 			pGridProp->AddSubItem(pSubProp);
+		}
+		break;
+	case PropertyNode::NodeTypePointDataArray:
+		pGridProp = new CMFCPropertyGridProperty(prop.name, 0, TRUE);
+		{
+			auto& data = (const PropertyNodePointDataArray&)prop;
+			const size_t maxCount = 10;
+			size_t nCount = std::min(maxCount, data.pts->GetSize());
+			bool bFloat = !data.pts->f.empty();
+			for (size_t ii = 0; ii < nCount; ++ii)
+			{
+				CStringW strName, strVal;
+				strName.Format(L"[%lu]", ii);
+				if (bFloat)
+					strVal.Format(L"%g, %g", data.pts->f[ii].x, data.pts->f[ii].y);
+				else
+					strVal.Format(L"%d, %d", data.pts->i[ii].x, data.pts->i[ii].y);
+				pSubProp = new CMFCPropertyGridProperty(strName, strVal, nullptr);
+				pSubProp->AllowEdit(FALSE);
+				pGridProp->AddSubItem(pSubProp);
+			}
+			pGridProp->Expand();
 		}
 		break;
 	case PropertyNode::NodeTypeColor:

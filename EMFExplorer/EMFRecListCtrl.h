@@ -26,8 +26,6 @@ public:
 protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 
-	COLORREF OnGetCellBkColor(int nRow, int nColum);
-
 	void OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const;
 
 	BOOL IsDarkTheme() const;

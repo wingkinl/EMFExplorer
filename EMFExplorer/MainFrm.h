@@ -12,6 +12,8 @@
 enum MainFrameMsg
 {
 	MainFrameMsgOnSelectRecordItem = WM_APP + 100,
+	MainFrameMsgCanOpenRecordItem,
+	MainFrameMsgOpenRecordItem,
 };
 
 class CMainFrame : public CFrameWndEx
@@ -68,6 +70,8 @@ protected:
 
 	afx_msg LRESULT OnToolbarCreateNew(WPARAM wp, LPARAM lp);
 	afx_msg LRESULT OnSelectRecordItem(WPARAM wp, LPARAM lp);
+	afx_msg LRESULT OnCanOpenRecordItem(WPARAM wp, LPARAM lp);
+	afx_msg LRESULT OnOpenRecordItem(WPARAM wp, LPARAM lp);
 	DECLARE_MESSAGE_MAP()
 
 	BOOL CreateDockingWindows();

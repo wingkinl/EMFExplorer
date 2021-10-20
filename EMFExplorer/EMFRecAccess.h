@@ -39,13 +39,17 @@ public:
 	};
 	virtual RecCategory GetRecordCategory() const = 0;
 
+	// Don't be confused with RecCategoryDrawing sicne there are other records that can draw
+	// such as BitBlt
+	bool IsDrawingRecord() const;
+
 	virtual bool IsGDIRecord() const = 0;
 
 	inline bool IsGDIPlusRecord() const { return !IsGDIRecord(); }
 
 	const emfplus::OEmfPlusRecInfo& GetRecInfo() const { return m_recInfo; }
 
-	const PropertyNode& GetProperties(EMFAccess* pEMF);
+	std::shared_ptr<PropertyNode> GetProperties(EMFAccess* pEMF);
 
 	inline size_t GetIndex() const { return m_nIndex; }
 
@@ -62,11 +66,10 @@ protected:
 	void AddLinkRecord(EMFRecAccess* pRecAccess, bool bMutually = true);
 protected:
 	friend class EMFAccess;
-	emfplus::OEmfPlusRecInfo	m_recInfo;
-	size_t						m_nIndex = 0;
-	bool						m_bRecDataCached = false;
-	PropertyNode				m_propsCached{PropertyNode::NodeTypeBranch};
-	std::vector<EMFRecAccess*>	m_linkRecs;
+	emfplus::OEmfPlusRecInfo		m_recInfo;
+	size_t							m_nIndex = 0;
+	std::shared_ptr<PropertyNode>	m_propsCached;
+	std::vector<EMFRecAccess*>		m_linkRecs;
 };
 
 class EMFRecAccessGDIRec : public EMFRecAccess
@@ -1145,55 +1148,55 @@ public:
 	void CacheProperties(EMFAccess* pEMF) override;
 };
 
-class EMFRecAccessGDIPlusClippingRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusClippingCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryClipping; }
 };
 
-class EMFRecAccessGDIPlusControlRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusControlCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryControl; }
 };
 
-class EMFRecAccessGDIPlusDrawingRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusDrawingCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryDrawing; }
 };
 
-class EMFRecAccessGDIPlusObjectRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusObjectCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryObject; }
 };
 
-class EMFRecAccessGDIPlusPropertyRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusPropertyCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryProperty; }
 };
 
-class EMFRecAccessGDIPlusStateRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusStateCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryState; }
 };
 
-class EMFRecAccessGDIPlusTerminalServerRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusTerminalServerCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryTerminalServer; }
 };
 
-class EMFRecAccessGDIPlusTransformRec : public EMFRecAccessGDIPlusRec
+class EMFRecAccessGDIPlusTransformCat : public EMFRecAccessGDIPlusRec
 {
 public:
 	RecCategory GetRecordCategory() const override { return RecCategoryTransform; }
 };
 
-class EMFRecAccessGDIPlusRecHeader : public EMFRecAccessGDIPlusControlRec
+class EMFRecAccessGDIPlusRecHeader : public EMFRecAccessGDIPlusControlCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusHeader"; }
@@ -1203,7 +1206,7 @@ private:
 	emfplus::OEmfPlusHeader	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecEndOfFile : public EMFRecAccessGDIPlusControlRec
+class EMFRecAccessGDIPlusRecEndOfFile : public EMFRecAccessGDIPlusControlCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusEndOfFile"; }
@@ -1223,7 +1226,7 @@ private:
 	emfplus::OEmfPlusRecComment	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecGetDC : public EMFRecAccessGDIPlusControlRec
+class EMFRecAccessGDIPlusRecGetDC : public EMFRecAccessGDIPlusControlCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusGetDC"; }
@@ -1261,21 +1264,38 @@ public:
 	RecCategory GetRecordCategory() const override { return RecCategoryReserved; }
 };
 
-class EMFRecAccessGDIPlusRecObject : public EMFRecAccessGDIPlusObjectRec
+class EMFRecAccessGDIPlusObjWrapper
+{
+public:
+	EMFRecAccessGDIPlusObjWrapper() = default;
+	virtual ~EMFRecAccessGDIPlusObjWrapper() = default;
+
+	emfplus::OEmfPlusGraphObject* GetObject() const { return m_obj.get(); }
+protected:
+	friend class EMFRecAccessGDIPlusRecObject;
+
+	virtual void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const {}
+protected:
+	std::unique_ptr<emfplus::OEmfPlusGraphObject>	m_obj;
+};
+
+class EMFRecAccessGDIPlusRecObject : public EMFRecAccessGDIPlusObjectCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusObject"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeObject; }
+
+	EMFRecAccessGDIPlusObjWrapper* GetObjectWrapper() const { return m_recDataCached.get(); }
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
 	void CacheProperties(EMFAccess* pEMF) override;
 private:
-	std::unique_ptr<emfplus::OEmfPlusGraphObject>	m_recDataCached;
+	std::unique_ptr<EMFRecAccessGDIPlusObjWrapper>	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecClear : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecClear : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusClear"; }
@@ -1285,7 +1305,7 @@ private:
 	emfplus::OEmfPlusRecClear	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecFillRects : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecFillRects : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillRects"; }
@@ -1297,17 +1317,19 @@ private:
 	emfplus::OEmfPlusRecFillRects	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawRects : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawRects : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawRects"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawRects; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawRects	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecFillPolygon : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecFillPolygon : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillPolygon"; }
@@ -1319,17 +1341,19 @@ private:
 	emfplus::OEmfPlusRecFillPolygon	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawLines : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawLines : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawLines"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawLines; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawLines	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecFillEllipse : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecFillEllipse : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillEllipse"; }
@@ -1341,17 +1365,19 @@ private:
 	emfplus::OEmfPlusRecFillEllipse	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawEllipse : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawEllipse : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawEllipse"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawEllipse; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawEllipse	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecFillPie : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecFillPie : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillPie"; }
@@ -1363,27 +1389,31 @@ private:
 	emfplus::OEmfPlusRecFillPie	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawPie : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawPie : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawPie"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawPie; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawPie	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawArc : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawArc : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawArc"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawArc; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawArc	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecFillRegion : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecFillRegion : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillRegion"; }
@@ -1395,7 +1425,7 @@ private:
 	emfplus::OEmfPlusRecFillRegion	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecFillPath : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecFillPath : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillPath"; }
@@ -1407,7 +1437,7 @@ private:
 	emfplus::OEmfPlusRecFillPath	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawPath : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawPath : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawPath"; }
@@ -1419,7 +1449,7 @@ private:
 	emfplus::OEmfPlusRecDrawPath	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecFillClosedCurve : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecFillClosedCurve : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillClosedCurve"; }
@@ -1429,7 +1459,7 @@ private:
 	emfplus::OEmfPlusRecFillClosedCurve	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawClosedCurve : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawClosedCurve : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawClosedCurve"; }
@@ -1439,7 +1469,7 @@ private:
 	emfplus::OEmfPlusRecDrawClosedCurve	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawCurve : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawCurve : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawCurve"; }
@@ -1449,17 +1479,19 @@ private:
 	emfplus::OEmfPlusRecDrawCurve	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawBeziers : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawBeziers : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawBeziers"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawBeziers; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawBeziers	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawImage : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawImage : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawImage"; }
@@ -1471,7 +1503,7 @@ private:
 	emfplus::OEmfPlusRecDrawImage	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawImagePoints : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawImagePoints : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawImagePoints"; }
@@ -1485,7 +1517,7 @@ private:
 	emfplus::OEmfPlusRecDrawImagePoints	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawString : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawString : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawString"; }
@@ -1497,7 +1529,7 @@ private:
 	emfplus::OEmfPlusRecDrawString	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecSetRenderingOrigin : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetRenderingOrigin : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetRenderingOrigin"; }
@@ -1507,7 +1539,7 @@ private:
 	emfplus::OEmfPlusRecSetRenderingOrigin	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecSetAntiAliasMode : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetAntiAliasMode : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetAntiAliasMode"; }
@@ -1515,7 +1547,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetAntiAliasMode; }
 };
 
-class EMFRecAccessGDIPlusRecSetTextRenderingHint : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetTextRenderingHint : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetTextRenderingHint"; }
@@ -1523,7 +1555,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetTextRenderingHint; }
 };
 
-class EMFRecAccessGDIPlusRecSetTextContrast : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetTextContrast : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetTextContrast"; }
@@ -1531,7 +1563,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetTextContrast; }
 };
 
-class EMFRecAccessGDIPlusRecSetInterpolationMode : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetInterpolationMode : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetInterpolationMode"; }
@@ -1539,7 +1571,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetInterpolationMode; }
 };
 
-class EMFRecAccessGDIPlusRecSetPixelOffsetMode : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetPixelOffsetMode : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetPixelOffsetMode"; }
@@ -1547,7 +1579,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetPixelOffsetMode; }
 };
 
-class EMFRecAccessGDIPlusRecSetCompositingMode : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetCompositingMode : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetCompositingMode"; }
@@ -1555,7 +1587,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetCompositingMode; }
 };
 
-class EMFRecAccessGDIPlusRecSetCompositingQuality : public EMFRecAccessGDIPlusPropertyRec
+class EMFRecAccessGDIPlusRecSetCompositingQuality : public EMFRecAccessGDIPlusPropertyCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetCompositingQuality"; }
@@ -1563,7 +1595,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetCompositingQuality; }
 };
 
-class EMFRecAccessGDIPlusRecSave : public EMFRecAccessGDIPlusStateRec
+class EMFRecAccessGDIPlusRecSave : public EMFRecAccessGDIPlusStateCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSave"; }
@@ -1573,7 +1605,7 @@ private:
 	emfplus::OEmfPlusRecSave	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecRestore : public EMFRecAccessGDIPlusStateRec
+class EMFRecAccessGDIPlusRecRestore : public EMFRecAccessGDIPlusStateCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusRestore"; }
@@ -1583,7 +1615,7 @@ private:
 	emfplus::OEmfPlusRecRestore	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecBeginContainer : public EMFRecAccessGDIPlusStateRec
+class EMFRecAccessGDIPlusRecBeginContainer : public EMFRecAccessGDIPlusStateCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusBeginContainer"; }
@@ -1593,7 +1625,7 @@ private:
 	emfplus::OEmfPlusRecBeginContainer	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecBeginContainerNoParams : public EMFRecAccessGDIPlusStateRec
+class EMFRecAccessGDIPlusRecBeginContainerNoParams : public EMFRecAccessGDIPlusStateCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusBeginContainerNoParams"; }
@@ -1603,7 +1635,7 @@ private:
 	emfplus::OEmfPlusRecBeginContainerNoParams	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecEndContainer : public EMFRecAccessGDIPlusStateRec
+class EMFRecAccessGDIPlusRecEndContainer : public EMFRecAccessGDIPlusStateCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusEndContainer"; }
@@ -1613,7 +1645,7 @@ private:
 	emfplus::OEmfPlusRecEndContainer	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecSetWorldTransform : public EMFRecAccessGDIPlusTransformRec
+class EMFRecAccessGDIPlusRecSetWorldTransform : public EMFRecAccessGDIPlusTransformCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetWorldTransform"; }
@@ -1623,7 +1655,7 @@ private:
 	emfplus::OEmfPlusRecSetWorldTransform	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecResetWorldTransform : public EMFRecAccessGDIPlusTransformRec
+class EMFRecAccessGDIPlusRecResetWorldTransform : public EMFRecAccessGDIPlusTransformCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusResetWorldTransform"; }
@@ -1631,7 +1663,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeResetWorldTransform; }
 };
 
-class EMFRecAccessGDIPlusRecMultiplyWorldTransform : public EMFRecAccessGDIPlusTransformRec
+class EMFRecAccessGDIPlusRecMultiplyWorldTransform : public EMFRecAccessGDIPlusTransformCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusMultiplyWorldTransform"; }
@@ -1641,7 +1673,7 @@ private:
 	emfplus::OEmfPlusRecMultiplyWorldTransform	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecTranslateWorldTransform : public EMFRecAccessGDIPlusTransformRec
+class EMFRecAccessGDIPlusRecTranslateWorldTransform : public EMFRecAccessGDIPlusTransformCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusTranslateWorldTransform"; }
@@ -1651,7 +1683,7 @@ private:
 	emfplus::OEmfPlusRecTranslateWorldTransform	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecScaleWorldTransform : public EMFRecAccessGDIPlusTransformRec
+class EMFRecAccessGDIPlusRecScaleWorldTransform : public EMFRecAccessGDIPlusTransformCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusScaleWorldTransform"; }
@@ -1661,7 +1693,7 @@ private:
 	emfplus::OEmfPlusRecScaleWorldTransform	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecRotateWorldTransform : public EMFRecAccessGDIPlusTransformRec
+class EMFRecAccessGDIPlusRecRotateWorldTransform : public EMFRecAccessGDIPlusTransformCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusRotateWorldTransform"; }
@@ -1671,7 +1703,7 @@ private:
 	emfplus::OEmfPlusRecRotateWorldTransform	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecSetPageTransform : public EMFRecAccessGDIPlusTransformRec
+class EMFRecAccessGDIPlusRecSetPageTransform : public EMFRecAccessGDIPlusTransformCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetPageTransform"; }
@@ -1681,7 +1713,7 @@ private:
 	emfplus::OEmfPlusRecSetPageTransform	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecResetClip : public EMFRecAccessGDIPlusClippingRec
+class EMFRecAccessGDIPlusRecResetClip : public EMFRecAccessGDIPlusClippingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusResetClip"; }
@@ -1689,7 +1721,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeResetClip; }
 };
 
-class EMFRecAccessGDIPlusRecSetClipRect : public EMFRecAccessGDIPlusClippingRec
+class EMFRecAccessGDIPlusRecSetClipRect : public EMFRecAccessGDIPlusClippingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetClipRect"; }
@@ -1699,7 +1731,7 @@ private:
 	emfplus::OEmfPlusRecSetClipRect	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecSetClipPath : public EMFRecAccessGDIPlusClippingRec
+class EMFRecAccessGDIPlusRecSetClipPath : public EMFRecAccessGDIPlusClippingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetClipPath"; }
@@ -1709,7 +1741,7 @@ private:
 	void Preprocess(EMFAccess* pEMF) override;
 };
 
-class EMFRecAccessGDIPlusRecSetClipRegion : public EMFRecAccessGDIPlusClippingRec
+class EMFRecAccessGDIPlusRecSetClipRegion : public EMFRecAccessGDIPlusClippingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetClipRegion"; }
@@ -1719,7 +1751,7 @@ private:
 	void Preprocess(EMFAccess* pEMF) override;
 };
 
-class EMFRecAccessGDIPlusRecOffsetClip : public EMFRecAccessGDIPlusClippingRec
+class EMFRecAccessGDIPlusRecOffsetClip : public EMFRecAccessGDIPlusClippingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusOffsetClip"; }
@@ -1729,7 +1761,7 @@ private:
 	emfplus::OEmfPlusRecOffsetClip	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecDrawDriverString : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecDrawDriverString : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawDriverString"; }
@@ -1741,7 +1773,7 @@ private:
 	emfplus::OEmfPlusRecDrawDriverString	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecStrokeFillPath : public EMFRecAccessGDIPlusDrawingRec
+class EMFRecAccessGDIPlusRecStrokeFillPath : public EMFRecAccessGDIPlusDrawingCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusStrokeFillPath"; }
@@ -1749,7 +1781,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeStrokeFillPath; }
 };
 
-class EMFRecAccessGDIPlusRecSerializableObject : public EMFRecAccessGDIPlusObjectRec
+class EMFRecAccessGDIPlusRecSerializableObject : public EMFRecAccessGDIPlusObjectCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSerializableObject"; }
@@ -1759,7 +1791,7 @@ private:
 	emfplus::OEmfPlusRecSerializableObject	m_recDataCached;
 };
 
-class EMFRecAccessGDIPlusRecSetTSGraphics : public EMFRecAccessGDIPlusTerminalServerRec
+class EMFRecAccessGDIPlusRecSetTSGraphics : public EMFRecAccessGDIPlusTerminalServerCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetTSGraphics"; }
@@ -1767,7 +1799,7 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetTSGraphics; }
 };
 
-class EMFRecAccessGDIPlusRecSetTSClip : public EMFRecAccessGDIPlusTerminalServerRec
+class EMFRecAccessGDIPlusRecSetTSClip : public EMFRecAccessGDIPlusTerminalServerCat
 {
 public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetTSClip"; }

@@ -29,11 +29,13 @@ BEGIN_MESSAGE_MAP(CFileView, CDockablePane)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
 	ON_WM_CONTEXTMENU()
-	ON_COMMAND(ID_PROPERTIES, OnProperties)
+	ON_COMMAND(ID_VIEW_RECORD, OnViewRecord)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_RECORD, OnUpdateViewRecord)
 	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_FILE_VIEW_CTRL, &CFileView::OnListItemChange)
+	ON_NOTIFY(NM_DBLCLK, IDC_FILE_VIEW_CTRL, &CFileView::OnListDblClk)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -103,6 +105,10 @@ void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
 	{
 		m_wndRecList.ScreenToClient(&point);
 		nRow = m_wndRecList.HitTest(point);
+		if (nRow >= 0)
+		{
+
+		}
 	}
 	if (nRow < 0)
 		return;
@@ -142,10 +148,16 @@ void CFileView::AdjustLayout()
 	m_wndRecList.SetWindowPos(nullptr, rectClient.left + 1, rectClient.top + cyTlb + 1, rectClient.Width() - 2, rectClient.Height() - cyTlb - 2, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
-void CFileView::OnProperties()
+void CFileView::OnViewRecord()
 {
-	AfxMessageBox(_T("Properties...."));
+	int nRow = GetCurSelRecIndex();
+	auto pMainWnd = AfxGetMainWnd();
+	pMainWnd->SendMessage(MainFrameMsgOpenRecordItem, nRow);
+}
 
+void CFileView::OnUpdateViewRecord(CCmdUI* pCmdUI)
+{
+	pCmdUI->Enable(CanViewCurSelRecord());
 }
 
 void CFileView::OnEditCopy()
@@ -208,6 +220,16 @@ void CFileView::OnListItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 }
 
+void CFileView::OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMITEMACTIVATE* pItemActivate = (NMITEMACTIVATE*)pNMHDR;
+	if (pItemActivate->iItem >= 0)
+	{
+		if (CanViewCurSelRecord())
+			OnViewRecord();
+	}
+}
+
 void CFileView::OnChangeVisualStyle()
 {
 	m_wndToolBar.CleanUpLockedImages();
@@ -254,4 +276,11 @@ int CFileView::GetCurSelRecIndex() const
 	return m_wndRecList.GetNextItem(-1, LVNI_SELECTED);
 }
 
+bool CFileView::CanViewCurSelRecord() const
+{
+	int nRow = GetCurSelRecIndex();
+	auto pMainWnd = AfxGetMainWnd();
+	auto bCanOpen = pMainWnd->SendMessage(MainFrameMsgCanOpenRecordItem, nRow);
+	return bCanOpen != 0;
+}
 

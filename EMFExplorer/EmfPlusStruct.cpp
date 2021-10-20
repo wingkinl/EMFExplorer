@@ -846,26 +846,12 @@ bool OEmfPlusRecFillClosedCurve::Read(DataReader& reader, u16t nFlags, size_t nE
 	return true;
 }
 
-u32t OEmfPlusRecFillEllipse::ReadBrushId(DataReader& reader)
-{
-	u32t id;
-	reader.ReadBytes(&id, sizeof(id));
-	return id;
-}
-
 bool OEmfPlusRecFillEllipse::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	reader.ReadBytes(&BrushId, sizeof(BrushId));
 	RectData.Read(reader, nFlags & FlagC);
 	return true;
-}
-
-u32t OEmfPlusRecFillPie::ReadBrushId(DataReader& reader)
-{
-	u32t id;
-	reader.ReadBytes(&id, sizeof(id));
-	return id;
 }
 
 bool OEmfPlusRecFillPie::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)
@@ -876,13 +862,6 @@ bool OEmfPlusRecFillPie::Read(DataReader& reader, u16t nFlags, size_t nExpectedS
 	return true;
 }
 
-u32t OEmfPlusRecFillPolygon::ReadBrushId(DataReader& reader)
-{
-	u32t id;
-	reader.ReadBytes(&id, sizeof(id));
-	return id;
-}
-
 bool OEmfPlusRecFillPolygon::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
@@ -890,13 +869,6 @@ bool OEmfPlusRecFillPolygon::Read(DataReader& reader, u16t nFlags, size_t nExpec
 	reader.ReadBytes(&Count, sizeof(Count));
 	PointData.Read(reader, Count, FlagP & nFlags, FlagC & nFlags);
 	return true;
-}
-
-u32t OEmfPlusRecFillRects::ReadBrushId(DataReader& reader)
-{
-	u32t id;
-	reader.ReadBytes(&id, sizeof(id));
-	return id;
 }
 
 bool OEmfPlusRecFillRects::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)

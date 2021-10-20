@@ -16,15 +16,7 @@
 #define IDR_EMFExplorerTYPE             130
 #define ID_WINDOW_MANAGER               131
 #define ID_VIEW_FILEVIEW                133
-#define ID_VIEW_CLASSVIEW               134
 #define ID_PROPERTIES                   135
-#define ID_OPEN                         136
-#define ID_OPEN_WITH                    137
-#define ID_DUMMY_COMPILE                138
-#define ID_CLASS_ADD_MEMBER_FUNCTION    139
-#define ID_CLASS_ADD_MEMBER_VARIABLE    140
-#define ID_CLASS_DEFINITION             141
-#define ID_CLASS_PROPERTIES             142
 #define ID_SORTING_GROUPBYTYPE          145
 #define ID_SORTING_SORTALPHABETIC       146
 #define ID_SORTING_SORTBYTYPE           147
@@ -57,7 +49,6 @@
 #define IDS_EXPLORER                    305
 #define IDS_EDIT_MENU                   306
 #define IDC_GITHUB_LINK                 1000
-#define ID_VIEW_                        32771
 #define ID_VIEW_BACKGROUND              32772
 #define ID_VIEW_THEME_DARK              32773
 #define ID_VIEW_THEME_LIGHT             32774
@@ -88,14 +79,14 @@
 #define ID_ZOOM_3200                    32799
 #define ID_ZOOM_CENTER                  32800
 #define ID_VIEW_THEME                   32810
-#define ID_PREVIEW                      32811
+#define ID_VIEW_RECORD                  32812
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         32812
+#define _APS_NEXT_COMMAND_VALUE         32813
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

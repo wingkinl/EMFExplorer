@@ -180,28 +180,6 @@ BOOL CEMFRecListCtrl::OnItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 	return FALSE;
 }
 
-COLORREF CEMFRecListCtrl::OnGetCellBkColor(int nRow, int nColum)
-{
-	auto pRec = GetEMFRecord(nRow);
-	if (nColum == ColumnTypeIndex)
-	{
-		int nSel = GetNextItem(-1, LVNI_SELECTED);
-		if (nSel >= 0 && nSel != nRow)
-		{
-			auto pRecSel = GetEMFRecord(nSel);
-			if (pRec->IsLinked(pRecSel))
-				return RGB(255, 255, 0);
-		}
-	}
-	switch (pRec->GetRecordCategory())
-	{
-	case EMFRecAccess::RecCategoryDrawing:
-		return theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
-	}
-	//return CEMFRecListCtrlBase::OnGetCellBkColor(nRow, nColum);
-	return GetBkColor();
-}
-
 void CEMFRecListCtrl::OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const
 {
 	int nColumn = lplvcd->iSubItem;
@@ -224,15 +202,10 @@ void CEMFRecListCtrl::OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const
 			}
 		}
 	}
-	switch (pRec->GetRecordCategory())
-	{
-	case EMFRecAccess::RecCategoryDrawing:
+	if (pRec->IsDrawingRecord())
 		lplvcd->clrTextBk = theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
-		break;
-	default:
+	else
 		lplvcd->clrTextBk = GetBkColor();
-		break;
-	}
 }
 
 BOOL CEMFRecListCtrl::IsDarkTheme() const

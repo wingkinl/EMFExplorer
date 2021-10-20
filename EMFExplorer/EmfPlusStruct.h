@@ -287,6 +287,11 @@ struct OEmfPlusPointDataArray
 	GSOptional std::vector<OEmfPlusPoint>	i;
 	GSOptional std::vector<OEmfPlusPointF>	f;
 
+	inline size_t GetSize() const
+	{
+		return std::max(i.size(), f.size());
+	}
+
 	void Read(DataReader& reader, u32t Count, bool bRelative, bool asInt);
 
 	void Reset();
@@ -1438,8 +1443,6 @@ struct OEmfPlusRecFillEllipse
 	u32t					BrushId;
 	OEmfPlusRectData		RectData;
 
-	static u32t ReadBrushId(DataReader& reader);
-
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
 
@@ -1465,8 +1468,6 @@ struct OEmfPlusRecFillPie
 	u32t			BrushId;
 	OEmfPlusArcData	ArcData;
 
-	static u32t ReadBrushId(DataReader& reader);
-
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
 
@@ -1485,8 +1486,6 @@ struct OEmfPlusRecFillPolygon
 	u32t					Count;
 	OEmfPlusPointDataArray	PointData;
 
-	static u32t ReadBrushId(DataReader& reader);
-
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
 
@@ -1500,8 +1499,6 @@ struct OEmfPlusRecFillRects
 	};
 	u32t					BrushId;
 	OEmfPlusRectDataArray	RectData;
-
-	static u32t ReadBrushId(DataReader& reader);
 
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };

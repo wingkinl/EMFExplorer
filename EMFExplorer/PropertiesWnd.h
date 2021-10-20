@@ -1,5 +1,6 @@
 
 #pragma once
+#include <memory>
 
 struct PropertyNode;
 
@@ -34,7 +35,7 @@ public:
 
 	void Reset();
 
-	void SetPropList(const PropertyNode& props);
+	void SetPropList(std::shared_ptr<PropertyNode> props);
 private:
 	CMFCPropertyGridProperty* AddPropList(const PropertyNode& prop);
 protected:

@@ -32,6 +32,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_COMMAND_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CMainFrame::OnViewImgBk)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CMainFrame::OnUpdateViewImgBk)
 	ON_MESSAGE(MainFrameMsgOnSelectRecordItem, &CMainFrame::OnSelectRecordItem)
+	ON_MESSAGE(MainFrameMsgCanOpenRecordItem, &CMainFrame::OnCanOpenRecordItem)
+	ON_MESSAGE(MainFrameMsgOpenRecordItem, &CMainFrame::OnOpenRecordItem)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -342,7 +344,7 @@ void CMainFrame::UpdateRecordProperty(int index)
 	auto pDoc = pView->GetDocument();
 	auto pEMF = pDoc->GetEMFAccess();
 	auto pRec = pEMF->GetRecord((size_t)index);
-	auto& props = pRec->GetProperties(pEMF.get());
+	auto props = pRec->GetProperties(pEMF.get());
 	m_wndProperties.SetPropList(props);
 }
 
@@ -352,6 +354,51 @@ LRESULT CMainFrame::OnSelectRecordItem(WPARAM wp, LPARAM lp)
 	{
 		UpdateRecordProperty((int)wp);
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnCanOpenRecordItem(WPARAM wp, LPARAM /*lp*/)
+{
+	auto nIndex = (size_t)wp;
+	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	auto pDoc = pView->GetDocument();
+	auto pEMF = pDoc->GetEMFAccess();
+	auto pRec = pEMF->GetRecord((size_t)nIndex);
+	switch (pRec->GetRecordType())
+	{
+	case emfplus::EmfPlusRecordTypeObject:
+		{
+			auto pObj = ((EMFRecAccessGDIPlusRecObject*)pRec)->GetObjectWrapper()->GetObject();
+			if (pObj)
+			{
+				switch (pObj->GetObjType())
+				{
+				case emfplus::OObjType::Image:
+					{
+						auto pImg = (emfplus::OEmfPlusImage*)pObj;
+						switch (pImg->Type)
+						{
+						case emfplus::OImageDataType::Metafile:
+							return TRUE;
+						}
+					}
+					break;
+				}
+			}
+		}
+		break;
+	case emfplus::EmfPlusRecordTypeDrawImage:
+		break;
+	case emfplus::EmfPlusRecordTypeDrawImagePoints:
+		break;
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnOpenRecordItem(WPARAM wp, LPARAM /*lp*/)
+{
+	//auto nIndex = (size_t)wp;
+	AfxMessageBox(L"Open");
 	return 0;
 }
 
