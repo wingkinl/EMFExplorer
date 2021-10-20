@@ -43,23 +43,30 @@ public:
 
 	inline bool IsGDIPlusRecord() const { return !IsGDIRecord(); }
 
-	void SetRecInfo(const emfplus::OEmfPlusRecInfo& info) { m_recInfo = info; }
-
 	const emfplus::OEmfPlusRecInfo& GetRecInfo() const { return m_recInfo; }
 
 	const PropertyNode& GetProperties(EMFAccess* pEMF);
 
 	inline size_t GetIndex() const { return m_nIndex; }
+
+	bool IsLinked(const EMFRecAccess* pRec) const;
 protected:
+	void SetRecInfo(const emfplus::OEmfPlusRecInfo& info) { m_recInfo = info; }
+
 	void SetIndex(size_t nIndex) { m_nIndex = nIndex; }
 
 	virtual void CacheProperties(EMFAccess* pEMF);
+
+	virtual void Preprocess(EMFAccess* pEMF) {}
+
+	void AddLinkRecord(EMFRecAccess* pRecAccess, bool bMutually = true);
 protected:
 	friend class EMFAccess;
 	emfplus::OEmfPlusRecInfo	m_recInfo;
 	size_t						m_nIndex = 0;
 	bool						m_bRecDataCached = false;
 	PropertyNode				m_propsCached{PropertyNode::NodeTypeBranch};
+	std::vector<EMFRecAccess*>	m_linkRecs;
 };
 
 class EMFRecAccessGDIRec : public EMFRecAccess
@@ -1261,6 +1268,10 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeObject; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+
+	void CacheProperties(EMFAccess* pEMF) override;
+private:
 	std::unique_ptr<emfplus::OEmfPlusGraphObject>	m_recDataCached;
 };
 
@@ -1280,6 +1291,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillRects"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillRects; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecFillRects	m_recDataCached;
 };
@@ -1301,6 +1314,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillPolygon; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecFillPolygon	m_recDataCached;
 };
 
@@ -1321,6 +1336,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillEllipse; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecFillEllipse	m_recDataCached;
 };
 
@@ -1340,6 +1357,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillPie"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillPie; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecFillPie	m_recDataCached;
 };
@@ -1371,6 +1390,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillRegion; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecFillRegion	m_recDataCached;
 };
 
@@ -1381,6 +1402,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillPath; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecFillPath	m_recDataCached;
 };
 
@@ -1390,6 +1413,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawPath"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawPath; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecDrawPath	m_recDataCached;
 };
@@ -1441,6 +1466,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawImage; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawImage	m_recDataCached;
 };
 
@@ -1451,6 +1478,10 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawImagePoints; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+
+	void CacheProperties(EMFAccess* pEMF) override;
+private:
 	emfplus::OEmfPlusRecDrawImagePoints	m_recDataCached;
 };
 
@@ -1460,6 +1491,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawString"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawString; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecDrawString	m_recDataCached;
 };
@@ -1672,6 +1705,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetClipPath"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetClipPath; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIPlusRecSetClipRegion : public EMFRecAccessGDIPlusClippingRec
@@ -1680,6 +1715,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusSetClipRegion"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetClipRegion; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIPlusRecOffsetClip : public EMFRecAccessGDIPlusClippingRec
@@ -1698,6 +1735,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawDriverString"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawDriverString; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecDrawDriverString	m_recDataCached;
 };
@@ -1753,18 +1792,34 @@ public:
 
 	inline size_t GetRecordCount() const { return m_EMFRecords.size(); }
 
-	EMFRecAccess* GetRecord(size_t index) const;
+	inline EMFRecAccess* GetRecord(size_t index) const
+	{
+		return m_EMFRecords[index];
+	}
 
 	bool GetRecords();
 
+	void FreeRecords();
+
 	bool HandleEMFRecord(emfplus::OEmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data);
+
+	EMFRecAccess* GetObjectCreationRecord(size_t index, bool bPlus) const;
+
+	bool SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus);
 protected:
-	using EmfRecArray	= std::vector<std::unique_ptr<EMFRecAccess>>;
+	using EmfRecArray	= std::vector<EMFRecAccess*>;
 	using EMFPtr		= std::unique_ptr<Gdiplus::Metafile>;
 
 	EMFPtr					m_pMetafile;
 	EmfRecArray				m_EMFRecords;
 	Gdiplus::MetafileHeader	m_hdr;
+
+	struct EMFPlusObjInfo 
+	{
+		EMFRecAccess* pRec;
+	};
+	std::vector<EMFPlusObjInfo>			m_vPlusObjTable;
+	emfplus::OEmfPlusRecObjectReader	m_PlusRecObjReader;
 };
 
 #endif // EMF_REC_ACCESS_H

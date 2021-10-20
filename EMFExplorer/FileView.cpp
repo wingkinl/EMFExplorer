@@ -93,13 +93,34 @@ void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
 		CDockablePane::OnContextMenu(pWnd, point);
 		return;
 	}
-
-	if (point != CPoint(-1, -1))
+	int nRow = -1;
+	// Select clicked item:
+	if (point == CPoint(-1, -1))
 	{
-		// Select clicked item:
-		CPoint ptItem = point;
-		m_wndRecList.ScreenToClient(&ptItem);
+		nRow = GetCurSelRecIndex();
 	}
+	else
+	{
+		m_wndRecList.ScreenToClient(&point);
+		nRow = m_wndRecList.HitTest(point);
+	}
+	if (nRow < 0)
+		return;
+	CRect rect;
+	m_wndRecList.GetItemRect(nRow, &rect, LVIR_BOUNDS);
+
+	if (point == CPoint(-1, -1))
+	{
+		point.x = rect.left;
+		point.y = rect.bottom;
+	}
+	CRect rcClient;
+	GetClientRect(rcClient);
+	if (point.y < rcClient.top)
+		point.y = rcClient.top;
+	else if (point.y > rcClient.bottom)
+		point.y = rcClient.bottom;
+	m_wndRecList.ClientToScreen(&point);
 
 	m_wndRecList.SetFocus();
 	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EXPLORER, point.x, point.y, this, TRUE);
@@ -129,7 +150,33 @@ void CFileView::OnProperties()
 
 void CFileView::OnEditCopy()
 {
-	// TODO: Add your command handler code here
+	int nRow = GetCurSelRecIndex();
+	auto pRec = nRow >= 0 ? m_wndRecList.GetEMFRecord(nRow) : nullptr;
+	if (!pRec)
+		return;
+	if (!OpenClipboard())
+	{
+		AfxMessageBox( _T("Cannot open the Clipboard") );
+		return;
+	}
+	EmptyClipboard();
+
+	auto pszName = pRec->GetRecordName();
+	auto nLen = wcslen(pszName);
+	auto hglbCopy = GlobalAlloc(GMEM_MOVEABLE, 
+		(nLen + 1) * sizeof(WCHAR));
+	if (!hglbCopy)
+	{
+		CloseClipboard();
+		return;
+	}
+	auto lptstrCopy = (WCHAR*)GlobalLock(hglbCopy); 
+	memcpy(lptstrCopy, pszName, 
+		nLen * sizeof(WCHAR)); 
+	lptstrCopy[nLen] = (WCHAR)0;
+	GlobalUnlock(hglbCopy); 
+	SetClipboardData(CF_UNICODETEXT, hglbCopy);
+	CloseClipboard();
 }
 
 void CFileView::OnPaint()
@@ -204,8 +251,6 @@ void CFileView::LoadEMFDataEvent(bool bBefore)
 
 int CFileView::GetCurSelRecIndex() const
 {
-	if (!IsWindowVisible())
-		return -1;
 	return m_wndRecList.GetNextItem(-1, LVNI_SELECTED);
 }
 

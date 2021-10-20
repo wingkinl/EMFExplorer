@@ -1438,6 +1438,8 @@ struct OEmfPlusRecFillEllipse
 	u32t					BrushId;
 	OEmfPlusRectData		RectData;
 
+	static u32t ReadBrushId(DataReader& reader);
+
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
 
@@ -1463,6 +1465,8 @@ struct OEmfPlusRecFillPie
 	u32t			BrushId;
 	OEmfPlusArcData	ArcData;
 
+	static u32t ReadBrushId(DataReader& reader);
+
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
 
@@ -1481,6 +1485,8 @@ struct OEmfPlusRecFillPolygon
 	u32t					Count;
 	OEmfPlusPointDataArray	PointData;
 
+	static u32t ReadBrushId(DataReader& reader);
+
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
 
@@ -1494,6 +1500,8 @@ struct OEmfPlusRecFillRects
 	};
 	u32t					BrushId;
 	OEmfPlusRectDataArray	RectData;
+
+	static u32t ReadBrushId(DataReader& reader);
 
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
@@ -1552,9 +1560,13 @@ struct OEmfPlusRecObjectReader
 
 	OEmfPlusGraphObject* CreateObject();
 
+	static OEmfPlusGraphObject* CreateObjectByType(OObjType objType);
+
 	bool IsContinueObj() const;
 
 	OObjType GetObjectType() const;
+
+	static OObjType GetObjectType(const OEmfPlusRecInfo& rec);
 
 	u8t GetObjectID() const;
 private:

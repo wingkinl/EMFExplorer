@@ -42,11 +42,28 @@ const PropertyNode& EMFRecAccess::GetProperties(EMFAccess* pEMF)
 	return m_propsCached;
 }
 
+bool EMFRecAccess::IsLinked(const EMFRecAccess* pRec) const
+{
+	for (auto link : m_linkRecs)
+	{
+		if (link == pRec)
+			return true;
+	}
+	return false;
+}
+
 void EMFRecAccess::CacheProperties(EMFAccess* pEMF)
 {
 	m_propsCached.AddText(L"Name", GetRecordName());
 	m_propsCached.AddValue(L"Type", m_recInfo.Type);
 	m_propsCached.AddValue(L"DataSize", m_recInfo.DataSize);
+}
+
+void EMFRecAccess::AddLinkRecord(EMFRecAccess* pRecAccess, bool bMutually)
+{
+	m_linkRecs.push_back(pRecAccess);
+	if (bMutually)
+		pRecAccess->AddLinkRecord(this, false);
 }
 
 void EMFRecAccessGDIRec::CacheProperties(EMFAccess* pEMF)
@@ -158,6 +175,193 @@ void EMFRecAccessGDIPlusRec::CacheProperties(EMFAccess* pEMF)
 	m_propsCached.AddValue(L"Flags", m_recInfo.Flags, PropertyNode::NodeTypeText, true);
 }
 
+void EMFRecAccessGDIPlusRecObject::Preprocess(EMFAccess* pEMF)
+{
+	auto nObjectID = (u8t)(m_recInfo.Flags & OEmfPlusRecObjectReader::FlagObjectIDMask);
+	pEMF->SetObjectToTable(nObjectID, this, true);
+}
+
+void EMFRecAccessGDIPlusRecObject::CacheProperties(EMFAccess* pEMF)
+{
+	EMFRecAccessGDIPlusObjectRec::CacheProperties(pEMF);
+	if (!m_recDataCached)
+	{
+		auto nObjType = OEmfPlusRecObjectReader::GetObjectType(m_recInfo);
+		auto pObj = OEmfPlusRecObjectReader::CreateObjectByType(nObjType);
+		if (!pObj)
+		{
+			ASSERT(0);
+			return;
+		}
+		m_recDataCached.reset(pObj);
+		DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
+		VERIFY(pObj->Read(reader, m_recInfo.DataSize));
+	}
+}
+
+void EMFRecAccessGDIPlusRecFillRects::Preprocess(EMFAccess* pEMF)
+{
+	if (!(m_recInfo.Flags & OEmfPlusRecFillRects::FlagS))
+	{
+		DataReader reader(m_recInfo.Data, (size_t)m_recInfo.DataSize);
+		auto nID = OEmfPlusRecFillRects::ReadBrushId(reader);
+		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+		if (pRec)
+			AddLinkRecord(pRec);
+	}
+}
+
+void EMFRecAccessGDIPlusRecFillPolygon::Preprocess(EMFAccess* pEMF)
+{
+	if (!(m_recInfo.Flags & OEmfPlusRecFillPolygon::FlagS))
+	{
+		DataReader reader(m_recInfo.Data, (size_t)m_recInfo.DataSize);
+		auto nID = OEmfPlusRecFillPolygon::ReadBrushId(reader);
+		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+		if (pRec)
+			AddLinkRecord(pRec);
+	}
+}
+
+void EMFRecAccessGDIPlusRecFillEllipse::Preprocess(EMFAccess* pEMF)
+{
+	if (!(m_recInfo.Flags & OEmfPlusRecFillEllipse::FlagS))
+	{
+		DataReader reader(m_recInfo.Data, (size_t)m_recInfo.DataSize);
+		auto nID = OEmfPlusRecFillEllipse::ReadBrushId(reader);
+		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+		if (pRec)
+			AddLinkRecord(pRec);
+	}
+}
+
+void EMFRecAccessGDIPlusRecFillPie::Preprocess(EMFAccess* pEMF)
+{
+	if (!(m_recInfo.Flags & OEmfPlusRecFillPie::FlagS))
+	{
+		DataReader reader(m_recInfo.Data, (size_t)m_recInfo.DataSize);
+		auto nID = OEmfPlusRecFillPie::ReadBrushId(reader);
+		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+		if (pRec)
+			AddLinkRecord(pRec);
+	}
+}
+
+void EMFRecAccessGDIPlusRecSetClipPath::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = OEmfPlusRecSetClipPath::GetObjectID(m_recInfo.Flags);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+		AddLinkRecord(pRec);
+}
+
+void EMFRecAccessGDIPlusRecSetClipRegion::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = OEmfPlusRecSetClipRegion::GetObjectID(m_recInfo.Flags);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+		AddLinkRecord(pRec);
+}
+
+void EMFRecAccessGDIPlusRecFillRegion::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecFillRegion::FlagObjectIDMask);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+	{
+		AddLinkRecord(pRec);
+		if (!(m_recInfo.Flags & OEmfPlusRecFillRegion::FlagS))
+		{
+			auto pFillRec = (const OEmfPlusRecFillRegion*)m_recInfo.Data;
+			auto pRecBrush = pEMF->GetObjectCreationRecord(pFillRec->BrushId, true);
+			if (pRecBrush)
+				AddLinkRecord(pRecBrush);
+		}
+	}
+}
+
+void EMFRecAccessGDIPlusRecFillPath::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecFillPath::FlagObjectIDMask);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+	{
+		AddLinkRecord(pRec);
+		if (!(m_recInfo.Flags & OEmfPlusRecFillPath::FlagS))
+		{
+			auto pFillRec = (const OEmfPlusRecFillPath*)m_recInfo.Data;
+			auto pRecBrush = pEMF->GetObjectCreationRecord(pFillRec->BrushId, true);
+			if (pRecBrush)
+				AddLinkRecord(pRecBrush);
+		}
+	}
+}
+
+void EMFRecAccessGDIPlusRecDrawPath::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawPath::FlagObjectIDMask);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+		AddLinkRecord(pRec);
+}
+
+void EMFRecAccessGDIPlusRecDrawImage::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawImage::FlagObjectIDMask);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+		AddLinkRecord(pRec);
+}
+
+void EMFRecAccessGDIPlusRecDrawImagePoints::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawImagePoints::FlagObjectIDMask);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+		AddLinkRecord(pRec);
+}
+
+static LPCWSTR EMFPlusUnitTypeText(OUnitType type)
+{
+	static const LPCWSTR aText[] = {
+		L"World", L"Display", L"Pixel", L"Point", L"Inch", L"Document", L"Millimeter"
+	};
+	return aText[(int)type];
+}
+
+void EMFRecAccessGDIPlusRecDrawImagePoints::CacheProperties(EMFAccess* pEMF)
+{
+	EMFRecAccessGDIPlusDrawingRec::CacheProperties(pEMF);
+
+	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
+	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
+
+	m_propsCached.AddValue(L"ImageAttributesID", m_recDataCached.ImageAttributesID);
+	m_propsCached.AddText(L"SrcUnit", EMFPlusUnitTypeText(m_recDataCached.SrcUnit));
+
+	if (!m_linkRecs.empty())
+	{
+		//auto pImg = m_linkRecs.front();
+		// TODO
+	}
+}
+
+void EMFRecAccessGDIPlusRecDrawString::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawString::FlagObjectIDMask);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+		AddLinkRecord(pRec);
+}
+
+void EMFRecAccessGDIPlusRecDrawDriverString::Preprocess(EMFAccess* pEMF)
+{
+	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawDriverString::FlagObjectIDMask);
+	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
+	if (pRec)
+		AddLinkRecord(pRec);
+}
+
 EMFAccess::EMFAccess(const std::vector<u8t>& vData)
 {
 	ATL::CComPtr<IStream> stream;
@@ -168,6 +372,7 @@ EMFAccess::EMFAccess(const std::vector<u8t>& vData)
 
 EMFAccess::~EMFAccess()
 {
+	FreeRecords();
 }
 
 void EMFAccess::DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const
@@ -210,6 +415,16 @@ bool EMFAccess::GetRecords()
 	return sts == Gdiplus::Ok;
 }
 
+void EMFAccess::FreeRecords()
+{
+	for (auto pRec : m_EMFRecords)
+	{
+		delete pRec;
+	}
+	m_EMFRecords.clear();
+	m_vPlusObjTable.clear();
+}
+
 bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data)
 {
 	OEmfPlusRecInfo rec;
@@ -218,548 +433,548 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 	rec.Size = sizeof(OEmfPlusRec) + dataSize;
 	rec.DataSize = dataSize;
 	rec.Data = (u8t*)data;
-	std::unique_ptr<EMFRecAccess> pRecAccess;
+	EMFRecAccess* pRecAccess = nullptr;
 	switch (type)
 	{
 	case EmfRecordTypeHeader:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecHeader>();
+		pRecAccess = new EMFRecAccessGDIRecHeader;
 		break;
 	case EmfRecordTypePolyBezier:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyBezier>();
+		pRecAccess = new EMFRecAccessGDIRecPolyBezier;
 		break;
 	case EmfRecordTypePolygon:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolygon>();
+		pRecAccess = new EMFRecAccessGDIRecPolygon;
 		break;
 	case EmfRecordTypePolyline:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyline>();
+		pRecAccess = new EMFRecAccessGDIRecPolyline;
 		break;
 	case EmfRecordTypePolyBezierTo:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyBezierTo>();
+		pRecAccess = new EMFRecAccessGDIRecPolyBezierTo;
 		break;
 	case EmfRecordTypePolyLineTo:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyLineTo>();
+		pRecAccess = new EMFRecAccessGDIRecPolyLineTo;
 		break;
 	case EmfRecordTypePolyPolyline:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyPolyline>();
+		pRecAccess = new EMFRecAccessGDIRecPolyPolyline;
 		break;
 	case EmfRecordTypePolyPolygon:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyPolygon>();
+		pRecAccess = new EMFRecAccessGDIRecPolyPolygon;
 		break;
 	case EmfRecordTypeSetWindowExtEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetWindowExtEx>();
+		pRecAccess = new EMFRecAccessGDIRecSetWindowExtEx;
 		break;
 	case EmfRecordTypeSetWindowOrgEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetWindowOrgEx>();
+		pRecAccess = new EMFRecAccessGDIRecSetWindowOrgEx;
 		break;
 	case EmfRecordTypeSetViewportExtEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetViewportExtEx>();
+		pRecAccess = new EMFRecAccessGDIRecSetViewportExtEx;
 		break;
 	case EmfRecordTypeSetViewportOrgEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetViewportOrgEx>();
+		pRecAccess = new EMFRecAccessGDIRecSetViewportOrgEx;
 		break;
 	case EmfRecordTypeSetBrushOrgEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetBrushOrgEx>();
+		pRecAccess = new EMFRecAccessGDIRecSetBrushOrgEx;
 		break;
 	case EmfRecordTypeEOF:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecEOF>();
+		pRecAccess = new EMFRecAccessGDIRecEOF;
 		break;
 	case EmfRecordTypeSetPixelV:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetPixelV>();
+		pRecAccess = new EMFRecAccessGDIRecSetPixelV;
 		break;
 	case EmfRecordTypeSetMapperFlags:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetMapperFlags>();
+		pRecAccess = new EMFRecAccessGDIRecSetMapperFlags;
 		break;
 	case EmfRecordTypeSetMapMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetMapMode>();
+		pRecAccess = new EMFRecAccessGDIRecSetMapMode;
 		break;
 	case EmfRecordTypeSetBkMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetBkMode>();
+		pRecAccess = new EMFRecAccessGDIRecSetBkMode;
 		break;
 	case EmfRecordTypeSetPolyFillMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetPolyFillMode>();
+		pRecAccess = new EMFRecAccessGDIRecSetPolyFillMode;
 		break;
 	case EmfRecordTypeSetROP2:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetROP2>();
+		pRecAccess = new EMFRecAccessGDIRecSetROP2;
 		break;
 	case EmfRecordTypeSetStretchBltMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetStretchBltMode>();
+		pRecAccess = new EMFRecAccessGDIRecSetStretchBltMode;
 		break;
 	case EmfRecordTypeSetTextAlign:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetTextAlign>();
+		pRecAccess = new EMFRecAccessGDIRecSetTextAlign;
 		break;
 	case EmfRecordTypeSetColorAdjustment:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetColorAdjustment>();
+		pRecAccess = new EMFRecAccessGDIRecSetColorAdjustment;
 		break;
 	case EmfRecordTypeSetTextColor:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetTextColor>();
+		pRecAccess = new EMFRecAccessGDIRecSetTextColor;
 		break;
 	case EmfRecordTypeSetBkColor:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetBkColor>();
+		pRecAccess = new EMFRecAccessGDIRecSetBkColor;
 		break;
 	case EmfRecordTypeOffsetClipRgn:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecOffsetClipRgn>();
+		pRecAccess = new EMFRecAccessGDIRecOffsetClipRgn;
 		break;
 	case EmfRecordTypeMoveToEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecMoveToEx>();
+		pRecAccess = new EMFRecAccessGDIRecMoveToEx;
 		break;
 	case EmfRecordTypeSetMetaRgn:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetMetaRgn>();
+		pRecAccess = new EMFRecAccessGDIRecSetMetaRgn;
 		break;
 	case EmfRecordTypeExcludeClipRect:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExcludeClipRect>();
+		pRecAccess = new EMFRecAccessGDIRecExcludeClipRect;
 		break;
 	case EmfRecordTypeIntersectClipRect:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecIntersectClipRect>();
+		pRecAccess = new EMFRecAccessGDIRecIntersectClipRect;
 		break;
 	case EmfRecordTypeScaleViewportExtEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecScaleViewportExtEx>();
+		pRecAccess = new EMFRecAccessGDIRecScaleViewportExtEx;
 		break;
 	case EmfRecordTypeScaleWindowExtEx:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecScaleWindowExtEx>();
+		pRecAccess = new EMFRecAccessGDIRecScaleWindowExtEx;
 		break;
 	case EmfRecordTypeSaveDC:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSaveDC>();
+		pRecAccess = new EMFRecAccessGDIRecSaveDC;
 		break;
 	case EmfRecordTypeRestoreDC:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecRestoreDC>();
+		pRecAccess = new EMFRecAccessGDIRecRestoreDC;
 		break;
 	case EmfRecordTypeSetWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIRecSetWorldTransform;
 		break;
 	case EmfRecordTypeModifyWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecModifyWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIRecModifyWorldTransform;
 		break;
 	case EmfRecordTypeSelectObject:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSelectObject>();
+		pRecAccess = new EMFRecAccessGDIRecSelectObject;
 		break;
 	case EmfRecordTypeCreatePen:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCreatePen>();
+		pRecAccess = new EMFRecAccessGDIRecCreatePen;
 		break;
 	case EmfRecordTypeCreateBrushIndirect:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCreateBrushIndirect>();
+		pRecAccess = new EMFRecAccessGDIRecCreateBrushIndirect;
 		break;
 	case EmfRecordTypeDeleteObject:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecDeleteObject>();
+		pRecAccess = new EMFRecAccessGDIRecDeleteObject;
 		break;
 	case EmfRecordTypeAngleArc:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecAngleArc>();
+		pRecAccess = new EMFRecAccessGDIRecAngleArc;
 		break;
 	case EmfRecordTypeEllipse:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecEllipse>();
+		pRecAccess = new EMFRecAccessGDIRecEllipse;
 		break;
 	case EmfRecordTypeRectangle:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecRectangle>();
+		pRecAccess = new EMFRecAccessGDIRecRectangle;
 		break;
 	case EmfRecordTypeRoundRect:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecRoundRect>();
+		pRecAccess = new EMFRecAccessGDIRecRoundRect;
 		break;
 	case EmfRecordTypeArc:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecArc>();
+		pRecAccess = new EMFRecAccessGDIRecArc;
 		break;
 	case EmfRecordTypeChord:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecChord>();
+		pRecAccess = new EMFRecAccessGDIRecChord;
 		break;
 	case EmfRecordTypePie:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPie>();
+		pRecAccess = new EMFRecAccessGDIRecPie;
 		break;
 	case EmfRecordTypeSelectPalette:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSelectPalette>();
+		pRecAccess = new EMFRecAccessGDIRecSelectPalette;
 		break;
 	case EmfRecordTypeCreatePalette:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCreatePalette>();
+		pRecAccess = new EMFRecAccessGDIRecCreatePalette;
 		break;
 	case EmfRecordTypeSetPaletteEntries:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetPaletteEntries>();
+		pRecAccess = new EMFRecAccessGDIRecSetPaletteEntries;
 		break;
 	case EmfRecordTypeResizePalette:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecResizePalette>();
+		pRecAccess = new EMFRecAccessGDIRecResizePalette;
 		break;
 	case EmfRecordTypeRealizePalette:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecRealizePalette>();
+		pRecAccess = new EMFRecAccessGDIRecRealizePalette;
 		break;
 	case EmfRecordTypeExtFloodFill:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExtFloodFill>();
+		pRecAccess = new EMFRecAccessGDIRecExtFloodFill;
 		break;
 	case EmfRecordTypeLineTo:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecLineTo>();
+		pRecAccess = new EMFRecAccessGDIRecLineTo;
 		break;
 	case EmfRecordTypeArcTo:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecArcTo>();
+		pRecAccess = new EMFRecAccessGDIRecArcTo;
 		break;
 	case EmfRecordTypePolyDraw:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyDraw>();
+		pRecAccess = new EMFRecAccessGDIRecPolyDraw;
 		break;
 	case EmfRecordTypeSetArcDirection:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetArcDirection>();
+		pRecAccess = new EMFRecAccessGDIRecSetArcDirection;
 		break;
 	case EmfRecordTypeSetMiterLimit:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetMiterLimit>();
+		pRecAccess = new EMFRecAccessGDIRecSetMiterLimit;
 		break;
 	case EmfRecordTypeBeginPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecBeginPath>();
+		pRecAccess = new EMFRecAccessGDIRecBeginPath;
 		break;
 	case EmfRecordTypeEndPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecEndPath>();
+		pRecAccess = new EMFRecAccessGDIRecEndPath;
 		break;
 	case EmfRecordTypeCloseFigure:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCloseFigure>();
+		pRecAccess = new EMFRecAccessGDIRecCloseFigure;
 		break;
 	case EmfRecordTypeFillPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecFillPath>();
+		pRecAccess = new EMFRecAccessGDIRecFillPath;
 		break;
 	case EmfRecordTypeStrokeAndFillPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecStrokeAndFillPath>();
+		pRecAccess = new EMFRecAccessGDIRecStrokeAndFillPath;
 		break;
 	case EmfRecordTypeStrokePath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecStrokePath>();
+		pRecAccess = new EMFRecAccessGDIRecStrokePath;
 		break;
 	case EmfRecordTypeFlattenPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecFlattenPath>();
+		pRecAccess = new EMFRecAccessGDIRecFlattenPath;
 		break;
 	case EmfRecordTypeWidenPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecWidenPath>();
+		pRecAccess = new EMFRecAccessGDIRecWidenPath;
 		break;
 	case EmfRecordTypeSelectClipPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSelectClipPath>();
+		pRecAccess = new EMFRecAccessGDIRecSelectClipPath;
 		break;
 	case EmfRecordTypeAbortPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecAbortPath>();
+		pRecAccess = new EMFRecAccessGDIRecAbortPath;
 		break;
 	case EmfRecordTypeReserved_069:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecReserved_069>();
+		pRecAccess = new EMFRecAccessGDIRecReserved_069;
 		break;
 	case EmfRecordTypeGdiComment:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecGdiComment>();
+		pRecAccess = new EMFRecAccessGDIRecGdiComment;
 		break;
 	case EmfRecordTypeFillRgn:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecFillRgn>();
+		pRecAccess = new EMFRecAccessGDIRecFillRgn;
 		break;
 	case EmfRecordTypeFrameRgn:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecFrameRgn>();
+		pRecAccess = new EMFRecAccessGDIRecFrameRgn;
 		break;
 	case EmfRecordTypeInvertRgn:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecInvertRgn>();
+		pRecAccess = new EMFRecAccessGDIRecInvertRgn;
 		break;
 	case EmfRecordTypePaintRgn:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPaintRgn>();
+		pRecAccess = new EMFRecAccessGDIRecPaintRgn;
 		break;
 	case EmfRecordTypeExtSelectClipRgn:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExtSelectClipRgn>();
+		pRecAccess = new EMFRecAccessGDIRecExtSelectClipRgn;
 		break;
 	case EmfRecordTypeBitBlt:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecBitBlt>();
+		pRecAccess = new EMFRecAccessGDIRecBitBlt;
 		break;
 	case EmfRecordTypeStretchBlt:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecStretchBlt>();
+		pRecAccess = new EMFRecAccessGDIRecStretchBlt;
 		break;
 	case EmfRecordTypeMaskBlt:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecMaskBlt>();
+		pRecAccess = new EMFRecAccessGDIRecMaskBlt;
 		break;
 	case EmfRecordTypePlgBlt:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPlgBlt>();
+		pRecAccess = new EMFRecAccessGDIRecPlgBlt;
 		break;
 	case EmfRecordTypeSetDIBitsToDevice:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetDIBitsToDevice>();
+		pRecAccess = new EMFRecAccessGDIRecSetDIBitsToDevice;
 		break;
 	case EmfRecordTypeStretchDIBits:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecStretchDIBits>();
+		pRecAccess = new EMFRecAccessGDIRecStretchDIBits;
 		break;
 	case EmfRecordTypeExtCreateFontIndirect:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExtCreateFontIndirect>();
+		pRecAccess = new EMFRecAccessGDIRecExtCreateFontIndirect;
 		break;
 	case EmfRecordTypeExtTextOutA:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExtTextOutA>();
+		pRecAccess = new EMFRecAccessGDIRecExtTextOutA;
 		break;
 	case EmfRecordTypeExtTextOutW:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExtTextOutW>();
+		pRecAccess = new EMFRecAccessGDIRecExtTextOutW;
 		break;
 	case EmfRecordTypePolyBezier16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyBezier16>();
+		pRecAccess = new EMFRecAccessGDIRecPolyBezier16;
 		break;
 	case EmfRecordTypePolygon16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolygon16>();
+		pRecAccess = new EMFRecAccessGDIRecPolygon16;
 		break;
 	case EmfRecordTypePolyline16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyline16>();
+		pRecAccess = new EMFRecAccessGDIRecPolyline16;
 		break;
 	case EmfRecordTypePolyBezierTo16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyBezierTo16>();
+		pRecAccess = new EMFRecAccessGDIRecPolyBezierTo16;
 		break;
 	case EmfRecordTypePolylineTo16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolylineTo16>();
+		pRecAccess = new EMFRecAccessGDIRecPolylineTo16;
 		break;
 	case EmfRecordTypePolyPolyline16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyPolyline16>();
+		pRecAccess = new EMFRecAccessGDIRecPolyPolyline16;
 		break;
 	case EmfRecordTypePolyPolygon16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyPolygon16>();
+		pRecAccess = new EMFRecAccessGDIRecPolyPolygon16;
 		break;
 	case EmfRecordTypePolyDraw16:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyDraw16>();
+		pRecAccess = new EMFRecAccessGDIRecPolyDraw16;
 		break;
 	case EmfRecordTypeCreateMonoBrush:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCreateMonoBrush>();
+		pRecAccess = new EMFRecAccessGDIRecCreateMonoBrush;
 		break;
 	case EmfRecordTypeCreateDIBPatternBrushPt:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCreateDIBPatternBrushPt>();
+		pRecAccess = new EMFRecAccessGDIRecCreateDIBPatternBrushPt;
 		break;
 	case EmfRecordTypeExtCreatePen:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExtCreatePen>();
+		pRecAccess = new EMFRecAccessGDIRecExtCreatePen;
 		break;
 	case EmfRecordTypePolyTextOutA:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyTextOutA>();
+		pRecAccess = new EMFRecAccessGDIRecPolyTextOutA;
 		break;
 	case EmfRecordTypePolyTextOutW:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPolyTextOutW>();
+		pRecAccess = new EMFRecAccessGDIRecPolyTextOutW;
 		break;
 	case EmfRecordTypeSetICMMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetICMMode>();
+		pRecAccess = new EMFRecAccessGDIRecSetICMMode;
 		break;
 	case EmfRecordTypeCreateColorSpace:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCreateColorSpace>();
+		pRecAccess = new EMFRecAccessGDIRecCreateColorSpace;
 		break;
 	case EmfRecordTypeSetColorSpace:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetColorSpace>();
+		pRecAccess = new EMFRecAccessGDIRecSetColorSpace;
 		break;
 	case EmfRecordTypeDeleteColorSpace:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecDeleteColorSpace>();
+		pRecAccess = new EMFRecAccessGDIRecDeleteColorSpace;
 		break;
 	case EmfRecordTypeGLSRecord:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecGLSRecord>();
+		pRecAccess = new EMFRecAccessGDIRecGLSRecord;
 		break;
 	case EmfRecordTypeGLSBoundedRecord:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecGLSBoundedRecord>();
+		pRecAccess = new EMFRecAccessGDIRecGLSBoundedRecord;
 		break;
 	case EmfRecordTypePixelFormat:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecPixelFormat>();
+		pRecAccess = new EMFRecAccessGDIRecPixelFormat;
 		break;
 	case EmfRecordTypeDrawEscape:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecDrawEscape>();
+		pRecAccess = new EMFRecAccessGDIRecDrawEscape;
 		break;
 	case EmfRecordTypeExtEscape:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecExtEscape>();
+		pRecAccess = new EMFRecAccessGDIRecExtEscape;
 		break;
 	case EmfRecordTypeStartDoc:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecStartDoc>();
+		pRecAccess = new EMFRecAccessGDIRecStartDoc;
 		break;
 	case EmfRecordTypeSmallTextOut:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSmallTextOut>();
+		pRecAccess = new EMFRecAccessGDIRecSmallTextOut;
 		break;
 	case EmfRecordTypeForceUFIMapping:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecForceUFIMapping>();
+		pRecAccess = new EMFRecAccessGDIRecForceUFIMapping;
 		break;
 	case EmfRecordTypeNamedEscape:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecNamedEscape>();
+		pRecAccess = new EMFRecAccessGDIRecNamedEscape;
 		break;
 	case EmfRecordTypeColorCorrectPalette:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecColorCorrectPalette>();
+		pRecAccess = new EMFRecAccessGDIRecColorCorrectPalette;
 		break;
 	case EmfRecordTypeSetICMProfileA:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetICMProfileA>();
+		pRecAccess = new EMFRecAccessGDIRecSetICMProfileA;
 		break;
 	case EmfRecordTypeSetICMProfileW:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetICMProfileW>();
+		pRecAccess = new EMFRecAccessGDIRecSetICMProfileW;
 		break;
 	case EmfRecordTypeAlphaBlend:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecAlphaBlend>();
+		pRecAccess = new EMFRecAccessGDIRecAlphaBlend;
 		break;
 	case EmfRecordTypeSetLayout:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetLayout>();
+		pRecAccess = new EMFRecAccessGDIRecSetLayout;
 		break;
 	case EmfRecordTypeTransparentBlt:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecTransparentBlt>();
+		pRecAccess = new EMFRecAccessGDIRecTransparentBlt;
 		break;
 	case EmfRecordTypeReserved_117:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecReserved_117>();
+		pRecAccess = new EMFRecAccessGDIRecReserved_117;
 		break;
 	case EmfRecordTypeGradientFill:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecGradientFill>();
+		pRecAccess = new EMFRecAccessGDIRecGradientFill;
 		break;
 	case EmfRecordTypeSetLinkedUFIs:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetLinkedUFIs>();
+		pRecAccess = new EMFRecAccessGDIRecSetLinkedUFIs;
 		break;
 	case EmfRecordTypeSetTextJustification:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecSetTextJustification>();
+		pRecAccess = new EMFRecAccessGDIRecSetTextJustification;
 		break;
 	case EmfRecordTypeColorMatchToTargetW:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecColorMatchToTargetW>();
+		pRecAccess = new EMFRecAccessGDIRecColorMatchToTargetW;
 		break;
 	case EmfRecordTypeCreateColorSpaceW:
-		pRecAccess = std::make_unique<EMFRecAccessGDIRecCreateColorSpaceW>();
+		pRecAccess = new EMFRecAccessGDIRecCreateColorSpaceW;
 		break;
 	case EmfPlusRecordTypeHeader:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecHeader>();
+		pRecAccess = new EMFRecAccessGDIPlusRecHeader;
 		break;
 	case EmfPlusRecordTypeEndOfFile:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecEndOfFile>();
+		pRecAccess = new EMFRecAccessGDIPlusRecEndOfFile;
 		break;
 	case EmfPlusRecordTypeComment:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecComment>();
+		pRecAccess = new EMFRecAccessGDIPlusRecComment;
 		break;
 	case EmfPlusRecordTypeGetDC:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecGetDC>();
+		pRecAccess = new EMFRecAccessGDIPlusRecGetDC;
 		break;
 	case EmfPlusRecordTypeMultiFormatStart:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecMultiFormatStart>();
+		pRecAccess = new EMFRecAccessGDIPlusRecMultiFormatStart;
 		break;
 	case EmfPlusRecordTypeMultiFormatSection:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecMultiFormatSection>();
+		pRecAccess = new EMFRecAccessGDIPlusRecMultiFormatSection;
 		break;
 	case EmfPlusRecordTypeMultiFormatEnd:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecMultiFormatEnd>();
+		pRecAccess = new EMFRecAccessGDIPlusRecMultiFormatEnd;
 		break;
 	case EmfPlusRecordTypeObject:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecObject>();
+		pRecAccess = new EMFRecAccessGDIPlusRecObject;
 		break;
 	case EmfPlusRecordTypeClear:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecClear>();
+		pRecAccess = new EMFRecAccessGDIPlusRecClear;
 		break;
 	case EmfPlusRecordTypeFillRects:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecFillRects>();
+		pRecAccess = new EMFRecAccessGDIPlusRecFillRects;
 		break;
 	case EmfPlusRecordTypeDrawRects:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawRects>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawRects;
 		break;
 	case EmfPlusRecordTypeFillPolygon:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecFillPolygon>();
+		pRecAccess = new EMFRecAccessGDIPlusRecFillPolygon;
 		break;
 	case EmfPlusRecordTypeDrawLines:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawLines>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawLines;
 		break;
 	case EmfPlusRecordTypeFillEllipse:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecFillEllipse>();
+		pRecAccess = new EMFRecAccessGDIPlusRecFillEllipse;
 		break;
 	case EmfPlusRecordTypeDrawEllipse:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawEllipse>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawEllipse;
 		break;
 	case EmfPlusRecordTypeFillPie:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecFillPie>();
+		pRecAccess = new EMFRecAccessGDIPlusRecFillPie;
 		break;
 	case EmfPlusRecordTypeDrawPie:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawPie>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawPie;
 		break;
 	case EmfPlusRecordTypeDrawArc:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawArc>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawArc;
 		break;
 	case EmfPlusRecordTypeFillRegion:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecFillRegion>();
+		pRecAccess = new EMFRecAccessGDIPlusRecFillRegion;
 		break;
 	case EmfPlusRecordTypeFillPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecFillPath>();
+		pRecAccess = new EMFRecAccessGDIPlusRecFillPath;
 		break;
 	case EmfPlusRecordTypeDrawPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawPath>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawPath;
 		break;
 	case EmfPlusRecordTypeFillClosedCurve:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecFillClosedCurve>();
+		pRecAccess = new EMFRecAccessGDIPlusRecFillClosedCurve;
 		break;
 	case EmfPlusRecordTypeDrawClosedCurve:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawClosedCurve>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawClosedCurve;
 		break;
 	case EmfPlusRecordTypeDrawCurve:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawCurve>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawCurve;
 		break;
 	case EmfPlusRecordTypeDrawBeziers:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawBeziers>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawBeziers;
 		break;
 	case EmfPlusRecordTypeDrawImage:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawImage>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawImage;
 		break;
 	case EmfPlusRecordTypeDrawImagePoints:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawImagePoints>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawImagePoints;
 		break;
 	case EmfPlusRecordTypeDrawString:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawString>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawString;
 		break;
 	case EmfPlusRecordTypeSetRenderingOrigin:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetRenderingOrigin>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetRenderingOrigin;
 		break;
 	case EmfPlusRecordTypeSetAntiAliasMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetAntiAliasMode>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetAntiAliasMode;
 		break;
 	case EmfPlusRecordTypeSetTextRenderingHint:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetTextRenderingHint>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetTextRenderingHint;
 		break;
 	case EmfPlusRecordTypeSetTextContrast:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetTextContrast>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetTextContrast;
 		break;
 	case EmfPlusRecordTypeSetInterpolationMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetInterpolationMode>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetInterpolationMode;
 		break;
 	case EmfPlusRecordTypeSetPixelOffsetMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetPixelOffsetMode>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetPixelOffsetMode;
 		break;
 	case EmfPlusRecordTypeSetCompositingMode:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetCompositingMode>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetCompositingMode;
 		break;
 	case EmfPlusRecordTypeSetCompositingQuality:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetCompositingQuality>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetCompositingQuality;
 		break;
 	case EmfPlusRecordTypeSave:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSave>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSave;
 		break;
 	case EmfPlusRecordTypeRestore:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecRestore>();
+		pRecAccess = new EMFRecAccessGDIPlusRecRestore;
 		break;
 	case EmfPlusRecordTypeBeginContainer:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecBeginContainer>();
+		pRecAccess = new EMFRecAccessGDIPlusRecBeginContainer;
 		break;
 	case EmfPlusRecordTypeBeginContainerNoParams:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecBeginContainerNoParams>();
+		pRecAccess = new EMFRecAccessGDIPlusRecBeginContainerNoParams;
 		break;
 	case EmfPlusRecordTypeEndContainer:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecEndContainer>();
+		pRecAccess = new EMFRecAccessGDIPlusRecEndContainer;
 		break;
 	case EmfPlusRecordTypeSetWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetWorldTransform;
 		break;
 	case EmfPlusRecordTypeResetWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecResetWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIPlusRecResetWorldTransform;
 		break;
 	case EmfPlusRecordTypeMultiplyWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecMultiplyWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIPlusRecMultiplyWorldTransform;
 		break;
 	case EmfPlusRecordTypeTranslateWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecTranslateWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIPlusRecTranslateWorldTransform;
 		break;
 	case EmfPlusRecordTypeScaleWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecScaleWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIPlusRecScaleWorldTransform;
 		break;
 	case EmfPlusRecordTypeRotateWorldTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecRotateWorldTransform>();
+		pRecAccess = new EMFRecAccessGDIPlusRecRotateWorldTransform;
 		break;
 	case EmfPlusRecordTypeSetPageTransform:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetPageTransform>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetPageTransform;
 		break;
 	case EmfPlusRecordTypeResetClip:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecResetClip>();
+		pRecAccess = new EMFRecAccessGDIPlusRecResetClip;
 		break;
 	case EmfPlusRecordTypeSetClipRect:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetClipRect>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetClipRect;
 		break;
 	case EmfPlusRecordTypeSetClipPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetClipPath>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetClipPath;
 		break;
 	case EmfPlusRecordTypeSetClipRegion:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetClipRegion>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetClipRegion;
 		break;
 	case EmfPlusRecordTypeOffsetClip:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecOffsetClip>();
+		pRecAccess = new EMFRecAccessGDIPlusRecOffsetClip;
 		break;
 	case EmfPlusRecordTypeDrawDriverString:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecDrawDriverString>();
+		pRecAccess = new EMFRecAccessGDIPlusRecDrawDriverString;
 		break;
 	case EmfPlusRecordTypeStrokeFillPath:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecStrokeFillPath>();
+		pRecAccess = new EMFRecAccessGDIPlusRecStrokeFillPath;
 		break;
 	case EmfPlusRecordTypeSerializableObject:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSerializableObject>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSerializableObject;
 		break;
 	case EmfPlusRecordTypeSetTSGraphics:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetTSGraphics>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetTSGraphics;
 		break;
 	case EmfPlusRecordTypeSetTSClip:
-		pRecAccess = std::make_unique<EMFRecAccessGDIPlusRecSetTSClip>();
+		pRecAccess = new EMFRecAccessGDIPlusRecSetTSClip;
 		break;
 	}
 	if (!pRecAccess)
@@ -768,15 +983,41 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 		return false;
 	}
 	pRecAccess->SetRecInfo(rec);
-	m_EMFRecords.push_back(std::move(pRecAccess));
+	pRecAccess->SetIndex(m_EMFRecords.size());
+	pRecAccess->Preprocess(this);
+	m_EMFRecords.push_back(pRecAccess);
 	return true;
 }
 
-EMFRecAccess* EMFAccess::GetRecord(size_t index) const
+EMFRecAccess* EMFAccess::GetObjectCreationRecord(size_t index, bool bPlus) const
 {
-	ASSERT(index < GetRecordCount());
-	return m_EMFRecords[index].get();
+	if (bPlus)
+	{
+		if (index < m_vPlusObjTable.size())
+			return m_vPlusObjTable[index].pRec;
+	}
+	else
+	{
+		// TODO
+	}
+	return nullptr;
 }
+
+bool EMFAccess::SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus)
+{
+	if (bPlus)
+	{
+		if (index >= m_vPlusObjTable.size())
+			m_vPlusObjTable.resize(index + 1);
+		m_vPlusObjTable[index].pRec = pRec;
+	}
+	else
+	{
+		// TODO
+	}
+	return true;
+}
+
 
 
 

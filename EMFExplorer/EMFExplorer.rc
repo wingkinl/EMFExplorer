@@ -262,16 +262,9 @@ IDR_POPUP_EXPLORER MENU
 BEGIN
     POPUP "Explorer"
     BEGIN
-        MENUITEM "&Open",                       ID_OPEN
-        MENUITEM "Open &With....",              ID_OPEN_WITH
-        MENUITEM SEPARATOR
-        MENUITEM "&Compile",                    ID_DUMMY_COMPILE
-        MENUITEM SEPARATOR
-        MENUITEM "Cu&t\tCtrl+X",                ID_EDIT_CUT
         MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
-        MENUITEM "&Remove",                     ID_EDIT_CLEAR
         MENUITEM SEPARATOR
-        MENUITEM "&Properties...",              ID_PROPERTIES
+        MENUITEM "&Preview...",                 ID_PREVIEW
     END
 END
 

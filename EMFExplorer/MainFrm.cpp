@@ -418,12 +418,15 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 		auto emf = pDoc->GetEMFAccess();
 		emf->GetRecords();
 		m_wndFileView.SetEMFAccess(emf);
+	}
+	m_wndFileView.LoadEMFDataEvent(bBefore);
+	if (!bBefore)
+	{
 		int nCurSelRecIdx = m_wndFileView.GetCurSelRecIndex();
 		if (nCurSelRecIdx >= 0)
 		{
 			UpdateRecordProperty(nCurSelRecIdx);
 		}
 	}
-	m_wndFileView.LoadEMFDataEvent(bBefore);
 }
 

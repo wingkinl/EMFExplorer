@@ -846,12 +846,26 @@ bool OEmfPlusRecFillClosedCurve::Read(DataReader& reader, u16t nFlags, size_t nE
 	return true;
 }
 
+u32t OEmfPlusRecFillEllipse::ReadBrushId(DataReader& reader)
+{
+	u32t id;
+	reader.ReadBytes(&id, sizeof(id));
+	return id;
+}
+
 bool OEmfPlusRecFillEllipse::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	reader.ReadBytes(&BrushId, sizeof(BrushId));
 	RectData.Read(reader, nFlags & FlagC);
 	return true;
+}
+
+u32t OEmfPlusRecFillPie::ReadBrushId(DataReader& reader)
+{
+	u32t id;
+	reader.ReadBytes(&id, sizeof(id));
+	return id;
 }
 
 bool OEmfPlusRecFillPie::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)
@@ -862,6 +876,13 @@ bool OEmfPlusRecFillPie::Read(DataReader& reader, u16t nFlags, size_t nExpectedS
 	return true;
 }
 
+u32t OEmfPlusRecFillPolygon::ReadBrushId(DataReader& reader)
+{
+	u32t id;
+	reader.ReadBytes(&id, sizeof(id));
+	return id;
+}
+
 bool OEmfPlusRecFillPolygon::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
@@ -869,6 +890,13 @@ bool OEmfPlusRecFillPolygon::Read(DataReader& reader, u16t nFlags, size_t nExpec
 	reader.ReadBytes(&Count, sizeof(Count));
 	PointData.Read(reader, Count, FlagP & nFlags, FlagC & nFlags);
 	return true;
+}
+
+u32t OEmfPlusRecFillRects::ReadBrushId(DataReader& reader)
+{
+	u32t id;
+	reader.ReadBytes(&id, sizeof(id));
+	return id;
 }
 
 bool OEmfPlusRecFillRects::Read(DataReader& reader, u16t nFlags, size_t nExpectedSize)
@@ -921,8 +949,28 @@ OEmfPlusGraphObject* OEmfPlusRecObjectReader::CreateObject()
 		return nullptr;
 	}
 	auto nObjType = GetObjectType();
+	OEmfPlusGraphObject* pObj = CreateObjectByType(nObjType);
+	if (pObj)
+	{
+		bool bContinue = IsContinueObj();
+		const u8t* pData = bContinue ? ContinuableObjData.data() : StartRec->Data;
+		size_t nDataSize = bContinue ? TotalObjectSize : StartRec->DataSize;
+		DataReader reader(pData, nDataSize);
+		VERIFY(pObj->Read(reader, nDataSize));
+
+		ContinuableObjData.clear();
+	#ifdef _DEBUG
+		ContinuableObjFlags = 0;
+	#endif // _DEBUG
+		StartRec = nullptr;
+	}
+	return pObj;
+}
+
+OEmfPlusGraphObject* OEmfPlusRecObjectReader::CreateObjectByType(OObjType objType)
+{
 	OEmfPlusGraphObject* pObj = nullptr;
-	switch (nObjType)
+	switch (objType)
 	{
 	case OObjType::Brush:
 		pObj = new OEmfPlusBrush;
@@ -954,20 +1002,6 @@ OEmfPlusGraphObject* OEmfPlusRecObjectReader::CreateObject()
 	default:
 		return nullptr;
 	}
-	if (pObj)
-	{
-		bool bContinue = IsContinueObj();
-		const u8t* pData = bContinue ? ContinuableObjData.data() : StartRec->Data;
-		size_t nDataSize = bContinue ? TotalObjectSize : StartRec->DataSize;
-		DataReader reader(pData, nDataSize);
-		VERIFY(pObj->Read(reader, nDataSize));
-
-		ContinuableObjData.clear();
-	#ifdef _DEBUG
-		ContinuableObjFlags = 0;
-	#endif // _DEBUG
-		StartRec = nullptr;
-	}
 	return pObj;
 }
 
@@ -991,6 +1025,12 @@ OObjType OEmfPlusRecObjectReader::GetObjectType() const
 		return OObjType::Invalid;
 	}
 	auto nObjType = (OObjType)((StartRec->Flags & FlagObjectTypeMask) >> 8);
+	return nObjType;
+}
+
+OObjType OEmfPlusRecObjectReader::GetObjectType(const OEmfPlusRecInfo& rec)
+{
+	auto nObjType = (OObjType)((rec.Flags & FlagObjectTypeMask) >> 8);
 	return nObjType;
 }
 
