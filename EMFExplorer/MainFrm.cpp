@@ -25,6 +25,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_VIEW_CUSTOMIZE, &CMainFrame::OnViewCustomize)
 	ON_REGISTERED_MESSAGE(AFX_WM_CREATETOOLBAR, &CMainFrame::OnToolbarCreateNew)
+	ON_REGISTERED_MESSAGE(AFX_WM_CHANGEVISUALMANAGER, &CMainFrame::OnChangeVisualManager)
 	ON_COMMAND(ID_VIEW_THEME_DARK, &CMainFrame::OnViewThemeDark)
 	ON_COMMAND(ID_VIEW_THEME_LIGHT, &CMainFrame::OnViewThemeLight)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_THEME_DARK, &CMainFrame::OnUpdateViewThemeDark)
@@ -173,7 +174,15 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	CMFCToolBar::SetBasicCommands(lstBasicCommands);
 
+	OnChangeTheme();
+
 	return 0;
+}
+
+LRESULT CMainFrame::OnChangeVisualManager(WPARAM wParam, LPARAM lParam)
+{
+	OnChangeTheme();
+	return CFrameWndEx::OnChangeVisualManager(wParam, lParam);
 }
 
 BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
@@ -252,38 +261,18 @@ void CMainFrame::OnChangeTheme()
 {
 	m_wndFileView.OnChangeVisualStyle();
 	m_wndProperties.OnChangeVisualStyle();
-
-	// Reload toolbar images:
-	CMFCToolBar::ResetAllImages();
-
-	m_wndToolBar.LoadBitmap(theApp.m_bHiColorIcons ? IDR_MAINFRAME_256 : IDR_MAINFRAME);
-
-	CMFCToolBar::AddToolBarForImageCollection(IDR_MENU_IMAGES, theApp.m_bHiColorIcons ? IDB_MENU_IMAGES_24 : 0);
-
-	CDockingManager* pDockManager = GetDockingManager();
-	ASSERT_VALID(pDockManager);
-
-	pDockManager->AdjustPaneFrames();
-
-	RecalcLayout();
-	RedrawWindow(NULL, NULL, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
 }
 
 void CMainFrame::SetTheme(BOOL bDark)
 {
 	CWaitCursor wait;
 	
-	LockWindowUpdate();
-
 	theApp.SetDarkTheme(bDark);
+
 	CMFCVisualManagerOffice2007::SetStyle((CMFCVisualManagerOffice2007::Style)theApp.m_nStyle);
-	
-	CTabbedPane::ResetTabs();
+	CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerOffice2007));
 
-	OnChangeTheme();
-
-	UnlockWindowUpdate();
-	RedrawWindow();
+	RedrawWindow(nullptr, nullptr, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_FRAME | RDW_ERASE);
 }
 
 void CMainFrame::OnViewThemeDark()
@@ -357,6 +346,80 @@ LRESULT CMainFrame::OnSelectRecordItem(WPARAM wp, LPARAM lp)
 	return 0;
 }
 
+class EMFRecordVisualizer
+{
+public:
+	EMFRecordVisualizer() = default;
+	virtual ~EMFRecordVisualizer() = default;
+public:
+	virtual void OpenVisualizer(CMainFrame* pFrame) {}
+};
+
+class EMFRecordMetafileVisualizer : public EMFRecordVisualizer
+{
+public:
+	EMFRecordMetafileVisualizer(EMFRecAccessGDIPlusRecObject* pRec)
+	{
+		m_pRecObj = pRec;
+	}
+public:
+	void OpenVisualizer(CMainFrame* pFrame) override;
+protected:
+	EMFRecAccessGDIPlusRecObject* m_pRecObj;
+};
+
+void EMFRecordMetafileVisualizer::OpenVisualizer(CMainFrame* pFrame)
+{
+	auto pWrapper = m_pRecObj->GetObjectWrapper();
+	if (!pWrapper->CacheGDIPlusObject())
+	{
+		ASSERT(0);
+		return;
+	}
+	theApp.CreateNewFrameForSubEMF();
+}
+
+using EMFRecordVisualizerOptional = std::pair<bool, std::shared_ptr<EMFRecordVisualizer>>;
+
+static EMFRecordVisualizerOptional AccessEMRRecordVisualizer(EMFRecAccess* pRec, bool bCheckOnly)
+{
+	switch (pRec->GetRecordType())
+	{
+	case emfplus::EmfPlusRecordTypeObject:
+	{
+		auto pObj = ((EMFRecAccessGDIPlusRecObject*)pRec)->GetObjectWrapper()->GetObject();
+		if (pObj)
+		{
+			switch (pObj->GetObjType())
+			{
+			case emfplus::OObjType::Image:
+				{
+					auto pImg = (emfplus::OEmfPlusImage*)pObj;
+					switch (pImg->Type)
+					{
+					case emfplus::OImageDataType::Metafile:
+						return std::make_pair(true, bCheckOnly ? nullptr : 
+							std::make_shared<EMFRecordMetafileVisualizer>((EMFRecAccessGDIPlusRecObject*)pRec));
+					}
+				}
+				break;
+			}
+		}
+	}
+	break;
+	case emfplus::EmfPlusRecordTypeDrawImage:
+	case emfplus::EmfPlusRecordTypeDrawImagePoints:
+		if (pRec->GetLinkedObjectCount())
+		{
+			pRec = pRec->GetLinkedObject(0);
+			if (pRec)
+				return AccessEMRRecordVisualizer(pRec, bCheckOnly);
+		}
+		break;
+	}
+	return std::make_pair(false, nullptr);
+}
+
 LRESULT CMainFrame::OnCanOpenRecordItem(WPARAM wp, LPARAM /*lp*/)
 {
 	auto nIndex = (size_t)wp;
@@ -364,42 +427,21 @@ LRESULT CMainFrame::OnCanOpenRecordItem(WPARAM wp, LPARAM /*lp*/)
 	auto pDoc = pView->GetDocument();
 	auto pEMF = pDoc->GetEMFAccess();
 	auto pRec = pEMF->GetRecord((size_t)nIndex);
-	switch (pRec->GetRecordType())
-	{
-	case emfplus::EmfPlusRecordTypeObject:
-		{
-			auto pObj = ((EMFRecAccessGDIPlusRecObject*)pRec)->GetObjectWrapper()->GetObject();
-			if (pObj)
-			{
-				switch (pObj->GetObjType())
-				{
-				case emfplus::OObjType::Image:
-					{
-						auto pImg = (emfplus::OEmfPlusImage*)pObj;
-						switch (pImg->Type)
-						{
-						case emfplus::OImageDataType::Metafile:
-							return TRUE;
-						}
-					}
-					break;
-				}
-			}
-		}
-		break;
-	case emfplus::EmfPlusRecordTypeDrawImage:
-		break;
-	case emfplus::EmfPlusRecordTypeDrawImagePoints:
-		break;
-	}
-	return 0;
+	return AccessEMRRecordVisualizer(pRec, true).first;
 }
 
 LRESULT CMainFrame::OnOpenRecordItem(WPARAM wp, LPARAM /*lp*/)
 {
-	//auto nIndex = (size_t)wp;
-	AfxMessageBox(L"Open");
-	return 0;
+	auto nIndex = (size_t)wp;
+	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	auto pDoc = pView->GetDocument();
+	auto pEMF = pDoc->GetEMFAccess();
+	auto pRec = pEMF->GetRecord((size_t)nIndex);
+	auto vis = AccessEMRRecordVisualizer(pRec, false);
+	if (!vis.second)
+		return 0;
+	vis.second->OpenVisualizer(this);
+	return 1;
 }
 
 BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParentWnd, CCreateContext* pContext)

@@ -54,6 +54,14 @@ public:
 	inline size_t GetIndex() const { return m_nIndex; }
 
 	bool IsLinked(const EMFRecAccess* pRec) const;
+
+	inline size_t GetLinkedObjectCount() const { return m_linkRecs.size(); }
+
+	inline EMFRecAccess* GetLinkedObject(size_t index)
+	{
+		// Caller ensure safety
+		return m_linkRecs[index];
+	}
 protected:
 	void SetRecInfo(const emfplus::OEmfPlusRecInfo& info) { m_recInfo = info; }
 
@@ -1271,6 +1279,8 @@ public:
 	virtual ~EMFRecAccessGDIPlusObjWrapper() = default;
 
 	emfplus::OEmfPlusGraphObject* GetObject() const { return m_obj.get(); }
+
+	virtual bool CacheGDIPlusObject() { return false; }
 protected:
 	friend class EMFRecAccessGDIPlusRecObject;
 
@@ -1286,7 +1296,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeObject; }
 
-	EMFRecAccessGDIPlusObjWrapper* GetObjectWrapper() const { return m_recDataCached.get(); }
+	EMFRecAccessGDIPlusObjWrapper* GetObjectWrapper();
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 

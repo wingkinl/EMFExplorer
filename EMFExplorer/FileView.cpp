@@ -35,6 +35,7 @@ BEGIN_MESSAGE_MAP(CFileView, CDockablePane)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_FILE_VIEW_CTRL, &CFileView::OnListItemChange)
+	ON_NOTIFY(NM_RETURN, IDC_FILE_VIEW_CTRL, &CFileView::OnListEnter)
 	ON_NOTIFY(NM_DBLCLK, IDC_FILE_VIEW_CTRL, &CFileView::OnListDblClk)
 END_MESSAGE_MAP()
 
@@ -218,6 +219,12 @@ void CFileView::OnListItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 		auto pMainWnd = AfxGetMainWnd();
 		pMainWnd->SendMessage(MainFrameMsgOnSelectRecordItem, pNMLV->iItem);
 	}
+}
+
+void CFileView::OnListEnter(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	if (CanViewCurSelRecord())
+		OnViewRecord();
 }
 
 void CFileView::OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult)

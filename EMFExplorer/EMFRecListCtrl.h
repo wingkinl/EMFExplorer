@@ -38,6 +38,7 @@ protected:
 	afx_msg void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg BOOL OnItemChange(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg UINT OnGetDlgCode();
 protected:
 	COLORREF m_crfDefaultBkColor = (COLORREF)-1;
 	std::shared_ptr<EMFAccess>	m_emf;

@@ -196,6 +196,7 @@
     <ClInclude Include="PropertiesWnd.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ScrollZoomView.h" />
+    <ClInclude Include="SubEMFFrame.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="EMFRecListCtrl.h" />
   </ItemGroup>
@@ -216,6 +217,7 @@
     <ClCompile Include="PropertiesWnd.cpp" />
     <ClCompile Include="EMFRecListCtrl.cpp" />
     <ClCompile Include="ScrollZoomView.cpp" />
+    <ClCompile Include="SubEMFFrame.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EMFExplorer.reg" />

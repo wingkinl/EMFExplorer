@@ -11,6 +11,7 @@
 
 #include "EMFExplorerDoc.h"
 #include "EMFExplorerView.h"
+#include "SubEMFFrame.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -348,7 +349,7 @@ CEMFExplorerDoc* CEMFExplorerApp::CreateNewFrameForSubEMF()
 		m_pSubDocTemplate = new CSubEMFDocTemplate(
 			IDR_MAINFRAME,
 			RUNTIME_CLASS(CEMFExplorerDoc),
-			RUNTIME_CLASS(CMainFrame),       // main SDI frame window
+			RUNTIME_CLASS(CSubEMFFrame),       // main SDI frame window
 			RUNTIME_CLASS(CEMFExplorerView));
 		if (!m_pSubDocTemplate)
 			return nullptr;

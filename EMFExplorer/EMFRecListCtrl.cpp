@@ -61,6 +61,7 @@ BEGIN_MESSAGE_MAP(CEMFRecListCtrl, CEMFRecListCtrlBase)
 	ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, &CEMFRecListCtrl::OnCustomDraw)
 	ON_NOTIFY_REFLECT(LVN_GETDISPINFO, &CEMFRecListCtrl::OnGetDispInfo)
 	ON_NOTIFY_REFLECT_EX(LVN_ITEMCHANGED, &CEMFRecListCtrl::OnItemChange)
+	ON_WM_GETDLGCODE()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -178,6 +179,12 @@ BOOL CEMFRecListCtrl::OnItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 	Invalidate();
 	// Returns FALSE here so we allow parent to handle this too
 	return FALSE;
+}
+
+UINT CEMFRecListCtrl::OnGetDlgCode()
+{
+	// Add DLGC_WANTMESSAGE so we have NM_RETURN notification
+	return CEMFRecListCtrlBase::OnGetDlgCode() | DLGC_WANTMESSAGE;
 }
 
 void CEMFRecListCtrl::OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const

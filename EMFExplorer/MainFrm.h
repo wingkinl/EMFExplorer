@@ -60,6 +60,7 @@ protected:  // control bar embedded members
 // Generated message map functions
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg LRESULT OnChangeVisualManager(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnViewCustomize();
 	afx_msg void OnViewThemeDark();
 	afx_msg void OnViewThemeLight();

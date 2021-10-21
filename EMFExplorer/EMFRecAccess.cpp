@@ -390,6 +390,22 @@ static inline LPCWSTR EMFPlusObjectTypeText(OObjType type)
 	return aText[(int)type];
 }
 
+EMFRecAccessGDIPlusObjWrapper* EMFRecAccessGDIPlusRecObject::GetObjectWrapper()
+{
+	if (!m_recDataCached)
+	{
+		auto nObjType = OEmfPlusRecObjectReader::GetObjectType(m_recInfo);
+		auto pObj = CreatePlusObjectAccessWrapper(nObjType);
+		if (!pObj)
+		{
+			ASSERT(0);
+			return nullptr;
+		}
+		m_recDataCached.reset(pObj);
+	}
+	return m_recDataCached.get();
+}
+
 void EMFRecAccessGDIPlusRecObject::CacheProperties(EMFAccess* pEMF)
 {
 	EMFRecAccessGDIPlusObjectCat::CacheProperties(pEMF);
@@ -397,19 +413,13 @@ void EMFRecAccessGDIPlusRecObject::CacheProperties(EMFAccess* pEMF)
 	m_propsCached->AddText(L"ObjectType", EMFPlusObjectTypeText(nObjType));
 	auto nObjectID = (u8t)(m_recInfo.Flags & OEmfPlusRecObjectReader::FlagObjectIDMask);
 	m_propsCached->AddValue(L"Index", nObjectID);
-	if (!m_recDataCached)
+	auto pObjWrapper = GetObjectWrapper();
+	if (pObjWrapper)
 	{
-		auto pObj = CreatePlusObjectAccessWrapper(nObjType);
-		if (!pObj)
-		{
-			ASSERT(0);
-			return;
-		}
-		m_recDataCached.reset(pObj);
 		DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
-		VERIFY(pObj->GetObject()->Read(reader, m_recInfo.DataSize));
+		VERIFY(pObjWrapper->GetObject()->Read(reader, m_recInfo.DataSize));
 
-		pObj->CacheProperties(pEMF, m_propsCached.get());
+		pObjWrapper->CacheProperties(pEMF, m_propsCached.get());
 	}
 }
 
