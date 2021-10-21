@@ -1838,6 +1838,8 @@ public:
 
 	inline EMFRecAccess* GetRecord(size_t index) const
 	{
+		if (index >= m_EMFRecords.size())
+			return nullptr;
 		return m_EMFRecords[index];
 	}
 
@@ -1850,6 +1852,8 @@ public:
 	EMFRecAccess* GetObjectCreationRecord(size_t index, bool bPlus) const;
 
 	bool SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus);
+
+	bool SaveToArchive(CArchive& ar) const;
 protected:
 	using EmfRecArray	= std::vector<EMFRecAccess*>;
 	using EMFPtr		= std::unique_ptr<Gdiplus::Metafile>;

@@ -1355,6 +1355,17 @@ bool EMFAccess::SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus)
 	return true;
 }
 
+bool EMFAccess::SaveToArchive(CArchive& ar) const
+{
+	if (!m_pMetafile || ar.m_strFileName.IsEmpty())
+		return false;
+	{
+		Gdiplus::Metafile mf(ar.m_strFileName);
+		Gdiplus::Graphics gg(&mf);
+		gg.DrawImage(m_pMetafile.get(), 0, 0);
+	}
+	return true;
+}
 
 
 

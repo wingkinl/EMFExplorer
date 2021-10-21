@@ -297,14 +297,17 @@ void CMainFrame::OnUpdateViewThemeLight(CCmdUI* pCmdUI)
 
 void CMainFrame::OnViewImgBk(UINT nID)
 {
-	theApp.m_nImgBackgroundType = nID - ID_BACKGROUND_NONE;
+	auto nType = nID - ID_BACKGROUND_NONE;
+	if (!IsSubEMFFrame())
+		theApp.m_nImgBackgroundType = nType;
 	CEMFExplorerView* pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
-	pView->SetImgBackgroundType((CEMFExplorerView::ImgBackgroundType)theApp.m_nImgBackgroundType);
+	pView->SetImgBackgroundType((CEMFExplorerView::ImgBackgroundType)nType);
 }
 
 void CMainFrame::OnUpdateViewImgBk(CCmdUI* pCmdUI)
 {
-	pCmdUI->SetRadio(theApp.m_nImgBackgroundType == pCmdUI->m_nID - ID_BACKGROUND_NONE);
+	CEMFExplorerView* pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	pCmdUI->SetRadio(pView->GetImgBackgroundType() == pCmdUI->m_nID - ID_BACKGROUND_NONE);
 }
 
 LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)
@@ -327,14 +330,17 @@ LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)
 	return lres;
 }
 
-void CMainFrame::UpdateRecordProperty(int index)
+bool CMainFrame::UpdateRecordProperty(int index)
 {
-	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	auto pView = CheckGetActiveView();
 	auto pDoc = pView->GetDocument();
 	auto pEMF = pDoc->GetEMFAccess();
 	auto pRec = pEMF->GetRecord((size_t)index);
+	if (!pRec)
+		return false;
 	auto props = pRec->GetProperties(pEMF.get());
 	m_wndProperties.SetPropList(props);
+	return true;
 }
 
 LRESULT CMainFrame::OnSelectRecordItem(WPARAM wp, LPARAM lp)
@@ -494,7 +500,8 @@ BOOL CMainFrame::LoadEMFFromData(const std::vector<emfplus::u8t>& data, CEMFExpl
 	return TRUE;
 }
 
-void CMainFrame::LoadEMFDataEvent(bool bBefore)
+// This is only necessary during loading of frame window
+CEMFExplorerView* CMainFrame::CheckGetActiveView() const
 {
 	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
 	if (!pView)
@@ -503,12 +510,16 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 		CWnd* pWnd = GetDescendantWindow(AFX_IDW_PANE_FIRST, TRUE);
 		if (pWnd != NULL && pWnd->IsKindOf(RUNTIME_CLASS(CView)))
 			pView = (CEMFExplorerView*)pWnd;
-		if (!pView)
-		{
-			ASSERT(0);
-			return;
-		}
 	}
+	ASSERT(pView);
+	return pView;
+}
+
+void CMainFrame::LoadEMFDataEvent(bool bBefore)
+{
+	auto pView = CheckGetActiveView();
+	if (!pView)
+		return;
 	pView->LoadEMFDataEvent(bBefore);
 	if (bBefore)
 	{
@@ -524,11 +535,8 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 	m_wndFileView.LoadEMFDataEvent(bBefore);
 	if (!bBefore)
 	{
-		int nCurSelRecIdx = m_wndFileView.GetCurSelRecIndex();
-		if (nCurSelRecIdx >= 0)
-		{
-			UpdateRecordProperty(nCurSelRecIdx);
-		}
+		UpdateRecordProperty(0);
+		m_wndFileView.SetCurSelRecIndex(0);
 	}
 }
 

@@ -16,6 +16,8 @@ enum MainFrameMsg
 	MainFrameMsgOpenRecordItem,
 };
 
+class CEMFExplorerView;
+
 class CMainFrame : public CFrameWndEx
 {
 	
@@ -48,7 +50,11 @@ public:
 
 	void OnChangeTheme();
 private:
-	void UpdateRecordProperty(int index);
+	bool UpdateRecordProperty(int index);
+
+	virtual bool IsSubEMFFrame() const { return false; }
+
+	CEMFExplorerView* CheckGetActiveView() const;
 protected:  // control bar embedded members
 	CMFCMenuBar       m_wndMenuBar;
 	CMFCToolBar       m_wndToolBar;

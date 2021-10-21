@@ -100,7 +100,7 @@ void CEMFExplorerDoc::Serialize(CArchive& ar)
 {
 	if (ar.IsStoring())
 	{
-		// TODO: add storing code here
+		ASSERT(m_emf.get());
 	}
 	else
 	{

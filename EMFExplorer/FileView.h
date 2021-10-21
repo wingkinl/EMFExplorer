@@ -28,6 +28,8 @@ public:
 	void LoadEMFDataEvent(bool bBefore);
 
 	int GetCurSelRecIndex() const;
+
+	void SetCurSelRecIndex(int index);
 private:
 	bool CanViewCurSelRecord() const;
 // Attributes
