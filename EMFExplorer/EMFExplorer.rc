@@ -262,7 +262,7 @@ IDR_POPUP_EXPLORER MENU
 BEGIN
     POPUP "Explorer"
     BEGIN
-        MENUITEM "&Open...",                    ID_VIEW_RECORD
+        MENUITEM "&View...",                    ID_VIEW_RECORD
         MENUITEM SEPARATOR
         MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
     END
