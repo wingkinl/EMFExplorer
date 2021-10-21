@@ -122,9 +122,19 @@ void CEMFExplorerDoc::OnDrawThumbnail(CDC& dc, LPRECT lprcBounds)
 	dc.FillSolidRect(lprcBounds, RGB(255, 255, 255));
 	if (m_emf.get())
 	{
-// 		CRect rcDraw = m_emf->GetFittingDrawRect(rcBounds);
-// 		Gdiplus::Graphics gg(dc.GetSafeHdc());
-// 		m_emf->DrawMetafile(gg, rcDraw);
+		Gdiplus::Graphics gg(dc.GetSafeHdc());
+		gg.SetCompositingQuality(Gdiplus::CompositingQualityHighQuality);
+		gg.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+		gg.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias8x8);
+		auto hdr = m_emf->GetMetafileHeader();
+		CSize szImg(hdr.Width, hdr.Height);
+		CRect rcDraw = GetFitRect(lprcBounds, szImg, true);
+// 		Gdiplus::Pen pen(Gdiplus::Color::Black);
+// 		Gdiplus::SolidBrush brush(Gdiplus::Color(10, 0,0,0));
+// 		Gdiplus::Rect rcDrawP(rcDraw.left, rcDraw.top, rcDraw.Width(), rcDraw.Height());
+// 		gg.FillRectangle(&brush, rcDrawP);
+// 		gg.DrawRectangle(&pen, rcDrawP);
+		m_emf->DrawMetafile(gg, rcDraw);
 	}
 	else
 	{

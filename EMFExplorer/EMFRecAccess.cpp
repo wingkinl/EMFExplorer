@@ -20,14 +20,14 @@ CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter)
 		szDest.cy	= (int)(szSrc.cy * (float)szDest.cx / szSrc.cx);
 		rcFit.bottom = rcFit.top + szDest.cy;
 		if (bCenter)
-			rcFit.OffsetRect(0, (rcFit.Height() - rcDest.Height()) / 2);
+			rcFit.OffsetRect(0, (rcDest.Height() - rcFit.Height()) / 2);
 	}
 	else
 	{
 		szDest.cx	= (int)(szSrc.cx * (float)szDest.cy / szSrc.cy);
 		rcFit.right = rcFit.left + szDest.cx;
 		if (bCenter)
-			rcFit.OffsetRect((rcFit.Width() - rcDest.Width()) / 2, 0);
+			rcFit.OffsetRect((rcDest.Width() - rcFit.Width()) / 2, 0);
 	}
 	return rcFit;
 }
