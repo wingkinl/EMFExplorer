@@ -27,6 +27,9 @@ public:
 	void UpdateEMFData(const std::vector<emfplus::u8t>& data, EMFType type);
 
 	std::shared_ptr<EMFAccess> GetEMFAccess() const { return m_emf; }
+
+	void SetEMFAccess(std::shared_ptr<EMFAccess> emf, EMFType type);
+
 // Operations
 public:
 // Overrides

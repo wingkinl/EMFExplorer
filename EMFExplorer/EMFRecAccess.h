@@ -1281,6 +1281,8 @@ public:
 	emfplus::OEmfPlusGraphObject* GetObject() const { return m_obj.get(); }
 
 	virtual bool CacheGDIPlusObject() { return false; }
+
+	virtual std::shared_ptr<EMFAccess> GetEMFAccess() const { return nullptr; }
 protected:
 	friend class EMFRecAccessGDIPlusRecObject;
 

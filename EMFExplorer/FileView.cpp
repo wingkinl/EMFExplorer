@@ -152,7 +152,7 @@ void CFileView::AdjustLayout()
 void CFileView::OnViewRecord()
 {
 	int nRow = GetCurSelRecIndex();
-	auto pMainWnd = AfxGetMainWnd();
+	auto pMainWnd = GetTopLevelFrame();
 	pMainWnd->SendMessage(MainFrameMsgOpenRecordItem, nRow);
 }
 
@@ -216,7 +216,7 @@ void CFileView::OnListItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_LISTVIEW* pNMLV = (NM_LISTVIEW*)pNMHDR;
 	if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVIS_SELECTED))
 	{
-		auto pMainWnd = AfxGetMainWnd();
+		auto pMainWnd = GetTopLevelFrame();
 		pMainWnd->SendMessage(MainFrameMsgOnSelectRecordItem, pNMLV->iItem);
 	}
 }
@@ -286,7 +286,7 @@ int CFileView::GetCurSelRecIndex() const
 bool CFileView::CanViewCurSelRecord() const
 {
 	int nRow = GetCurSelRecIndex();
-	auto pMainWnd = AfxGetMainWnd();
+	auto pMainWnd = GetTopLevelFrame();
 	auto bCanOpen = pMainWnd->SendMessage(MainFrameMsgCanOpenRecordItem, nRow);
 	return bCanOpen != 0;
 }

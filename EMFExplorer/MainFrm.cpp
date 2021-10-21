@@ -376,7 +376,8 @@ void EMFRecordMetafileVisualizer::OpenVisualizer(CMainFrame* pFrame)
 		ASSERT(0);
 		return;
 	}
-	theApp.CreateNewFrameForSubEMF();
+	CWaitCursor wait;
+	theApp.CreateNewFrameForSubEMF(pWrapper->GetEMFAccess());
 }
 
 using EMFRecordVisualizerOptional = std::pair<bool, std::shared_ptr<EMFRecordVisualizer>>;
@@ -496,6 +497,18 @@ BOOL CMainFrame::LoadEMFFromData(const std::vector<emfplus::u8t>& data, CEMFExpl
 void CMainFrame::LoadEMFDataEvent(bool bBefore)
 {
 	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	if (!pView)
+	{
+		// This can happen for sub EMF frame
+		CWnd* pWnd = GetDescendantWindow(AFX_IDW_PANE_FIRST, TRUE);
+		if (pWnd != NULL && pWnd->IsKindOf(RUNTIME_CLASS(CView)))
+			pView = (CEMFExplorerView*)pWnd;
+		if (!pView)
+		{
+			ASSERT(0);
+			return;
+		}
+	}
 	pView->LoadEMFDataEvent(bBefore);
 	if (bBefore)
 	{

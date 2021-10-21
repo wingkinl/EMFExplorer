@@ -17,6 +17,63 @@
 #define new DEBUG_NEW
 #endif
 
+class CEMFDocTemplate : public CSingleDocTemplate
+{
+public:
+	using CSingleDocTemplate::CSingleDocTemplate;
+public:
+	bool OpenFromClipboardData(const std::vector<emfplus::u8t>& data);
+public:
+	CDocument* OpenDocumentFile(LPCTSTR lpszPathName, BOOL bAddToMRU, BOOL bMakeVisible) override;
+};
+
+bool CEMFDocTemplate::OpenFromClipboardData(const std::vector<emfplus::u8t>& data)
+{
+	ASSERT(m_pOnlyDoc);
+	CEMFExplorerDoc* pDoc = DYNAMIC_DOWNCAST(CEMFExplorerDoc, m_pOnlyDoc);
+	if (!pDoc->OnNewDocument())
+	{
+		TRACE(traceAppMsg, 0, "CEMFDocTemplate::OpenFromClipboardData returned FALSE.\n");
+		return false;
+	}
+	pDoc->SetTitle(_T("Clipboard"));
+	auto pMainFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
+	if (!pMainFrame->LoadEMFFromData(data, CEMFExplorerDoc::EMFType::FromClipboard))
+		return false;
+	InitialUpdateFrame(pMainFrame, pDoc);
+	return true;
+}
+
+CDocument* CEMFDocTemplate::OpenDocumentFile(LPCTSTR lpszPathName, BOOL bAddToMRU, BOOL bMakeVisible)
+{
+	auto pMainFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
+	if (pMainFrame)
+		pMainFrame->LoadEMFDataEvent(true);
+	auto pDoc = CSingleDocTemplate::OpenDocumentFile(lpszPathName, bAddToMRU, bMakeVisible);
+	if (pMainFrame)
+		pMainFrame->LoadEMFDataEvent(false);
+	return pDoc;
+}
+
+class CSubEMFDocTemplate : public CMultiDocTemplate
+{
+public:
+	using CMultiDocTemplate::CMultiDocTemplate;
+public:
+	void SetDefaultTitle(CDocument* pDocument) override
+	{
+		CEMFExplorerDoc* pDoc = DYNAMIC_DOWNCAST(CEMFExplorerDoc, pDocument);
+		if (pDoc)
+		{
+			ASSERT(pDoc->GetEMFType() == CEMFExplorerDoc::EMFType::FromEMFRecord);
+			// TODO
+			pDocument->SetTitle(_T("Sub EMF"));
+			return;
+		}
+		CMultiDocTemplate::SetDefaultTitle(pDocument);
+	}
+private:
+};
 
 // CEMFExplorerApp
 
@@ -55,44 +112,6 @@ CEMFExplorerApp theApp;
 
 
 // CEMFExplorerApp initialization
-
-class CEMFDocTemplate : public CSingleDocTemplate
-{
-public:
-	using CSingleDocTemplate::CSingleDocTemplate;
-public:
-	bool OpenFromClipboardData(const std::vector<emfplus::u8t>& data);
-public:
-	CDocument* OpenDocumentFile(LPCTSTR lpszPathName, BOOL bAddToMRU, BOOL bMakeVisible) override;
-};
-
-bool CEMFDocTemplate::OpenFromClipboardData(const std::vector<emfplus::u8t>& data)
-{
-	ASSERT(m_pOnlyDoc);
-	CEMFExplorerDoc* pDoc = DYNAMIC_DOWNCAST(CEMFExplorerDoc, m_pOnlyDoc);
-	if (!pDoc->OnNewDocument())
-	{
-		TRACE(traceAppMsg, 0, "CEMFDocTemplate::OpenFromClipboardData returned FALSE.\n");
-		return false;
-	}
-	pDoc->SetTitle(_T("Clipboard"));
-	auto pMainFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
-	if (!pMainFrame->LoadEMFFromData(data, CEMFExplorerDoc::EMFType::FromClipboard))
-		return false;
-	InitialUpdateFrame(pMainFrame, pDoc);
-	return true;
-}
-
-CDocument* CEMFDocTemplate::OpenDocumentFile(LPCTSTR lpszPathName, BOOL bAddToMRU, BOOL bMakeVisible)
-{
-	auto pMainFrame = DYNAMIC_DOWNCAST(CMainFrame, AfxGetMainWnd());
-	if (pMainFrame)
-		pMainFrame->LoadEMFDataEvent(true);
-	auto pDoc = CSingleDocTemplate::OpenDocumentFile(lpszPathName, bAddToMRU, bMakeVisible);
-	if (pMainFrame)
-		pMainFrame->LoadEMFDataEvent(false);
-	return pDoc;
-}
 
 BOOL CEMFExplorerApp::InitInstance()
 {
@@ -322,27 +341,7 @@ CDocument* CEMFExplorerApp::OpenDocumentFile(LPCTSTR lpszFileName)
 
 // CEMFExplorerApp message handlers
 
-class CSubEMFDocTemplate : public CMultiDocTemplate
-{
-public:
-	using CMultiDocTemplate::CMultiDocTemplate;
-public:
-	void SetDefaultTitle(CDocument* pDocument) override
-	{
-		CEMFExplorerDoc* pDoc = DYNAMIC_DOWNCAST(CEMFExplorerDoc, pDocument);
-		if (pDoc)
-		{
-			ASSERT(pDoc->GetEMFType() == CEMFExplorerDoc::EMFType::FromEMFRecord);
-			// TODO
-			pDocument->SetTitle(_T("Sub EMF"));
-			return;
-		}
-		CMultiDocTemplate::SetDefaultTitle(pDocument);
-	}
-private:
-};
-
-CEMFExplorerDoc* CEMFExplorerApp::CreateNewFrameForSubEMF()
+bool CEMFExplorerApp::CreateNewFrameForSubEMF(std::shared_ptr<EMFAccess> emf)
 {
 	if (!m_pSubDocTemplate)
 	{
@@ -356,26 +355,21 @@ CEMFExplorerDoc* CEMFExplorerApp::CreateNewFrameForSubEMF()
 		m_pSubDocTemplate->LoadTemplate();
 	}
 
-	CDocument* pDoc = nullptr;
-	CFrameWnd* pFrame = nullptr;
+	CEMFExplorerDoc* pDoc = nullptr;
+	CSubEMFFrame* pFrame = nullptr;
 
 	// Create a new instance of the document referenced
-	// by the m_pDocTemplate member.
+	// by the m_pSubDocTemplate member.
 	if (m_pSubDocTemplate != nullptr)
-		pDoc = m_pSubDocTemplate->CreateNewDocument();
+		pDoc = DYNAMIC_DOWNCAST(CEMFExplorerDoc, m_pSubDocTemplate->CreateNewDocument());
 
 	if (pDoc != nullptr)
 	{
 		// If creation worked, use create a new frame for
 		// that document.
-		pFrame = m_pSubDocTemplate->CreateNewFrame(pDoc, nullptr);
+		pFrame = DYNAMIC_DOWNCAST(CSubEMFFrame, m_pSubDocTemplate->CreateNewFrame(pDoc, nullptr));
 		if (pFrame != nullptr)
 		{
-			// Set the title, and initialize the document.
-			// If document initialization fails, clean-up
-			// the frame window and document.
-
-			m_pSubDocTemplate->SetDefaultTitle(pDoc);
 			if (!pDoc->OnNewDocument())
 			{
 				pFrame->DestroyWindow();
@@ -383,7 +377,15 @@ CEMFExplorerDoc* CEMFExplorerApp::CreateNewFrameForSubEMF()
 			}
 			else
 			{
-				// Otherwise, update the frame
+				pFrame->ModifyStyle(0, FWS_ADDTOTITLE);
+				pDoc->SetTitle(_T("Sub EMF"));
+				
+				pFrame->LoadEMFDataEvent(true);
+
+				pDoc->SetEMFAccess(emf, CEMFExplorerDoc::EMFType::FromEMFRecord);
+
+				pFrame->LoadEMFDataEvent(false);
+
 				m_pSubDocTemplate->InitialUpdateFrame(pFrame, pDoc, TRUE);
 			}
 		}
@@ -398,5 +400,5 @@ CEMFExplorerDoc* CEMFExplorerApp::CreateNewFrameForSubEMF()
 		pDoc = nullptr;
 		AfxMessageBox(AFX_IDP_FAILED_TO_CREATE_DOC);
 	}
-	return DYNAMIC_DOWNCAST(CEMFExplorerDoc, pDoc);
+	return pDoc != nullptr;
 }

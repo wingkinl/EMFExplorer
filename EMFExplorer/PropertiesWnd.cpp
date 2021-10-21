@@ -48,7 +48,9 @@ END_MESSAGE_MAP()
 
 void CPropertiesWnd::AdjustLayout()
 {
-	if (GetSafeHwnd () == nullptr || (AfxGetMainWnd() != nullptr && AfxGetMainWnd()->IsIconic()))
+	CWnd* pWndFrame = nullptr;
+	if (GetSafeHwnd () == nullptr 
+		|| ((pWndFrame = GetTopLevelFrame()) && pWndFrame->IsIconic()))
 	{
 		return;
 	}

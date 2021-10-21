@@ -87,6 +87,12 @@ void CEMFExplorerDoc::UpdateEMFData(const std::vector<emfplus::u8t>& data, EMFTy
 	m_type = type;
 }
 
+void CEMFExplorerDoc::SetEMFAccess(std::shared_ptr<EMFAccess> emf, EMFType type)
+{
+	m_emf = emf;
+	m_type = type;
+}
+
 
 // CEMFExplorerDoc serialization
 

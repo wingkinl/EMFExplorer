@@ -8,8 +8,11 @@
 #endif
 
 #include "resource.h"       // main symbols
+#include <memory>
 
 class CEMFExplorerDoc;
+class EMFAccess;
+class CSubEMFDocTemplate;
 
 // CEMFExplorerApp:
 // See EMFExplorer.cpp for the implementation of this class
@@ -22,9 +25,9 @@ public:
 	~CEMFExplorerApp();
 
 protected:
-	CMultiDocTemplate* m_pSubDocTemplate = nullptr;
+	CSubEMFDocTemplate* m_pSubDocTemplate = nullptr;
 public:
-	CEMFExplorerDoc* CreateNewFrameForSubEMF();
+	bool CreateNewFrameForSubEMF(std::shared_ptr<EMFAccess> emf);
 // Overrides
 public:
 	virtual BOOL InitInstance();

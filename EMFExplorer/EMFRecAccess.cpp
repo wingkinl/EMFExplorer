@@ -259,6 +259,14 @@ static inline LPCWSTR EMFPlusBitmapTypeText(OBitmapDataType type)
 	return aText[(int)type];
 }
 
+static inline LPCWSTR EMFPlusMetafileTypeText(OMetafileDataType type)
+{
+	static const LPCWSTR aText[] = {
+		L"Invalid", L"Wmf", L"WmfPlaceable", L"Emf", L"EmfPlusOnly", L"EmfPlusDual",
+	};
+	return aText[(int)type];
+}
+
 class EMFRecAccessGDIPlusImageWrapper : public EMFRecAccessGDIPlusObjWrapper
 {
 public:
@@ -281,10 +289,35 @@ protected:
 			pNode->AddText(L"BitmapType", EMFPlusBitmapTypeText(pImg->ImageDataBmp.Type));
 			break;
 		case OImageDataType::Metafile:
-			// TODO
+			pNode->AddText(L"MetafileType", EMFPlusMetafileTypeText(pImg->ImageDataMetafile.Type));
+			pNode->AddValue(L"MetafileDataSize", pImg->ImageDataMetafile.MetafileDataSize);
 			break;
 		}
 	}
+
+	bool CacheGDIPlusObject() override
+	{
+		if (m_emf)
+			return true;
+		auto pImg = (OEmfPlusImage*)m_obj.get();
+		switch (pImg->Type)
+		{
+		case OImageDataType::Bitmap:
+			// TODO
+			break;
+		case OImageDataType::Metafile:
+			m_emf = std::make_shared<EMFAccess>(pImg->ImageDataMetafile.MetafileData);
+			break;
+		}
+		return true;
+	}
+
+	std::shared_ptr<EMFAccess> GetEMFAccess() const override
+	{
+		return m_emf;
+	}
+private:
+	std::shared_ptr<EMFAccess>	m_emf;
 };
 
 class EMFRecAccessGDIPlusFontWrapper : public EMFRecAccessGDIPlusObjWrapper
@@ -395,13 +428,15 @@ EMFRecAccessGDIPlusObjWrapper* EMFRecAccessGDIPlusRecObject::GetObjectWrapper()
 	if (!m_recDataCached)
 	{
 		auto nObjType = OEmfPlusRecObjectReader::GetObjectType(m_recInfo);
-		auto pObj = CreatePlusObjectAccessWrapper(nObjType);
-		if (!pObj)
+		auto pObjWrapper = CreatePlusObjectAccessWrapper(nObjType);
+		if (!pObjWrapper)
 		{
 			ASSERT(0);
 			return nullptr;
 		}
-		m_recDataCached.reset(pObj);
+		m_recDataCached.reset(pObjWrapper);
+		DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
+		VERIFY(pObjWrapper->GetObject()->Read(reader, m_recInfo.DataSize));
 	}
 	return m_recDataCached.get();
 }
@@ -416,9 +451,6 @@ void EMFRecAccessGDIPlusRecObject::CacheProperties(EMFAccess* pEMF)
 	auto pObjWrapper = GetObjectWrapper();
 	if (pObjWrapper)
 	{
-		DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
-		VERIFY(pObjWrapper->GetObject()->Read(reader, m_recInfo.DataSize));
-
 		pObjWrapper->CacheProperties(pEMF, m_propsCached.get());
 	}
 }
@@ -709,6 +741,8 @@ BOOL EnumMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT data
 
 bool EMFAccess::GetRecords()
 {
+	if (!m_EMFRecords.empty())
+		return true;
 	CDC dcMem;
 	dcMem.CreateCompatibleDC(nullptr);
 	Gdiplus::Graphics gg(dcMem.GetSafeHdc());
