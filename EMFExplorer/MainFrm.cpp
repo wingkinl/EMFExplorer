@@ -362,7 +362,7 @@ public:
 	EMFRecordVisualizer() = default;
 	virtual ~EMFRecordVisualizer() = default;
 public:
-	virtual void OpenVisualizer(CMainFrame* pFrame) {}
+	virtual void OpenVisualizer(CMainFrame* pFrame, EMFAccess* pEMF) {}
 };
 
 class EMFRecordMetafileVisualizer : public EMFRecordVisualizer
@@ -373,15 +373,15 @@ public:
 		m_pRecObj = pRec;
 	}
 public:
-	void OpenVisualizer(CMainFrame* pFrame) override;
+	void OpenVisualizer(CMainFrame* pFrame, EMFAccess* pEMF) override;
 protected:
 	EMFRecAccessGDIPlusRecObject* m_pRecObj;
 };
 
-void EMFRecordMetafileVisualizer::OpenVisualizer(CMainFrame* pFrame)
+void EMFRecordMetafileVisualizer::OpenVisualizer(CMainFrame* pFrame, EMFAccess* pEMF)
 {
 	auto pWrapper = m_pRecObj->GetObjectWrapper();
-	if (!pWrapper->CacheGDIPlusObject())
+	if (!pWrapper->CacheGDIPlusObject(pEMF))
 	{
 		ASSERT(0);
 		return;
@@ -451,7 +451,7 @@ LRESULT CMainFrame::OnOpenRecordItem(WPARAM wp, LPARAM /*lp*/)
 	auto vis = AccessEMRRecordVisualizer(pRec, false);
 	if (!vis.second)
 		return 0;
-	vis.second->OpenVisualizer(this);
+	vis.second->OpenVisualizer(this, pEMF.get());
 	return 1;
 }
 
@@ -561,6 +561,19 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 		auto emf = pDoc->GetEMFAccess();
 		emf->GetRecords();
 		m_wndFileView.SetEMFAccess(emf);
+		if (emf->GetNestedPath().empty())
+		{
+			switch (pDoc->GetEMFType())
+			{
+			case CEMFExplorerDoc::EMFType::FromFile:
+			case CEMFExplorerDoc::EMFType::FromClipboard:
+				emf->AddNestedPath(pDoc->GetTitle());
+				break;
+			case CEMFExplorerDoc::EMFType::FromEMFRecord:
+				// Nothing is needed since it's already taken care of
+				break;
+			}
+		}
 	}
 	m_wndFileView.LoadEMFDataEvent(bBefore);
 	if (!bBefore)

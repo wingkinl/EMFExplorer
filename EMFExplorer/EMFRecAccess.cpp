@@ -295,7 +295,7 @@ protected:
 		}
 	}
 
-	bool CacheGDIPlusObject() override
+	bool CacheGDIPlusObject(EMFAccess* pEMF) override
 	{
 		if (m_emf)
 			return true;
@@ -307,6 +307,8 @@ protected:
 			break;
 		case OImageDataType::Metafile:
 			m_emf = std::make_shared<EMFAccess>(pImg->ImageDataMetafile.MetafileData);
+			m_emf->AddNestedPath(pEMF->GetNestedPath().c_str());
+			m_emf->AddNestedPath(std::to_wstring(m_pObjRec->GetIndex()+1).c_str());
 			break;
 		}
 		return true;
@@ -434,6 +436,7 @@ EMFRecAccessGDIPlusObjWrapper* EMFRecAccessGDIPlusRecObject::GetObjectWrapper()
 			ASSERT(0);
 			return nullptr;
 		}
+		pObjWrapper->m_pObjRec = this;
 		m_recDataCached.reset(pObjWrapper);
 		DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 		VERIFY(pObjWrapper->GetObject()->Read(reader, m_recInfo.DataSize));

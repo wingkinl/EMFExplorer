@@ -1272,6 +1272,8 @@ public:
 	RecCategory GetRecordCategory() const override { return RecCategoryReserved; }
 };
 
+class EMFRecAccessGDIPlusRecObject;
+
 class EMFRecAccessGDIPlusObjWrapper
 {
 public:
@@ -1280,7 +1282,7 @@ public:
 
 	emfplus::OEmfPlusGraphObject* GetObject() const { return m_obj.get(); }
 
-	virtual bool CacheGDIPlusObject() { return false; }
+	virtual bool CacheGDIPlusObject(EMFAccess* pEMF) { return false; }
 
 	virtual std::shared_ptr<EMFAccess> GetEMFAccess() const { return nullptr; }
 protected:
@@ -1288,6 +1290,7 @@ protected:
 
 	virtual void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const {}
 protected:
+	EMFRecAccessGDIPlusRecObject*					m_pObjRec = nullptr;
 	std::unique_ptr<emfplus::OEmfPlusGraphObject>	m_obj;
 };
 
@@ -1854,6 +1857,17 @@ public:
 	bool SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus);
 
 	bool SaveToFile(LPCWSTR szPath) const;
+
+	const std::wstring GetNestedPath() const
+	{
+		return m_strNestedPath;
+	}
+	inline void AddNestedPath(LPCWSTR szPath)
+	{
+		if (!m_strNestedPath.empty())
+			m_strNestedPath += L"/";
+		m_strNestedPath += szPath;
+	}
 protected:
 	using EmfRecArray	= std::vector<EMFRecAccess*>;
 	using EMFPtr		= std::unique_ptr<Gdiplus::Metafile>;
@@ -1868,6 +1882,8 @@ protected:
 	};
 	std::vector<EMFPlusObjInfo>			m_vPlusObjTable;
 	emfplus::OEmfPlusRecObjectReader	m_PlusRecObjReader;
+
+	std::wstring		m_strNestedPath;
 };
 
 #endif // EMF_REC_ACCESS_H

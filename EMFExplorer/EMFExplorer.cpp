@@ -374,7 +374,7 @@ bool CEMFExplorerApp::CreateNewFrameForSubEMF(std::shared_ptr<EMFAccess> emf)
 			else
 			{
 				pFrame->ModifyStyle(0, FWS_ADDTOTITLE);
-				pDoc->SetTitle(_T("Sub EMF"));
+				pDoc->SetTitle(emf->GetNestedPath().c_str());
 				
 				pFrame->LoadEMFDataEvent(true);
 
