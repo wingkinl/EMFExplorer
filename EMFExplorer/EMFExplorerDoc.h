@@ -41,7 +41,12 @@ public:
 
 #ifdef SHARED_HANDLERS
 	virtual void InitializeSearchContent();
-	virtual void OnDrawThumbnail(CDC& dc, LPRECT lprcBounds);
+	
+#if 0	// not needed for now
+	void OnDrawThumbnail(CDC& dc, LPRECT lprcBounds) override;
+#endif
+	
+	BOOL GetThumbnail(UINT cx, HBITMAP* phbmp, WTS_ALPHATYPE* pdwAlpha) override;	
 #endif // SHARED_HANDLERS
 
 // Implementation

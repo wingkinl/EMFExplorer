@@ -122,6 +122,7 @@ void CEMFExplorerDoc::DeleteContents()
 
 #ifdef SHARED_HANDLERS
 
+#if 0
 // Support for thumbnails
 void CEMFExplorerDoc::OnDrawThumbnail(CDC& dc, LPRECT lprcBounds)
 {
@@ -160,6 +161,44 @@ void CEMFExplorerDoc::OnDrawThumbnail(CDC& dc, LPRECT lprcBounds)
 		dc.SetTextColor(oldTxtColor);
 		dc.SelectObject(pOldFont);
 	}
+}
+#endif
+
+BOOL CEMFExplorerDoc::GetThumbnail(UINT cx, HBITMAP* phbmp, WTS_ALPHATYPE* pdwAlpha)
+{
+	ASSERT(phbmp != NULL);
+	if (pdwAlpha != NULL)
+	{
+		*pdwAlpha = WTSAT_ARGB;
+	}
+	CRect rectDocBounds = CRect(0, 0, cx, cx);
+	Gdiplus::Bitmap bmp(cx, cx, PixelFormat32bppARGB);
+	Gdiplus::Graphics gg(&bmp);
+	gg.SetCompositingQuality(Gdiplus::CompositingQualityHighQuality);
+	gg.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+	gg.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias8x8);
+	gg.SetTextRenderingHint(Gdiplus::TextRenderingHintClearTypeGridFit);
+
+	if (m_emf)
+	{
+		auto hdr = m_emf->GetMetafileHeader();
+		CSize szImg(hdr.Width, hdr.Height);
+		CRect rcDraw = GetFitRect(rectDocBounds, szImg, true);
+		m_emf->DrawMetafile(gg, rcDraw);
+	}
+	else
+	{
+		HDC hdc = GetDC(nullptr);
+		Gdiplus::Font font(hdc, (HFONT)GetStockObject(DEFAULT_GUI_FONT));
+		Gdiplus::PointF pt(0, 0);
+		Gdiplus::SolidBrush brush(Gdiplus::Color::Black);
+		gg.DrawString(L"EMFExplorer: failed to read EMF", -1, &font, pt, &brush);
+		ReleaseDC(nullptr, hdc);
+	}
+	HBITMAP hBmp = nullptr;
+	bmp.GetHBITMAP(Gdiplus::Color(0, 0, 0, 0), &hBmp);
+	*phbmp = hBmp;
+	return TRUE;
 }
 
 // Support for Search Handlers

@@ -247,6 +247,7 @@ void CEMFExplorerView::OnPaint()
 	gg.SetCompositingQuality(Gdiplus::CompositingQualityHighQuality);
 	gg.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
 	gg.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias8x8);
+	gg.SetTextRenderingHint(Gdiplus::TextRenderingHintClearTypeGridFit);
 	pEMF->DrawMetafile(gg, rcImg);
 }
 
