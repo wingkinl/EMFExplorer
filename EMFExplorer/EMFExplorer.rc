@@ -222,7 +222,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Center",                      ID_ZOOM_CENTER
         MENUITEM SEPARATOR
-        MENUITEM "Fit to Window\tCtrl+Shift+0", ID_ZOOM_FITTOWINDOW
+        MENUITEM "Fit to Window",               ID_ZOOM_FITTOWINDOW
         MENUITEM "Fit Width",                   ID_ZOOM_FITWIDTH
         MENUITEM "Fit Height",                  ID_ZOOM_FITHEIGHT
         MENUITEM SEPARATOR
@@ -297,7 +297,6 @@ BEGIN
     "0",            ID_ZOOM_ACTUALSIZE,     VIRTKEY, CONTROL, NOINVERT
     VK_OEM_PLUS,    ID_ZOOM_IN,             VIRTKEY, CONTROL, NOINVERT
     VK_OEM_MINUS,   ID_ZOOM_OUT,            VIRTKEY, CONTROL, NOINVERT
-    "0",            ID_ZOOM_FITTOWINDOW,    VIRTKEY, SHIFT, CONTROL, NOINVERT
 END
 
 

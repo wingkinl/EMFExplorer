@@ -140,7 +140,7 @@ BOOL CEMFExplorerApp::InitInstance()
 	// Change the registry key under which our settings are stored
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization
-	SetRegistryKey(_T("EMFExplorer"));
+	SetRegistryKey(_T("wingkinl"));
 	LoadStdProfileSettings(4);  // Load standard INI file options (including MRU)
 
 	LoadCustomSettings();
@@ -313,14 +313,12 @@ void CEMFExplorerApp::SaveCustomState()
 const TCHAR cszThemeStyle[] = _T("ThemeStyle");
 const TCHAR cszImgBackgroundType[] = _T("BackgroundType");
 const TCHAR cszViewCenter[] = _T("ViewCenter");
-const TCHAR cszFitWinType[] = _T("FitWinType");
 
 void CEMFExplorerApp::LoadCustomSettings()
 {
 	m_nStyle = GetInt(cszThemeStyle, CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
 	m_nImgBackgroundType = GetInt(cszImgBackgroundType, CEMFExplorerView::ImgBackgroundTypeTransparentGrid);
 	m_bViewCenter = GetInt(cszViewCenter, TRUE);
-	m_nFitWinType = GetInt(cszFitWinType, CScrollZoomView::FitToBoth);
 }
 
 void CEMFExplorerApp::SaveCustomSettings()
@@ -328,7 +326,6 @@ void CEMFExplorerApp::SaveCustomSettings()
 	WriteInt(cszThemeStyle, m_nStyle);
 	WriteInt(cszImgBackgroundType, m_nImgBackgroundType);
 	WriteInt(cszViewCenter, m_bViewCenter);
-	WriteInt(cszFitWinType, m_nFitWinType);
 }
 
 CDocument* CEMFExplorerApp::OpenDocumentFile(LPCTSTR lpszFileName)

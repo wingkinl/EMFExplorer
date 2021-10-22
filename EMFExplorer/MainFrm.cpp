@@ -30,8 +30,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_COMMAND(ID_VIEW_THEME_LIGHT, &CMainFrame::OnViewThemeLight)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_THEME_DARK, &CMainFrame::OnUpdateViewThemeDark)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_THEME_LIGHT, &CMainFrame::OnUpdateViewThemeLight)
-	ON_COMMAND_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CMainFrame::OnViewImgBk)
-	ON_UPDATE_COMMAND_UI_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CMainFrame::OnUpdateViewImgBk)
 	ON_MESSAGE(MainFrameMsgOnSelectRecordItem, &CMainFrame::OnSelectRecordItem)
 	ON_MESSAGE(MainFrameMsgCanOpenRecordItem, &CMainFrame::OnCanOpenRecordItem)
 	ON_MESSAGE(MainFrameMsgOpenRecordItem, &CMainFrame::OnOpenRecordItem)
@@ -293,21 +291,6 @@ void CMainFrame::OnUpdateViewThemeDark(CCmdUI* pCmdUI)
 void CMainFrame::OnUpdateViewThemeLight(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetRadio(!theApp.IsDarkTheme());
-}
-
-void CMainFrame::OnViewImgBk(UINT nID)
-{
-	auto nType = nID - ID_BACKGROUND_NONE;
-	if (!IsSubEMFFrame())
-		theApp.m_nImgBackgroundType = nType;
-	CEMFExplorerView* pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
-	pView->SetImgBackgroundType((CEMFExplorerView::ImgBackgroundType)nType);
-}
-
-void CMainFrame::OnUpdateViewImgBk(CCmdUI* pCmdUI)
-{
-	CEMFExplorerView* pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
-	pCmdUI->SetRadio(pView->GetImgBackgroundType() == pCmdUI->m_nID - ID_BACKGROUND_NONE);
 }
 
 LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)

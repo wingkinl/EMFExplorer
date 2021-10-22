@@ -40,6 +40,7 @@ public:
 
 	virtual void LoadEMFDataEvent(bool bBefore);
 
+	virtual bool IsSubEMFFrame() const { return false; }
 // Implementation
 public:
 	virtual ~CMainFrame();
@@ -51,8 +52,6 @@ public:
 	void OnChangeTheme();
 private:
 	bool UpdateRecordProperty(int index);
-
-	virtual bool IsSubEMFFrame() const { return false; }
 
 	CEMFExplorerView* CheckGetActiveView() const;
 protected:  // control bar embedded members
@@ -72,8 +71,6 @@ protected:
 	afx_msg void OnViewThemeLight();
 	afx_msg void OnUpdateViewThemeDark(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateViewThemeLight(CCmdUI* pCmdUI);
-	afx_msg void OnViewImgBk(UINT nID);
-	afx_msg void OnUpdateViewImgBk(CCmdUI* pCmdUI);
 
 	afx_msg LRESULT OnToolbarCreateNew(WPARAM wp, LPARAM lp);
 	afx_msg LRESULT OnSelectRecordItem(WPARAM wp, LPARAM lp);

@@ -12,6 +12,7 @@
 
 #include "EMFExplorerDoc.h"
 #include "EMFExplorerView.h"
+#include "MainFrm.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -29,11 +30,16 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_WM_PAINT()
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
+#ifdef SHARED_HANDLERS
+	ON_WM_INITMENUPOPUP()
+#endif // SHARED_HANDLERS
 	ON_UPDATE_COMMAND_UI(ID_FILE_NEW, &CEMFExplorerView::OnUpdateFileNew)
 	ON_UPDATE_COMMAND_UI(ID_FILE_SAVE, &CEMFExplorerView::OnUpdateNeedDoc)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_COPY, &CEMFExplorerView::OnUpdateNeedDoc)
 	ON_COMMAND(ID_EDIT_COPY, &CEMFExplorerView::OnEditCopy)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CEMFExplorerView::OnUpdateNeedClip)
+	ON_COMMAND_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CEMFExplorerView::OnViewImgBk)
+	ON_UPDATE_COMMAND_UI_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CEMFExplorerView::OnUpdateViewImgBk)
 #ifndef SHARED_HANDLERS
 	ON_COMMAND(ID_ZOOM_ACTUALSIZE, &CEMFExplorerView::OnZoomActualSize)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_ACTUALSIZE, &CEMFExplorerView::OnUpdateZoomActualSize)
@@ -41,6 +47,9 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_IN, &CEMFExplorerView::OnUpdateZoomIn)
 	ON_COMMAND(ID_ZOOM_OUT, &CEMFExplorerView::OnZoomOut)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_OUT, &CEMFExplorerView::OnUpdateZoomOut)
+	ON_COMMAND_RANGE(ID_ZOOM_1, ID_ZOOM_3200, &CEMFExplorerView::OnZoomPresetFactor)
+	ON_UPDATE_COMMAND_UI_RANGE(ID_ZOOM_1, ID_ZOOM_3200, &CEMFExplorerView::OnUpdateZoomPresetFactor)
+#endif // SHARED_HANDLERS
 	ON_COMMAND(ID_ZOOM_CENTER, &CEMFExplorerView::OnZoomCenter)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_CENTER, &CEMFExplorerView::OnUpdateZoomCenter)
 	ON_COMMAND(ID_ZOOM_FITTOWINDOW, &CEMFExplorerView::OnZoomFitToWindow)
@@ -49,18 +58,20 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_FITWIDTH, &CEMFExplorerView::OnUpdateZoomFitWidth)
 	ON_COMMAND(ID_ZOOM_FITHEIGHT, &CEMFExplorerView::OnZoomFitHeight)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_FITHEIGHT, &CEMFExplorerView::OnUpdateZoomFitHeight)
-	ON_COMMAND_RANGE(ID_ZOOM_1, ID_ZOOM_3200, &CEMFExplorerView::OnZoomPresetFactor)
-	ON_UPDATE_COMMAND_UI_RANGE(ID_ZOOM_1, ID_ZOOM_3200, &CEMFExplorerView::OnUpdateZoomPresetFactor)
-#endif // SHARED_HANDLERS
 END_MESSAGE_MAP()
 
 // CEMFExplorerView construction/destruction
 
 CEMFExplorerView::CEMFExplorerView() noexcept
 {
-#ifndef SHARED_HANDLERS
+	BOOL bCenter = TRUE;
+#ifdef SHARED_HANDLERS
+	
+#else
 	m_nImgBackgroundType = (ImgBackgroundType)theApp.m_nImgBackgroundType;
+	bCenter = theApp.m_bViewCenter;
 #endif // SHARED_HANDLERS
+	SetCenter(bCenter);
 }
 
 CEMFExplorerView::~CEMFExplorerView()
@@ -245,9 +256,29 @@ void CEMFExplorerView::OnRButtonUp(UINT /* nFlags */, CPoint point)
 	OnContextMenu(this, point);
 }
 
+void CEMFExplorerView::OnViewImgBk(UINT nID)
+{
+	auto nType = nID - ID_BACKGROUND_NONE;
+#ifndef SHARED_HANDLERS
+	if (!IsSubEMFView())
+		theApp.m_nImgBackgroundType = nType;
+#endif // SHARED_HANDLERS
+	SetImgBackgroundType((CEMFExplorerView::ImgBackgroundType)nType);
+}
+
+void CEMFExplorerView::OnUpdateViewImgBk(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetRadio(GetImgBackgroundType() == pCmdUI->m_nID - ID_BACKGROUND_NONE);
+}
+
 void CEMFExplorerView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
 {
-#ifndef SHARED_HANDLERS
+#ifdef SHARED_HANDLERS
+	CMenu menu;
+	menu.LoadMenu(IDR_POPUP_CTXT);
+	CMenu* pCtxtMenu = menu.GetSubMenu(0);
+	pCtxtMenu->TrackPopupMenu(0, point.x, point.y, this);
+#else
 	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EDIT, point.x, point.y, this, TRUE);
 #endif
 }
@@ -334,6 +365,16 @@ void CEMFExplorerView::OnEditCopy()
 	CloseClipboard();
 }
 
+bool CEMFExplorerView::IsSubEMFView() const
+{
+#ifdef SHARED_HANDLERS
+	return false;
+#else
+	auto pFrameWnd = DYNAMIC_DOWNCAST(CMainFrame, GetParent());
+	return pFrameWnd && pFrameWnd->IsSubEMFFrame();
+#endif // SHARED_HANDLERS
+}
+
 #ifndef SHARED_HANDLERS
 void CEMFExplorerView::OnZoomIn()
 {
@@ -367,14 +408,49 @@ void CEMFExplorerView::OnUpdateZoomActualSize(CCmdUI* pCmdUI)
 	pCmdUI->Enable(IsZoomAllowed());
 }
 
+const float zoomFactors[]{
+	0.01f, 0.05f, 0.10f, 0.20f, 0.25f, 1.0f/3, 0.5f, 2.0f/3, 3.0f/4, 
+	1.0f, 1.5f, 2.0f, 4.0f, 8.0f, 16.0f, 32.0f
+};
+
+void CEMFExplorerView::OnZoomPresetFactor(UINT nID)
+{
+	auto nIdx = nID - ID_ZOOM_1;
+	SetZoomFactor(zoomFactors[nIdx]);
+}
+
+void CEMFExplorerView::OnUpdateZoomPresetFactor(CCmdUI* pCmdUI)
+{
+	BOOL bCheck = FALSE;
+	if (GetFitToWindow() == FitToNone)
+	{
+		auto factor = GetZoomFactor();
+		auto nIdx = pCmdUI->m_nID - ID_ZOOM_1;
+		bCheck = zoomFactors[nIdx] == factor;
+	}
+	pCmdUI->SetRadio(bCheck);
+	pCmdUI->Enable(IsZoomAllowed());
+}
+#endif // SHARED_HANDLERS
+
 void CEMFExplorerView::OnZoomCenter()
 {
-	SetCenter(!GetCenter());
+	BOOL bCenter = !GetCenter();
+	SetCenter(bCenter);
+#ifndef SHARED_HANDLERS
+	if (!IsSubEMFView())
+		theApp.m_bViewCenter = bCenter;
+#endif // SHARED_HANDLERS
 }
 
 void CEMFExplorerView::OnUpdateZoomCenter(CCmdUI* pCmdUI)
 {
-	pCmdUI->SetCheck(GetCenter());
+	BOOL bCenter = GetCenter();
+#ifndef SHARED_HANDLERS
+	if (!IsSubEMFView())
+		bCenter = theApp.m_bViewCenter;
+#endif // SHARED_HANDLERS
+	pCmdUI->SetCheck(bCenter);
 }
 
 void CEMFExplorerView::OnZoomFitToWindow()
@@ -407,28 +483,21 @@ void CEMFExplorerView::OnUpdateZoomFitHeight(CCmdUI* pCmdUI)
 	pCmdUI->SetRadio(GetFitToWindow() == FitToHeight);
 }
 
-const float zoomFactors[]{
-	0.01f, 0.05f, 0.10f, 0.20f, 0.25f, 1.0f/3, 0.5f, 2.0f/3, 3.0f/4, 
-	1.0f, 1.5f, 2.0f, 4.0f, 8.0f, 16.0f, 32.0f
-};
-
-void CEMFExplorerView::OnZoomPresetFactor(UINT nID)
+#ifdef SHARED_HANDLERS
+void CEMFExplorerView::OnInitMenuPopup(CMenu* popup, UINT nIndex, BOOL bSysMenu)
 {
-	auto nIdx = nID - ID_ZOOM_1;
-	SetZoomFactor(zoomFactors[nIdx]);
-}
-
-void CEMFExplorerView::OnUpdateZoomPresetFactor(CCmdUI* pCmdUI)
-{
-	BOOL bCheck = FALSE;
-	if (GetFitToWindow() == FitToNone)
+	if(popup && !bSysMenu)
 	{
-		auto factor = GetZoomFactor();
-		auto nIdx = pCmdUI->m_nID - ID_ZOOM_1;
-		bCheck = zoomFactors[nIdx] == factor;
+		CCmdUI state;
+		state.m_pMenu = popup;
+		state.m_nIndexMax = popup->GetMenuItemCount();
+		for(UINT i = 0; i < state.m_nIndexMax; i++)
+		{
+			state.m_nIndex = i;
+			state.m_nID = popup->GetMenuItemID(i);
+			state.DoUpdate(this, FALSE);
+		}
 	}
-	pCmdUI->SetRadio(bCheck);
-	pCmdUI->Enable(IsZoomAllowed());
 }
 #endif // SHARED_HANDLERS
 

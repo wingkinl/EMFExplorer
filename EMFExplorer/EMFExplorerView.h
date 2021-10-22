@@ -39,6 +39,8 @@ public:
 
 	ImgBackgroundType GetImgBackgroundType() const { return m_nImgBackgroundType; }
 	void SetImgBackgroundType(ImgBackgroundType val);
+
+	bool IsSubEMFView() const;
 protected:
 	BOOL CheckClipboardForEMF() const;
 
@@ -73,6 +75,8 @@ protected:
 	afx_msg void OnUpdateNeedClip(CCmdUI* pCmdUI);
 	afx_msg void OnEditCopy();
 
+	afx_msg void OnViewImgBk(UINT nID);
+	afx_msg void OnUpdateViewImgBk(CCmdUI* pCmdUI);
 #ifndef SHARED_HANDLERS
 	afx_msg void OnZoomIn();
 	afx_msg void OnUpdateZoomIn(CCmdUI* pCmdUI);
@@ -80,6 +84,9 @@ protected:
 	afx_msg void OnUpdateZoomOut(CCmdUI* pCmdUI);
 	afx_msg void OnZoomActualSize();
 	afx_msg void OnUpdateZoomActualSize(CCmdUI* pCmdUI);
+	afx_msg void OnZoomPresetFactor(UINT nID);
+	afx_msg void OnUpdateZoomPresetFactor(CCmdUI* pCmdUI);
+#endif
 	afx_msg void OnZoomCenter();
 	afx_msg void OnUpdateZoomCenter(CCmdUI* pCmdUI);
 	afx_msg void OnZoomFitToWindow();
@@ -88,9 +95,11 @@ protected:
 	afx_msg void OnUpdateZoomFitWidth(CCmdUI* pCmdUI);
 	afx_msg void OnZoomFitHeight();
 	afx_msg void OnUpdateZoomFitHeight(CCmdUI* pCmdUI);
-	afx_msg void OnZoomPresetFactor(UINT nID);
-	afx_msg void OnUpdateZoomPresetFactor(CCmdUI* pCmdUI);
-#endif
+
+#ifdef SHARED_HANDLERS
+	// This is needed for handler to update menu because the parent is not a CFrameWnd
+	afx_msg void OnInitMenuPopup(CMenu* popup, UINT nIndex, BOOL bSysMenu);
+#endif // SHARED_HANDLERS
 	DECLARE_MESSAGE_MAP()
 };
 

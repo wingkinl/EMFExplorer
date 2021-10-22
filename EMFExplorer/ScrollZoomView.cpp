@@ -25,7 +25,7 @@ END_MESSAGE_MAP()
 
 void CScrollZoomView::OnInitialUpdate()
 {
-	CScrollView::OnInitialUpdate();
+	CScrollZoomViewBase::OnInitialUpdate();
 
 	UpdateViewSize();
 }
@@ -142,14 +142,16 @@ void CScrollZoomView::SetFitToWindow(FitWinType val)
 	m_fitWndType = val;
 	m_fZoomFactor = 1.0f;
 	UpdateViewSize();
-	Invalidate();
+	if (GetSafeHwnd())
+		Invalidate();
 }
 
 void CScrollZoomView::SetCenter(bool val)
 {
 	m_bCenter = val;
 	UpdateViewSize();
-	Invalidate();
+	if (GetSafeHwnd())
+		Invalidate();
 }
 
 float CScrollZoomView::GetRealZoomFactor() const
@@ -221,6 +223,7 @@ void CScrollZoomView::SetZoomFactor(float factor)
 	m_fZoomFactor = factor;
 	m_fitWndType = FitToNone;
 	UpdateViewSize();
-	Invalidate();
+	if (GetSafeHwnd())
+		Invalidate();
 }
 
