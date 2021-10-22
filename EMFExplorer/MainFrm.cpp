@@ -33,6 +33,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_MESSAGE(MainFrameMsgOnSelectRecordItem, &CMainFrame::OnSelectRecordItem)
 	ON_MESSAGE(MainFrameMsgCanOpenRecordItem, &CMainFrame::OnCanOpenRecordItem)
 	ON_MESSAGE(MainFrameMsgOpenRecordItem, &CMainFrame::OnOpenRecordItem)
+	ON_MESSAGE(MainFrameMsgViewUpdateSizeScroll, &CMainFrame::OnViewUpdateSizeScroll)
 	ON_COMMAND(ID_EDIT_PASTE, &CMainFrame::OnEditPaste)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CMainFrame::OnUpdateEditPaste)
 END_MESSAGE_MAP()
@@ -129,7 +130,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CDockablePane* pTabbedBar = nullptr;
 	m_wndProperties.EnableDocking(CBRS_ALIGN_ANY);
 	DockPane(&m_wndProperties);
-
+	m_wndThumbnail.EnableDocking(CBRS_ALIGN_ANY);
+	//DockPane(&m_wndThumbnail);
+	m_wndThumbnail.DockToWindow(&m_wndProperties, CBRS_ALIGN_BOTTOM);
 
 	// set the visual manager used to draw all user interface elements
 	CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerOffice2007));
@@ -210,12 +213,20 @@ BOOL CMainFrame::CreateDockingWindows()
 	}
 
 	// Create properties window
-	CString strPropertiesWnd;
-	bNameValid = strPropertiesWnd.LoadString(IDS_PROPERTIES_WND);
+	CString str;
+	bNameValid = str.LoadString(IDS_PROPERTIES_WND);
 	ASSERT(bNameValid);
-	if (!m_wndProperties.Create(strPropertiesWnd, this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_PROPERTIESWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
+	if (!m_wndProperties.Create(str, this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_PROPERTIESWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
 	{
 		TRACE0("Failed to create Properties window\n");
+		return FALSE; // failed to create
+	}
+
+	bNameValid = str.LoadString(IDS_THUMBNAIL_WND);
+	ASSERT(bNameValid);
+	if (!m_wndThumbnail.Create(str, this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_THUMBNAIL_WND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
+	{
+		TRACE0("Failed to create Thumbnail window\n");
 		return FALSE; // failed to create
 	}
 
@@ -280,6 +291,7 @@ void CMainFrame::OnChangeTheme()
 {
 	m_wndFileView.OnChangeVisualStyle();
 	m_wndProperties.OnChangeVisualStyle();
+	m_wndThumbnail.OnChangeVisualStyle();
 }
 
 void CMainFrame::SetTheme(BOOL bDark)
@@ -455,6 +467,12 @@ LRESULT CMainFrame::OnOpenRecordItem(WPARAM wp, LPARAM /*lp*/)
 	return 1;
 }
 
+LRESULT CMainFrame::OnViewUpdateSizeScroll(WPARAM /*wp*/, LPARAM /*lp*/)
+{
+	m_wndThumbnail.OnViewUpdateSizeScroll();
+	return 0;
+}
+
 BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParentWnd, CCreateContext* pContext)
 {
 	// base class does the real work
@@ -561,6 +579,7 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 		auto emf = pDoc->GetEMFAccess();
 		emf->GetRecords();
 		m_wndFileView.SetEMFAccess(emf);
+		m_wndThumbnail.SetEMFAccess(emf);
 		if (emf->GetNestedPath().empty())
 		{
 			switch (pDoc->GetEMFType())
@@ -576,6 +595,7 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 		}
 	}
 	m_wndFileView.LoadEMFDataEvent(bBefore);
+	m_wndThumbnail.LoadEMFDataEvent(bBefore);
 	if (!bBefore)
 	{
 		UpdateRecordProperty(0);

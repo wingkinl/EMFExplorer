@@ -24,9 +24,9 @@
 IMPLEMENT_DYNCREATE(CEMFExplorerView, CEMFExplorerViewBase)
 
 BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
-#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#ifdef HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	ON_WM_ERASEBKGND()
-#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	ON_WM_PAINT()
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
@@ -79,12 +79,10 @@ CEMFExplorerView::~CEMFExplorerView()
 
 BOOL CEMFExplorerView::PreCreateWindow(CREATESTRUCT& cs)
 {
-	// TODO: Modify the Window class or styles here by modifying
-	//  the CREATESTRUCT cs
+#ifndef HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	// double buffer
-#ifndef HANDLE_PAINT_WITH_DOUBLE_BUFFER
 	cs.dwExStyle |= WS_EX_COMPOSITED;
-#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 
 	return CEMFExplorerViewBase::PreCreateWindow(cs);
 }
@@ -161,20 +159,20 @@ CSize CEMFExplorerView::GetViewSize() const
 	return CEMFExplorerViewBase::GetViewSize();
 }
 
-#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#ifdef HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 BOOL CEMFExplorerView::OnEraseBkgnd(CDC* /*pDC*/)
 {
 	return TRUE;
 }
-#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 
 void CEMFExplorerView::OnPaint()
 {
 	CPaintDC dc(this);
-#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#ifdef HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	CMemDC dcMem(dc, this);
 	CDC* pDCDraw = &dcMem.GetDC();
-#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	CDC* pDCDraw = &dc;
 
 	CRect rect;
@@ -197,9 +195,7 @@ void CEMFExplorerView::OnPaint()
 	auto pEMF = pDoc->GetEMFAccess();
 	if (!pEMF)
 		return;
-	auto fitToWin = GetFitToWindow();
-	CSize szImg = fitToWin ? GetRealViewSize() : m_totalDev;
-	ASSERT(fitToWin || GetRealViewSize() == m_totalDev);
+	CSize szImg = GetRealViewSize();
 
 	CPoint ptImg = -GetDeviceScrollPosition();
 	if (GetCenter())
@@ -318,6 +314,24 @@ bool CEMFExplorerView::PutBitmapToClipboard(Gdiplus::Image* pImg)
 	SetClipboardData(CF_DIB, hMem);
 	return true;
 }
+
+#ifndef SHARED_HANDLERS
+void CEMFExplorerView::OnAfterUpdateViewSize()
+{
+	if (!GetSafeHwnd())
+		return;
+	auto pFrameWnd = DYNAMIC_DOWNCAST(CMainFrame, GetParent());
+	pFrameWnd->SendMessage(MainFrameMsgViewUpdateSizeScroll, TRUE);
+}
+
+BOOL CEMFExplorerView::OnScrollBy(CSize sizeScroll, BOOL bDoScroll)
+{
+	BOOL bRet = CEMFExplorerViewBase::OnScrollBy(sizeScroll, bDoScroll);
+	auto pFrameWnd = DYNAMIC_DOWNCAST(CMainFrame, GetParent());
+	pFrameWnd->SendMessage(MainFrameMsgViewUpdateSizeScroll, FALSE);
+	return bRet;
+}
+#endif // SHARED_HANDLERS
 
 void CEMFExplorerView::OnEditCopy()
 {

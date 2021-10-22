@@ -6,6 +6,7 @@
 #include "FileView.h"
 #include "PropertiesWnd.h"
 #include "EMFExplorerDoc.h"
+#include "ThumbnailWnd.h"
 
 #define _ENABLE_STATUS_BAR
 
@@ -14,6 +15,7 @@ enum MainFrameMsg
 	MainFrameMsgOnSelectRecordItem = WM_APP + 100,
 	MainFrameMsgCanOpenRecordItem,
 	MainFrameMsgOpenRecordItem,
+	MainFrameMsgViewUpdateSizeScroll,
 };
 
 class CEMFExplorerView;
@@ -63,6 +65,7 @@ protected:  // control bar embedded members
 	CMFCToolBarImages m_UserImages;
 	CFileView         m_wndFileView;
 	CPropertiesWnd    m_wndProperties;
+	CThumbnailWnd     m_wndThumbnail;
 
 // Generated message map functions
 protected:
@@ -80,6 +83,7 @@ protected:
 	afx_msg LRESULT OnSelectRecordItem(WPARAM wp, LPARAM lp);
 	afx_msg LRESULT OnCanOpenRecordItem(WPARAM wp, LPARAM lp);
 	afx_msg LRESULT OnOpenRecordItem(WPARAM wp, LPARAM lp);
+	afx_msg LRESULT OnViewUpdateSizeScroll(WPARAM wp, LPARAM lp);
 	DECLARE_MESSAGE_MAP()
 
 	BOOL CreateDockingWindows();

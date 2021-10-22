@@ -63,6 +63,9 @@
     <ClInclude Include="SubEMFFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ThumbnailWnd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EMFExplorer.cpp">
@@ -99,6 +102,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SubEMFFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThumbnailWnd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

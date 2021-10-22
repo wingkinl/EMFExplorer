@@ -37,6 +37,13 @@ CSize CScrollZoomView::GetViewSize() const
 
 CSize CScrollZoomView::GetRealViewSize() const
 {
+	CSize sz = m_fitWndType ? GetRealViewSizeImp() : m_totalDev;
+	ASSERT(m_fitWndType || GetRealViewSizeImp() == m_totalDev);
+	return sz;
+}
+
+CSize CScrollZoomView::GetRealViewSizeImp() const
+{
 	CSize szImage = GetViewSize();
 	float factor = GetRealZoomFactor();
 	CSize szImageScaled;
@@ -49,8 +56,9 @@ void CScrollZoomView::UpdateViewSize()
 {
 	CSize szScroll(0, 0);
 	if (m_fitWndType == FitToNone)
-		szScroll = GetRealViewSize();
+		szScroll = GetRealViewSizeImp();
 	SetScrollSizes(MM_TEXT, szScroll);
+	OnAfterUpdateViewSize();
 }
 
 void CScrollZoomView::OnDraw(CDC* pDC)
@@ -135,6 +143,8 @@ void CScrollZoomView::SetZoomFactorRange(float fMin, float fMax)
 	else if (m_fZoomFactor > fMax)
 		m_fZoomFactor = fMax;
 	UpdateViewSize();
+	if (GetSafeHwnd())
+		Invalidate();
 }
 
 void CScrollZoomView::SetFitToWindow(FitWinType val)

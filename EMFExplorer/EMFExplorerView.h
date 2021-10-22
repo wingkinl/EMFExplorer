@@ -9,7 +9,7 @@
 using CEMFExplorerViewBase = CScrollZoomView;
 
 // It seems that WS_EX_COMPOSITED is enough
-//#define HANDLE_PAINT_WITH_DOUBLE_BUFFER
+//#define HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 
 class CEMFExplorerView : public CEMFExplorerViewBase
 {
@@ -49,6 +49,12 @@ protected:
 	bool IsZoomAllowed() const override;
 
 	bool PutBitmapToClipboard(Gdiplus::Image* pImg);
+
+#ifndef SHARED_HANDLERS
+	void OnAfterUpdateViewSize() override;
+
+	BOOL OnScrollBy(CSize sizeScroll, BOOL bDoScroll = TRUE) override;
+#endif
 // Implementation
 public:
 	virtual ~CEMFExplorerView();
@@ -61,9 +67,9 @@ protected:
 	ImgBackgroundType	m_nImgBackgroundType = ImgBackgroundTypeTransparentGrid;
 // Generated message map functions
 protected:
-#ifdef HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#ifdef HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-#endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
+#endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	afx_msg void OnPaint();
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);

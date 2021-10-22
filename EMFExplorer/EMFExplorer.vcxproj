@@ -199,6 +199,7 @@
     <ClInclude Include="SubEMFFrame.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="EMFRecListCtrl.h" />
+    <ClInclude Include="ThumbnailWnd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EMFExplorer.cpp" />
@@ -218,6 +219,7 @@
     <ClCompile Include="EMFRecListCtrl.cpp" />
     <ClCompile Include="ScrollZoomView.cpp" />
     <ClCompile Include="SubEMFFrame.cpp" />
+    <ClCompile Include="ThumbnailWnd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EMFExplorer.reg" />

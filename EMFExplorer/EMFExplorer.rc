@@ -523,6 +523,7 @@ BEGIN
     IDS_STATUS_PANE2        "Pane 2"
     IDS_TOOLBAR_STANDARD    "Standard"
     IDS_TOOLBAR_CUSTOMIZE   "Customize..."
+    IDS_THUMBNAIL_WND       "Thumbnail"
 END
 
 STRINGTABLE

@@ -45,7 +45,11 @@ public:
 protected:
 	void UpdateViewSize();
 
+	virtual void OnAfterUpdateViewSize() {}
+
 	void OnDraw(CDC* pDC) override;
+
+	CSize GetRealViewSizeImp() const;
 
 	virtual void OnDrawZoomedView(CDC* pDC, const CRect& rect);
 protected:

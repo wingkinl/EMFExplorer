@@ -11,6 +11,7 @@
 #define IDS_TOOLBAR_STANDARD            124
 #define IDS_TOOLBAR_CUSTOMIZE           125
 #define ID_VIEW_CUSTOMIZE               126
+#define IDS_THUMBNAIL_WND               126
 #define IDR_MAINFRAME                   128
 #define IDR_MAINFRAME_256               129
 #define IDR_EMFExplorerTYPE             130
@@ -46,6 +47,7 @@
 #define ID_TOOLS_MACRO                  181
 #define IDR_PROPERTIES                  183
 #define IDB_PROPERTIES_HC               184
+#define ID_VIEW_THUMBNAIL_WND           200
 #define IDS_EXPLORER                    305
 #define IDS_EDIT_MENU                   306
 #define IDC_GITHUB_LINK                 1000
