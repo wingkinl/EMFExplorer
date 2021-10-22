@@ -32,6 +32,9 @@ public:
 
 // Operations
 public:
+	BOOL DoFileSave() override;
+
+	BOOL OnSaveDocument(LPCTSTR lpszPathName) override;
 // Overrides
 public:
 	virtual BOOL OnNewDocument();

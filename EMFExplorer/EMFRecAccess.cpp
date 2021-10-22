@@ -1355,12 +1355,13 @@ bool EMFAccess::SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus)
 	return true;
 }
 
-bool EMFAccess::SaveToArchive(CArchive& ar) const
+bool EMFAccess::SaveToFile(LPCWSTR szPath) const
 {
-	if (!m_pMetafile || ar.m_strFileName.IsEmpty())
+	if (!m_pMetafile || !szPath)
 		return false;
 	{
-		Gdiplus::Metafile mf(ar.m_strFileName);
+		CClientDC dc(nullptr);
+		Gdiplus::Metafile mf(szPath, dc.GetSafeHdc());
 		Gdiplus::Graphics gg(&mf);
 		gg.DrawImage(m_pMetafile.get(), 0, 0);
 	}

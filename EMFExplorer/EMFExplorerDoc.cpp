@@ -94,6 +94,26 @@ void CEMFExplorerDoc::SetEMFAccess(std::shared_ptr<EMFAccess> emf, EMFType type)
 }
 
 
+BOOL CEMFExplorerDoc::DoFileSave()
+{
+	DWORD dwAttrib = GetFileAttributes(m_strPathName);
+	BOOL bUsePathName = m_type == EMFType::FromFile && !(dwAttrib & FILE_ATTRIBUTE_READONLY);
+	LPCTSTR pszFilePath = bUsePathName ? m_strPathName : nullptr;
+	if (!DoSave(pszFilePath, FALSE))
+	{
+		TRACE(traceAppMsg, 0, "Warning: File save failed.\n");
+		return FALSE;
+	}
+	return TRUE;
+}
+
+BOOL CEMFExplorerDoc::OnSaveDocument(LPCTSTR lpszPathName)
+{
+	if (!m_emf)
+		return FALSE;
+	return m_emf->SaveToFile(lpszPathName);
+}
+
 // CEMFExplorerDoc serialization
 
 void CEMFExplorerDoc::Serialize(CArchive& ar)
@@ -188,12 +208,11 @@ BOOL CEMFExplorerDoc::GetThumbnail(UINT cx, HBITMAP* phbmp, WTS_ALPHATYPE* pdwAl
 	}
 	else
 	{
-		HDC hdc = GetDC(nullptr);
-		Gdiplus::Font font(hdc, (HFONT)GetStockObject(DEFAULT_GUI_FONT));
+		CClientDC dc(nullptr);
+		Gdiplus::Font font(dc.GetSafeHdc(), (HFONT)GetStockObject(DEFAULT_GUI_FONT));
 		Gdiplus::PointF pt(0, 0);
 		Gdiplus::SolidBrush brush(Gdiplus::Color::Black);
 		gg.DrawString(L"EMFExplorer: failed to read EMF", -1, &font, pt, &brush);
-		ReleaseDC(nullptr, hdc);
 	}
 	HBITMAP hBmp = nullptr;
 	bmp.GetHBITMAP(Gdiplus::Color(0, 0, 0, 0), &hBmp);

@@ -1853,7 +1853,7 @@ public:
 
 	bool SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus);
 
-	bool SaveToArchive(CArchive& ar) const;
+	bool SaveToFile(LPCWSTR szPath) const;
 protected:
 	using EmfRecArray	= std::vector<EMFRecAccess*>;
 	using EMFPtr		= std::unique_ptr<Gdiplus::Metafile>;
