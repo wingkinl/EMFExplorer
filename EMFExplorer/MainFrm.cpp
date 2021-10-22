@@ -33,6 +33,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_MESSAGE(MainFrameMsgOnSelectRecordItem, &CMainFrame::OnSelectRecordItem)
 	ON_MESSAGE(MainFrameMsgCanOpenRecordItem, &CMainFrame::OnCanOpenRecordItem)
 	ON_MESSAGE(MainFrameMsgOpenRecordItem, &CMainFrame::OnOpenRecordItem)
+	ON_COMMAND(ID_EDIT_PASTE, &CMainFrame::OnEditPaste)
+	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CMainFrame::OnUpdateEditPaste)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -253,6 +255,25 @@ void CMainFrame::OnViewCustomize()
 	CMFCToolBarsCustomizeDialog* pDlgCust = new CMFCToolBarsCustomizeDialog(this, TRUE /* scan menus */);
 	pDlgCust->EnableUserDefinedToolbars();
 	pDlgCust->Create();
+}
+
+BOOL CMainFrame::CheckClipboardForEMF() const
+{
+	BOOL bOK = IsClipboardFormatAvailable(CF_ENHMETAFILE);
+	return bOK;
+}
+
+void CMainFrame::OnUpdateEditPaste(CCmdUI* pCmdUI)
+{
+	BOOL bEnable = FALSE;
+	if (!IsSubEMFFrame())
+		bEnable = CheckClipboardForEMF();
+	pCmdUI->Enable(bEnable);
+}
+
+void CMainFrame::OnEditPaste()
+{
+	theApp.DoEditPaste();
 }
 
 void CMainFrame::OnChangeTheme()
@@ -503,6 +524,32 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 	auto pView = CheckGetActiveView();
 	if (!pView)
 		return;
+
+	if (bBefore && !IsSubEMFFrame())
+	{
+		// Make a copy for safety
+		CList<CFrameWnd*, CFrameWnd*> lstFramesCopy;
+		auto& lstFrames = CFrameImpl::GetFrameList();
+		for (POSITION pos = lstFrames.GetHeadPosition(); pos != NULL;)
+		{
+			CFrameWnd* pFrame = lstFrames.GetNext(pos);
+			lstFramesCopy.AddTail(pFrame);
+		}
+		for (POSITION pos = lstFramesCopy.GetHeadPosition(); pos != NULL;)
+		{
+			CFrameWnd* pFrame = lstFramesCopy.GetNext(pos);
+
+			if (CWnd::FromHandlePermanent(pFrame->m_hWnd) != NULL)
+			{
+				ASSERT_VALID(pFrame);
+				if (pFrame->GetSafeHwnd() != GetSafeHwnd())
+				{
+					pFrame->SendMessage(WM_CLOSE);
+				}
+			}
+		}
+	}
+
 	pView->LoadEMFDataEvent(bBefore);
 	if (bBefore)
 	{

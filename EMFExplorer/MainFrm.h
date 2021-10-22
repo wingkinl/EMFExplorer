@@ -50,6 +50,8 @@ public:
 #endif
 
 	void OnChangeTheme();
+
+	BOOL CheckClipboardForEMF() const;
 private:
 	bool UpdateRecordProperty(int index);
 
@@ -67,6 +69,8 @@ protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg LRESULT OnChangeVisualManager(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnViewCustomize();
+	afx_msg void OnEditPaste();
+	afx_msg void OnUpdateEditPaste(CCmdUI* pCmdUI);
 	afx_msg void OnViewThemeDark();
 	afx_msg void OnViewThemeLight();
 	afx_msg void OnUpdateViewThemeDark(CCmdUI* pCmdUI);

@@ -36,6 +36,8 @@ public:
 	BOOL IsDarkTheme() const;
 	void SetDarkTheme(BOOL bDark);
 
+	void DoEditPaste();
+
 // Implementation
 	BOOL m_bHiColorIcons;
 	int m_nStyle = 0;
@@ -55,7 +57,6 @@ public:
 	CDocument* OpenDocumentFile(LPCTSTR lpszFileName) override;
 
 	afx_msg void OnAppAbout();
-	afx_msg void OnEditPaste();
 	DECLARE_MESSAGE_MAP()
 };
 

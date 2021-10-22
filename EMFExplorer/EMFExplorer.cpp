@@ -82,7 +82,6 @@ BEGIN_MESSAGE_MAP(CEMFExplorerApp, CWinAppEx)
 	// Standard file based document commands
 	ON_COMMAND(ID_FILE_NEW, &CWinAppEx::OnFileNew)
 	ON_COMMAND(ID_FILE_OPEN, &CWinAppEx::OnFileOpen)
-	ON_COMMAND(ID_EDIT_PASTE, &CEMFExplorerApp::OnEditPaste)
 END_MESSAGE_MAP()
 
 
@@ -253,7 +252,7 @@ void CEMFExplorerApp::OnAppAbout()
 	aboutDlg.DoModal();
 }
 
-void CEMFExplorerApp::OnEditPaste()
+void CEMFExplorerApp::DoEditPaste()
 {
 	if (!m_pMainWnd->OpenClipboard())
 	{

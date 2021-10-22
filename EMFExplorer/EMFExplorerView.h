@@ -42,8 +42,6 @@ public:
 
 	bool IsSubEMFView() const;
 protected:
-	BOOL CheckClipboardForEMF() const;
-
 	BOOL HasValidEMFInDoc() const;
 
 	void DrawTransparentGrid(CDC* pDC, const CRect& rect);

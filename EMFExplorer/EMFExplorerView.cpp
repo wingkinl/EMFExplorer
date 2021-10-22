@@ -37,7 +37,6 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_UPDATE_COMMAND_UI(ID_FILE_SAVE, &CEMFExplorerView::OnUpdateNeedDoc)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_COPY, &CEMFExplorerView::OnUpdateNeedDoc)
 	ON_COMMAND(ID_EDIT_COPY, &CEMFExplorerView::OnEditCopy)
-	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CEMFExplorerView::OnUpdateNeedClip)
 	ON_COMMAND_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CEMFExplorerView::OnViewImgBk)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_BACKGROUND_NONE, ID_BACKGROUND_WHITE, &CEMFExplorerView::OnUpdateViewImgBk)
 #ifndef SHARED_HANDLERS
@@ -88,12 +87,6 @@ BOOL CEMFExplorerView::PreCreateWindow(CREATESTRUCT& cs)
 #endif // HANDLE_PAINT_WITH_DOUBLE_BUFFER
 
 	return CEMFExplorerViewBase::PreCreateWindow(cs);
-}
-
-BOOL CEMFExplorerView::CheckClipboardForEMF() const
-{
-	BOOL bOK = IsClipboardFormatAvailable(CF_ENHMETAFILE);
-	return bOK;
 }
 
 BOOL CEMFExplorerView::HasValidEMFInDoc() const
@@ -293,11 +286,6 @@ void CEMFExplorerView::OnUpdateFileNew(CCmdUI* pCmdUI)
 void CEMFExplorerView::OnUpdateNeedDoc(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(HasValidEMFInDoc());
-}
-
-void CEMFExplorerView::OnUpdateNeedClip(CCmdUI* pCmdUI)
-{
-	pCmdUI->Enable(CheckClipboardForEMF());
 }
 
 bool CEMFExplorerView::PutBitmapToClipboard(Gdiplus::Image* pImg)
