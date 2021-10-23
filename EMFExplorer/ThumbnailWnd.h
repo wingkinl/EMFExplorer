@@ -20,15 +20,23 @@ public:
 
 	void LoadEMFDataEvent(bool bBefore);
 
-	void OnViewUpdateSizeScroll();
+	void OnViewUpdateSizeScroll();	
+	
 protected:
+	void DrawImage(CDC* pDCDraw, CRect rect);
+
+	void DrawZoomArea(CDC* pDCDraw, CRect rect);
+
+	void ScrollViewByOffset(CSize szOffset);
+
 #ifndef HANDLE_THUMBNAIL_WND_PAINT_WITH_DOUBLE_BUFFER
 	BOOL PreCreateWindow(CREATESTRUCT& cs) override;
 #endif // HANDLE_THUMBNAIL_WND_PAINT_WITH_DOUBLE_BUFFER
 protected:
 	std::shared_ptr<EMFAccess>	m_emf;
-	CRect	m_rcThumbnail;
+	CRect	m_rcImg;
 	CRect	m_rcZoomRect;
+	BOOL	m_bStartedScrolling = FALSE;
 	CPoint	m_ptStartMovePt;
 	float	m_factor = 1.0f;
 	// Implementation

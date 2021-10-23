@@ -96,8 +96,9 @@ BOOL CScrollZoomView::OnMouseWheel(UINT fFlags, short zDelta, CPoint point)
 
 void CScrollZoomView::OnMouseMove(UINT nFlags, CPoint point)
 {
-	if ((nFlags & MK_LBUTTON) && GetCapture() == this)
+	if ((nFlags & MK_LBUTTON) && m_bStartedScrolling)
 	{
+		ASSERT(GetCapture() == this);
 		CSize szScroll = m_ptStartMovePt - point;
 		OnScrollBy(szScroll);
 		m_ptStartMovePt = point;
@@ -110,14 +111,17 @@ void CScrollZoomView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	m_ptStartMovePt = point;
 	SetCapture();
+	m_bStartedScrolling = TRUE;
 	CScrollZoomViewBase::OnLButtonDown(nFlags, point);
 }
 
 void CScrollZoomView::OnLButtonUp(UINT nFlags, CPoint point)
 {
-	if (GetCapture() == this)
+	if (m_bStartedScrolling)
 	{
+		ASSERT(GetCapture() == this);
 		ReleaseCapture();
+		m_bStartedScrolling = FALSE;
 	}
 	CScrollZoomViewBase::OnLButtonUp(nFlags, point);
 }

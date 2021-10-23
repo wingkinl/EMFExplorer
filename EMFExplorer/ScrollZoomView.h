@@ -57,7 +57,7 @@ protected:
 	float	m_fMinZoomFactor = 0.01f;
 	float	m_fMaxZoomFactor = 32.0f;
 	FitWinType	m_fitWndType = FitToBoth;
-
+	BOOL	m_bStartedScrolling = FALSE;
 	CPoint	m_ptStartMovePt;
 protected:
 	afx_msg BOOL OnMouseWheel(UINT fFlags, short zDelta, CPoint point);

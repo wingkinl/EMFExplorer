@@ -41,6 +41,10 @@ public:
 	void SetImgBackgroundType(ImgBackgroundType val);
 
 	bool IsSubEMFView() const;
+
+#ifndef SHARED_HANDLERS
+	BOOL OnScrollBy(CSize sizeScroll, BOOL bDoScroll = TRUE) override;
+#endif // SHARED_HANDLERS
 protected:
 	BOOL HasValidEMFInDoc() const;
 
@@ -52,8 +56,6 @@ protected:
 
 #ifndef SHARED_HANDLERS
 	void OnAfterUpdateViewSize() override;
-
-	BOOL OnScrollBy(CSize sizeScroll, BOOL bDoScroll = TRUE) override;
 #endif
 // Implementation
 public:
