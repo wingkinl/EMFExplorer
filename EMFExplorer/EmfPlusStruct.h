@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <algorithm>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -673,6 +674,11 @@ union OEmfPlusARGB
 		argb.Blue	= GetBValue(clr);
 		argb.Alpha	= 255;
 		return argb;
+	}
+
+	inline COLORREF ToCOLORREF() const
+	{
+		return RGB(Red, Green, Blue);
 	}
 
 	static inline std::string GetColorTextFromBGR(COLORREF crf)
@@ -1348,8 +1354,11 @@ struct OEmfPlusRecDrawLines
 {
 	enum Flag
 	{
+		// Compressed data
 		FlagC				= 0x4000,
+		// Draw an extra line between the last point and the first point
 		FlagL				= 0x2000,
+		// This bit indicates whether the PointData field specifies relative or absolute locations.
 		FlagP				= 0x0800,
 		FlagObjectIDMask	= 0x00FF,
 	};
@@ -1476,10 +1485,13 @@ struct OEmfPlusRecFillPolygon
 {
 	enum Flag
 	{
+		// If set, BrushId specifies a color as an OEmfPlusARGB object
 		FlagS	= 0x8000,
+		// This bit indicates whether the PointData field specifies compressed data.
 		FlagC	= 0x4000,
 		// Winding mode. Note: MS does not document this (maybe they forgot)
 		FlagW	= 0x2000,
+		// This bit indicates whether the PointData field specifies relative or absolute locations.
 		FlagP	= 0x0800,
 	};
 	u32t					BrushId;
@@ -1592,6 +1604,10 @@ struct OEmfPlusRecSetAntiAliasMode
 		FlagSmoothingModeMask	= 0x00FE,
 		FlagA					= 0x0001,
 	};
+	static OSmoothingMode GetSmoothingMode(u32t flags)
+	{
+		return (OSmoothingMode)((flags & FlagSmoothingModeMask) >> 1);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/d7ace3ef-2092-4e94-89da-103ac3f9ac5f
@@ -1601,6 +1617,10 @@ struct OEmfPlusRecSetCompositingMode
 	{
 		FlagCompositingModeMask	= 0x00FF,
 	};
+	static OCompositingMode GetCompositingMode(u32t flags)
+	{
+		return (OCompositingMode)(flags & FlagCompositingModeMask);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/99e4d432-526e-4fcf-872c-d0be6a6ffbfd
@@ -1610,6 +1630,10 @@ struct OEmfPlusRecSetCompositingQuality
 	{
 		FlagCompositingQualityMask	= 0x00FF,
 	};
+	static OCompositingQuality GetCompositingQuality(u32t flags)
+	{
+		return (OCompositingQuality)(flags & FlagCompositingQualityMask);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/2fe03573-1e0c-4cc5-8ab3-74421ef17c18
@@ -1619,6 +1643,10 @@ struct OEmfPlusRecSetInterpolationMode
 	{
 		FlagInterpolationModeyMask	= 0x00FF,
 	};
+	static OInterpolationMode GetInterpolationMode(u32t flags)
+	{
+		return (OInterpolationMode)(flags & FlagInterpolationModeyMask);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/679d2b1d-e618-4730-9400-fea5f4fd3b92
@@ -1628,6 +1656,10 @@ struct OEmfPlusRecSetPixelOffsetMode
 	{
 		FlagPixelOffsetModeMask	= 0x00FF,
 	};
+	static OPixelOffsetMode GetPixelOffsetMode(u32t flags)
+	{
+		return (OPixelOffsetMode)(flags & FlagPixelOffsetModeMask);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/4f88414d-a117-4aea-9817-c05338585777
@@ -1644,6 +1676,10 @@ struct OEmfPlusRecSetTextContrast
 	{
 		FlagTextContrastMask	= 0x00FF,
 	};
+	static u16t GetTextContrast(u32t flags)
+	{
+		return (u16t)(flags & FlagTextContrastMask);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/a05c335d-0777-4897-862a-aa35c0b684d8
@@ -1653,6 +1689,10 @@ struct OEmfPlusRecSetTextRenderingHint
 	{
 		FlagTextRenderingHintMask	= 0x00FF,
 	};
+	static OTextRenderingHint GetTextRenderingHint(u32t flags)
+	{
+		return (OTextRenderingHint)(flags & FlagTextRenderingHintMask);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/9d8d1b89-349e-42da-aa74-8a68a3401601

@@ -17,29 +17,33 @@ struct PropertyNode
 		NodeTypeColor,
 		NodeTypeFont,
 		NodeTypePointDataArray,
+		NodeTypeMatrix,
+		NodeTypeRects,
+		NodeTypeRectData,
+		NodeTypeArcData,
 	};
-	NodeType	type;
 	CStringW	name;
 	CStringW	text;
 	std::vector<std::shared_ptr<PropertyNode>> sub;
 
-	PropertyNode(LPCWSTR szName = nullptr, LPCWSTR szText = nullptr, NodeType t = NodeTypeBranch)
+	PropertyNode(LPCWSTR szName = nullptr, LPCWSTR szText = nullptr)
 		: name(szName)
 		, text(szText)
-		, type(t)
 	{
 
 	}
 
-	inline std::shared_ptr<PropertyNode> AddText(LPCWSTR szName, LPCWSTR szText, NodeType type = NodeTypeText)
+	virtual NodeType	GetNodeType() const { return NodeTypeText; }
+
+	inline std::shared_ptr<PropertyNode> AddText(LPCWSTR szName, LPCWSTR szText)
 	{
-		auto ptr = std::make_shared<PropertyNode>(szName, szText, type);
+		auto ptr = std::make_shared<PropertyNode>(szName, szText);
 		sub.push_back(ptr);
 		return ptr;
 	}
 
 	template <typename T>
-	std::shared_ptr<PropertyNode> AddValue(LPCWSTR szName, T val, NodeType type = NodeTypeText, bool bHex = false)
+	std::shared_ptr<PropertyNode> AddValue(LPCWSTR szName, T val, bool bHex = false)
 	{
 		std::wstring str;
 		if (bHex)
@@ -50,18 +54,30 @@ struct PropertyNode
 		}
 		else
 			str = std::to_wstring(val);
-		auto ptr = std::make_shared<PropertyNode>(szName, str.c_str(), type);
-		sub.push_back(ptr);
-		return ptr;
+		return AddText(szName, str.c_str());
 	}
+
+	inline std::shared_ptr<PropertyNode> AddBranch(LPCWSTR szName, LPCWSTR szText = nullptr);
 };
+
+struct PropertyNodeBranch : public PropertyNode
+{
+	using PropertyNode::PropertyNode;
+	NodeType	GetNodeType() const { return NodeTypeBranch; }
+};
+
+std::shared_ptr<PropertyNode> PropertyNode::AddBranch(LPCWSTR szName, LPCWSTR szText)
+{
+	auto ptr = std::make_shared<PropertyNodeBranch>(szName, szText);
+	sub.push_back(ptr);
+	return ptr;
+}
 
 struct PropertyNodeRectInt : public PropertyNode
 {
 	template <typename T>
 	PropertyNodeRectInt(LPCWSTR szName, const T& rc)
 	{
-		type = NodeTypeRectInt;
 		name = szName;
 		rect.left = rc.left;
 		rect.top = rc.top;
@@ -71,25 +87,15 @@ struct PropertyNodeRectInt : public PropertyNode
 	template <typename T>
 	PropertyNodeRectInt(LPCWSTR szName, T l, T t, T r, T b)
 	{
-		type = NodeTypeRectInt;
 		name = szName;
 		rect.left = l;
 		rect.top = t;
 		rect.right = r;
 		rect.bottom = b;
 	}
-	RECT	rect;
-};
 
-struct PropertyNodeRectFloat : public PropertyNode
-{
-	PropertyNodeRectFloat(LPCWSTR szName, const emfplus::OEmfPlusRectF& rc)
-	{
-		type = NodeTypeRectFloat;
-		name = szName;
-		rect = rc;
-	}
-	emfplus::OEmfPlusRectF rect;
+	NodeType	GetNodeType() const { return NodeTypeRectInt; }
+	RECT	rect;
 };
 
 struct PropertyNodeSizeInt : public PropertyNode
@@ -102,30 +108,47 @@ struct PropertyNodeSizeInt : public PropertyNode
 	template <typename T>
 	PropertyNodeSizeInt(LPCWSTR szName, T cx, T cy)
 	{
-		type = NodeTypeSizeInt;
 		name = szName;
 		size.cx = cx;
 		size.cy = cy;
 	}
+
+	NodeType	GetNodeType() const { return NodeTypeSizeInt; }
 	SIZE	size;
 };
 
-struct PropertyNodeColor : public PropertyNode
+template <typename T, PropertyNode::NodeType _type>
+struct PropertyNodeData : public PropertyNode
 {
-	emfplus::OEmfPlusARGB	clr;
+	PropertyNodeData(LPCWSTR szName, T _data)
+		: data(_data)
+
+	{
+		name = szName;
+	}
+
+	NodeType	GetNodeType() const { return _type; }
+	T	data;
 };
 
-struct PropertyNodePointDataArray : public PropertyNode 
+using PropertyNodePointDataArrayBase = PropertyNodeData<const emfplus::OEmfPlusPointDataArray&, PropertyNode::NodeTypePointDataArray>;
+
+struct PropertyNodePlusPointDataArray : public PropertyNodePointDataArrayBase
 {
-	PropertyNodePointDataArray(LPCWSTR szName, const emfplus::OEmfPlusPointDataArray& refData, bool bRelative = false)
+	PropertyNodePlusPointDataArray(LPCWSTR szName, const emfplus::OEmfPlusPointDataArray& refData, bool bRelative = false)
+		: PropertyNodePointDataArrayBase(szName, refData)
 	{
-		type = NodeTypePointDataArray;
-		name = szName;
-		pts = &refData;
 		relative = bRelative;
 	}
-	const emfplus::OEmfPlusPointDataArray*	pts;
-	bool									relative;
+
+	bool	relative;
 };
+
+using PropertyNodePlusTransform = PropertyNodeData<const emfplus::OEmfPlusTransformMatrix&, PropertyNode::NodeTypeMatrix>;
+using PropertyNodePlusRectF = PropertyNodeData<const emfplus::OEmfPlusRectF&, PropertyNode::NodeTypeRectFloat>;
+using PropertyNodeColor = PropertyNodeData<const emfplus::OEmfPlusARGB&, PropertyNode::NodeTypeColor>;
+using PropertyNodePlusRectDataArray = PropertyNodeData<const emfplus::OEmfPlusRectDataArray&, PropertyNode::NodeTypeRects>;
+using PropertyNodePlusRectData = PropertyNodeData<const emfplus::OEmfPlusRectData&, PropertyNode::NodeTypeRectData>;
+using PropertyNodePlusArcData = PropertyNodeData<const emfplus::OEmfPlusArcData&, PropertyNode::NodeTypeArcData>;
 
 #endif // PROPERTY_TREE_H
