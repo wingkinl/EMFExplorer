@@ -179,15 +179,15 @@ void CEMFExplorerView::OnPaint()
 #endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	CDC* pDCDraw = &dc;
 
-	CRect rect;
-	GetClientRect(&rect);
+	CRect rcClient;
+	GetClientRect(&rcClient);
 
 	COLORREF crfBk = GetSysColor(COLOR_WINDOW);
 #ifndef SHARED_HANDLERS
 	if (theApp.IsDarkTheme())
 		crfBk = theApp.m_crfDarkThemeBkColor;
 #endif // SHARED_HANDLERS
-	pDCDraw->FillSolidRect(rect, crfBk);
+	pDCDraw->FillSolidRect(rcClient, crfBk);
 
 	if (m_bInitialRedraw)
 		return;
@@ -199,18 +199,8 @@ void CEMFExplorerView::OnPaint()
 	auto pEMF = pDoc->GetEMFAccess();
 	if (!pEMF)
 		return;
-	CSize szImg = GetRealViewSize();
 
-	CPoint ptImg = -GetDeviceScrollPosition();
-	if (GetCenter())
-	{
-		if (szImg.cx < rect.Width())
-			ptImg.x = (rect.Width() - szImg.cx) / 2;
-		if (szImg.cy < rect.Height())
-			ptImg.y = (rect.Height() - szImg.cy) / 2;
-	}
-
-	CRect rcImg(ptImg, szImg);
+	CRect rcImg = GetScrolledZoomedView();
 
 	if (GetImgBackgroundType() != ImgBackgroundTypeNone)
 	{
@@ -320,7 +310,7 @@ bool CEMFExplorerView::PutBitmapToClipboard(Gdiplus::Image* pImg)
 }
 
 #ifndef SHARED_HANDLERS
-void CEMFExplorerView::OnAfterUpdateViewSize()
+void CEMFExplorerView::OnAfterUpdateZoomedViewSize()
 {
 	if (!GetSafeHwnd())
 		return;
@@ -516,10 +506,12 @@ void CEMFExplorerView::OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI)
 		CPoint pos;
 		GetCursorPos(&pos);
 		ScreenToClient(&pos);
-		CPoint ptOffset = GetDeviceScrollPosition();
-		pos += ptOffset;
-		GetRealZoomFactor();
- 		str.Format(_T("(%d, %d)"), pos.x, pos.y);
+		CRect rcView = GetScrolledZoomedView(true);
+		pos += rcView.TopLeft();
+		float factor = GetRealZoomFactor();
+		pos.x = (LONG)(pos.x / factor);
+		pos.y = (LONG)(pos.y / factor);
+ 		str.Format(_T(" (%d, %d) "), pos.x, pos.y);
 	}
 	else
 	{

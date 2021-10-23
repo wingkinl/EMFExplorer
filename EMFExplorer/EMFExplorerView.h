@@ -58,7 +58,7 @@ protected:
 	bool PutBitmapToClipboard(Gdiplus::Image* pImg);
 
 #ifndef SHARED_HANDLERS
-	void OnAfterUpdateViewSize() override;
+	void OnAfterUpdateZoomedViewSize() override;
 #endif
 // Implementation
 public:

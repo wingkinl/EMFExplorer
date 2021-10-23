@@ -100,22 +100,18 @@ void CThumbnailWnd::DrawZoomArea(CDC* pDCDraw, CRect rect)
 	auto pView = pFrameWnd ? DYNAMIC_DOWNCAST(CEMFExplorerView, pFrameWnd->GetActiveView()) : nullptr;
 	if (!pView)
 		return;
-	CSize szView = pView->GetRealViewSize();
-	CPoint ptView = pView->GetDeviceScrollPosition();
-	CRect rcView(0, 0, szView.cx, szView.cy);
-	m_factor = (float)m_rcImg.Width() / szView.cx;
-	rcView.left = ptView.x;
-	rcView.top = ptView.y;
-	CRect rcClient;
-	pView->GetClientRect(&rcClient);
-	rcView.right = rcView.left + rcClient.Width();
-	rcView.bottom = rcView.top + rcClient.Height();
-	if (rcView.Width() >= szView.cx && rcView.Height() >= szView.cy)
+	CSize szView = pView->GetZoomedViewSize();
+	CRect rcScrolledView = pView->GetScrolledZoomedView(true);
+	if (rcScrolledView.Width() >= szView.cx && rcScrolledView.Height() >= szView.cy)
+	{
+		m_factor = -1.f;
 		return;
-	m_rcZoomRect.left = (LONG)(rcView.left * m_factor);
-	m_rcZoomRect.top = (LONG)(rcView.top * m_factor);
-	m_rcZoomRect.right = (LONG)(rcView.right * m_factor);
-	m_rcZoomRect.bottom = (LONG)(rcView.bottom * m_factor);
+	}
+	m_factor = (float)m_rcImg.Width() / szView.cx;
+	m_rcZoomRect.left = (LONG)(rcScrolledView.left * m_factor);
+	m_rcZoomRect.top = (LONG)(rcScrolledView.top * m_factor);
+	m_rcZoomRect.right = (LONG)(rcScrolledView.right * m_factor);
+	m_rcZoomRect.bottom = (LONG)(rcScrolledView.bottom * m_factor);
 	m_rcZoomRect.OffsetRect(m_rcImg.TopLeft());
 	if (m_rcZoomRect.left < m_rcImg.left)
 		m_rcZoomRect.left = m_rcImg.left;
@@ -159,14 +155,17 @@ void CThumbnailWnd::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	if (m_rcImg.PtInRect(point))
 	{
-		m_bStartedScrolling = TRUE;
-		m_ptStartMovePt = point;
-		if (!m_rcZoomRect.PtInRect(point))
+		if (m_factor > 0)
 		{
-			CSize szOffset = point - m_rcZoomRect.CenterPoint();
-			ScrollViewByOffset(szOffset);
+			m_bStartedScrolling = TRUE;
+			m_ptStartMovePt = point;
+			if (!m_rcZoomRect.PtInRect(point))
+			{
+				CSize szOffset = point - m_rcZoomRect.CenterPoint();
+				ScrollViewByOffset(szOffset);
+			}
+			SetCapture();
 		}
-		SetCapture();
 		return;
 	}
 	CThumbnailWndBase::OnLButtonDown(nFlags, point);

@@ -39,7 +39,7 @@ struct PropertyNode
 	}
 
 	template <typename T>
-	void AddValue(LPCWSTR szName, T val, NodeType type = NodeTypeText, bool bHex = false)
+	std::shared_ptr<PropertyNode> AddValue(LPCWSTR szName, T val, NodeType type = NodeTypeText, bool bHex = false)
 	{
 		std::wstring str;
 		if (bHex)
@@ -52,6 +52,7 @@ struct PropertyNode
 			str = std::to_wstring(val);
 		auto ptr = std::make_shared<PropertyNode>(szName, str.c_str(), type);
 		sub.push_back(ptr);
+		return ptr;
 	}
 };
 

@@ -1831,7 +1831,7 @@ public:
 	EMFAccess(const std::vector<emfplus::u8t>& vData);
 	~EMFAccess();
 public:
-	const Gdiplus::MetafileHeader GetMetafileHeader() const { return m_hdr; }
+	const Gdiplus::MetafileHeader& GetMetafileHeader() const { return m_hdr; }
 
 	void DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const;
 

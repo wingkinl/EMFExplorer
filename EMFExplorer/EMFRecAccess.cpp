@@ -96,15 +96,21 @@ void EMFRecAccessGDIRec::CacheProperties(EMFAccess* pEMF)
 	CachePropertiesFromGDI(pEMF, pRec);
 }
 
+static inline LPCWSTR EMFPlusMetafileTypeText(OMetafileDataType type)
+{
+	static const LPCWSTR aText[] = {
+		L"Invalid", L"Wmf", L"WmfPlaceable", L"Emf", L"EmfPlusOnly", L"EmfPlusDual",
+	};
+	return aText[(int)type];
+}
+
 void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec)
 {
 	auto pRec = (const ENHMETAHEADER*)pEMFRec;
 	ASSERT(pRec->dSignature == ENHMETA_SIGNATURE);
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeRectInt>(L"rclBounds", pRec->rclBounds));
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeRectInt>(L"rclFrame", pRec->rclFrame));
-	CStringW str;
-	str.Format(L"%08X", pRec->dSignature);
-	m_propsCached->AddText(L"Signature", str);
+	m_propsCached->AddValue(L"Signature", pRec->dSignature, PropertyNode::NodeTypeText, true);
 	m_propsCached->AddValue(L"nVersion", pRec->nVersion);
 	m_propsCached->AddValue(L"nBytes", pRec->nBytes);
 	m_propsCached->AddValue(L"nRecords", pRec->nRecords);
@@ -122,6 +128,20 @@ void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENH
 	}
 	m_propsCached->AddValue(L"bOpenGL", pRec->bOpenGL);
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeSizeInt>(L"szlMicrometers", pRec->szlMicrometers));
+
+	auto pPlusNode = m_propsCached->AddText(L"GDI+ Header", nullptr, PropertyNode::NodeTypeBranch);
+	auto& hdr = pEMF->GetMetafileHeader();
+	pPlusNode->AddText(L"MetafileType", EMFPlusMetafileTypeText((OMetafileDataType)hdr.Type));
+	pPlusNode->AddValue(L"Version", hdr.Version, PropertyNode::NodeTypeText, true);
+	pPlusNode->AddValue(L"EmfPlusFlags", hdr.EmfPlusFlags, PropertyNode::NodeTypeText, true);
+	pPlusNode->AddValue(L"DpiX", hdr.DpiX);
+	pPlusNode->AddValue(L"DpiY", hdr.DpiY);
+	pPlusNode->AddValue(L"X", hdr.X);
+	pPlusNode->AddValue(L"Y", hdr.Y);
+	pPlusNode->AddValue(L"Width", hdr.Width);
+	pPlusNode->AddValue(L"Height", hdr.Height);
+	pPlusNode->AddValue(L"LogicalDpiX", hdr.LogicalDpiX);
+	pPlusNode->AddValue(L"LogicalDpiY", hdr.LogicalDpiY);
 }
 
 void EMFRecAccessGDIRecGdiComment::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec)
@@ -260,14 +280,6 @@ static inline LPCWSTR EMFPlusBitmapTypeText(OBitmapDataType type)
 {
 	static const LPCWSTR aText[] = {
 		L"Pixel", L"Compressed"
-	};
-	return aText[(int)type];
-}
-
-static inline LPCWSTR EMFPlusMetafileTypeText(OMetafileDataType type)
-{
-	static const LPCWSTR aText[] = {
-		L"Invalid", L"Wmf", L"WmfPlaceable", L"Emf", L"EmfPlusOnly", L"EmfPlusDual",
 	};
 	return aText[(int)type];
 }

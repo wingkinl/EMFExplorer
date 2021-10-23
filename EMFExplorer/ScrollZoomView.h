@@ -39,17 +39,19 @@ public:
 
 	virtual CSize GetViewSize() const;
 
-	CSize GetRealViewSize() const;
+	CSize GetZoomedViewSize() const;
+
+	CRect GetScrolledZoomedView(bool bClient = false) const;
 
 	virtual bool IsZoomAllowed() const { return true; }
 protected:
-	void UpdateViewSize();
+	void UpdateZoomedViewSize();
 
-	virtual void OnAfterUpdateViewSize() {}
+	virtual void OnAfterUpdateZoomedViewSize() {}
 
 	void OnDraw(CDC* pDC) override;
 
-	CSize GetRealViewSizeImp() const;
+	CSize CalcZoomedViewSize() const;
 
 	virtual void OnDrawZoomedView(CDC* pDC, const CRect& rect);
 protected:

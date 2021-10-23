@@ -60,7 +60,7 @@ BOOL CMainStatusBar::SetPaneText(int nIndex, LPCTSTR lpszNewText, BOOL bUpdate)
 {
 	if (!CMainStatusBarBase::SetPaneText(nIndex, lpszNewText, bUpdate))
 		return FALSE;
-	if (nIndex >= StatusBarIndexColorText)
+	if (lpszNewText && nIndex >= StatusBarIndexColorText)
 	{
 		int cx = GetPaneWidth(nIndex);
 		CClientDC dcScreen(NULL);
@@ -512,7 +512,7 @@ void CMainFrame::OnUpdateStatusBarColorText(CCmdUI* pCmdUI)
 	if (bValid)
 	{
 		COLORREF clr = pView->GetCursorColor();
-		str.Format(_T("RGB(%d, %d, %d)"), GetRValue(clr), GetGValue(clr), GetBValue(clr));
+		str.Format(_T(" RGB(%d, %d, %d) "), GetRValue(clr), GetGValue(clr), GetBValue(clr));
 		m_wndStatusBar.SetPaneBackgroundColor(CMainStatusBar::StatusBarIndexColor, clr, TRUE);
 	}
 	else

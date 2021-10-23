@@ -27,7 +27,7 @@ void CScrollZoomView::OnInitialUpdate()
 {
 	CScrollZoomViewBase::OnInitialUpdate();
 
-	UpdateViewSize();
+	UpdateZoomedViewSize();
 }
 
 CSize CScrollZoomView::GetViewSize() const
@@ -35,14 +35,37 @@ CSize CScrollZoomView::GetViewSize() const
 	return CSize(0, 0);
 }
 
-CSize CScrollZoomView::GetRealViewSize() const
+CSize CScrollZoomView::GetZoomedViewSize() const
 {
-	CSize sz = m_fitWndType ? GetRealViewSizeImp() : m_totalDev;
-	ASSERT(m_fitWndType || GetRealViewSizeImp() == m_totalDev);
+	CSize sz = m_fitWndType ? CalcZoomedViewSize() : m_totalDev;
+	ASSERT(m_fitWndType || CalcZoomedViewSize() == m_totalDev);
 	return sz;
 }
 
-CSize CScrollZoomView::GetRealViewSizeImp() const
+CRect CScrollZoomView::GetScrolledZoomedView(bool bClient) const
+{
+	CSize szView = GetZoomedViewSize();
+	CRect rcClient;
+	GetClientRect(&rcClient);
+	CSize szClient = rcClient.Size();
+	CPoint ptView = -GetDeviceScrollPosition();
+	if (GetCenter())
+	{
+		if (szView.cx < szClient.cx)
+			ptView.x = (szClient.cx - szView.cx) / 2;
+		if (szView.cy < szClient.cy)
+			ptView.y = (szClient.cy - szView.cy) / 2;
+	}
+	if (bClient)
+	{
+		ptView = -ptView;
+		szView = szClient;
+	}
+	CRect rcView(ptView, szView);
+	return rcView;
+}
+
+CSize CScrollZoomView::CalcZoomedViewSize() const
 {
 	CSize szImage = GetViewSize();
 	float factor = GetRealZoomFactor();
@@ -52,13 +75,13 @@ CSize CScrollZoomView::GetRealViewSizeImp() const
 	return szImageScaled;
 }
 
-void CScrollZoomView::UpdateViewSize()
+void CScrollZoomView::UpdateZoomedViewSize()
 {
 	CSize szScroll(0, 0);
 	if (m_fitWndType == FitToNone)
-		szScroll = GetRealViewSizeImp();
+		szScroll = CalcZoomedViewSize();
 	SetScrollSizes(MM_TEXT, szScroll);
-	OnAfterUpdateViewSize();
+	OnAfterUpdateZoomedViewSize();
 }
 
 void CScrollZoomView::OnDraw(CDC* pDC)
@@ -146,7 +169,7 @@ void CScrollZoomView::SetZoomFactorRange(float fMin, float fMax)
 		m_fZoomFactor = fMin;
 	else if (m_fZoomFactor > fMax)
 		m_fZoomFactor = fMax;
-	UpdateViewSize();
+	UpdateZoomedViewSize();
 	if (GetSafeHwnd())
 		Invalidate();
 }
@@ -155,7 +178,7 @@ void CScrollZoomView::SetFitToWindow(FitWinType val)
 {
 	m_fitWndType = val;
 	m_fZoomFactor = 1.0f;
-	UpdateViewSize();
+	UpdateZoomedViewSize();
 	if (GetSafeHwnd())
 		Invalidate();
 }
@@ -163,7 +186,7 @@ void CScrollZoomView::SetFitToWindow(FitWinType val)
 void CScrollZoomView::SetCenter(bool val)
 {
 	m_bCenter = val;
-	UpdateViewSize();
+	UpdateZoomedViewSize();
 	if (GetSafeHwnd())
 		Invalidate();
 }
@@ -236,7 +259,7 @@ void CScrollZoomView::SetZoomFactor(float factor)
 		factor = m_fMaxZoomFactor;
 	m_fZoomFactor = factor;
 	m_fitWndType = FitToNone;
-	UpdateViewSize();
+	UpdateZoomedViewSize();
 	if (GetSafeHwnd())
 		Invalidate();
 }
