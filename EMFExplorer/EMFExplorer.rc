@@ -519,8 +519,10 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_STATUS_PANE1        "Pane 1"
-    IDS_STATUS_PANE2        "Pane 2"
+    ID_STATUSBAR_PANE_COLOR "     "
+    ID_STATUSBAR_PANE_COLOR_TEXT "Color"
+    ID_STATUSBAR_PANE_COORD "Coordinates"
+    ID_STATUSBAR_PANE_ZOOM  "Zoom"
     IDS_TOOLBAR_STANDARD    "Standard"
     IDS_TOOLBAR_CUSTOMIZE   "Customize..."
     IDS_THUMBNAIL_WND       "Thumbnail"

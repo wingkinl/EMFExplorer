@@ -42,11 +42,14 @@ public:
 
 	bool IsSubEMFView() const;
 
+	COLORREF GetCursorColor() const;
+
 #ifndef SHARED_HANDLERS
 	BOOL OnScrollBy(CSize sizeScroll, BOOL bDoScroll = TRUE) override;
 #endif // SHARED_HANDLERS
-protected:
+
 	BOOL HasValidEMFInDoc() const;
+protected:
 
 	void DrawTransparentGrid(CDC* pDC, const CRect& rect);
 
@@ -101,6 +104,10 @@ protected:
 	afx_msg void OnUpdateZoomFitWidth(CCmdUI* pCmdUI);
 	afx_msg void OnZoomFitHeight();
 	afx_msg void OnUpdateZoomFitHeight(CCmdUI* pCmdUI);
+#ifndef SHARED_HANDLERS
+	afx_msg void OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateStatusBarZoom(CCmdUI* pCmdUI);
+#endif
 
 #ifdef SHARED_HANDLERS
 	// This is needed for handler to update menu because the parent is not a CFrameWnd

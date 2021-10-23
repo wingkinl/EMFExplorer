@@ -36,15 +36,46 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_MESSAGE(MainFrameMsgViewUpdateSizeScroll, &CMainFrame::OnViewUpdateSizeScroll)
 	ON_COMMAND(ID_EDIT_PASTE, &CMainFrame::OnEditPaste)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CMainFrame::OnUpdateEditPaste)
+	ON_UPDATE_COMMAND_UI(ID_STATUSBAR_PANE_COLOR_TEXT, &CMainFrame::OnUpdateStatusBarColorText)
 END_MESSAGE_MAP()
 
-static UINT indicators[] =
-{
+
+UINT CMainStatusBar::Indicators[] = {
 	ID_SEPARATOR,           // status line indicator
-	ID_INDICATOR_CAPS,
-	ID_INDICATOR_NUM,
-	ID_INDICATOR_SCRL,
+	ID_STATUSBAR_PANE_COLOR,
+	ID_STATUSBAR_PANE_COLOR_TEXT,
+	ID_STATUSBAR_PANE_COORD,
+	ID_STATUSBAR_PANE_ZOOM,
 };
+
+BOOL CMainStatusBar::Create(CWnd* pParentWnd)
+{
+	if (!CMainStatusBarBase::Create(pParentWnd))
+		return FALSE;
+	SetIndicators(Indicators, sizeof(Indicators)/sizeof(UINT));
+	return TRUE;
+}
+
+BOOL CMainStatusBar::SetPaneText(int nIndex, LPCTSTR lpszNewText, BOOL bUpdate)
+{
+	if (!CMainStatusBarBase::SetPaneText(nIndex, lpszNewText, bUpdate))
+		return FALSE;
+	if (nIndex >= StatusBarIndexColorText)
+	{
+		int cx = GetPaneWidth(nIndex);
+		CClientDC dcScreen(NULL);
+		HFONT hFont = GetCurrentFont();
+
+		HGDIOBJ hOldFont = dcScreen.SelectObject(hFont);
+		CRect rectText(0, 0, cx, cx);
+		dcScreen.DrawText(lpszNewText, static_cast<int>(_tcslen(lpszNewText)), rectText, 
+			DT_CALCRECT | DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
+		dcScreen.SelectObject(hOldFont);
+		if (rectText.Width() > cx)
+			SetPaneWidth(nIndex, rectText.Width());
+	}
+	return TRUE;
+}
 
 // CMainFrame construction/destruction
 
@@ -100,7 +131,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create status bar\n");
 		return -1;      // fail to create
 	}
-	m_wndStatusBar.SetIndicators(indicators, sizeof(indicators)/sizeof(UINT));
 
 	// TODO: Delete these five lines if you don't want the toolbar and menubar to be dockable
 	m_wndMenuBar.EnableDocking(CBRS_ALIGN_ANY);
@@ -471,6 +501,25 @@ LRESULT CMainFrame::OnViewUpdateSizeScroll(WPARAM /*wp*/, LPARAM /*lp*/)
 {
 	m_wndThumbnail.OnViewUpdateSizeScroll();
 	return 0;
+}
+
+void CMainFrame::OnUpdateStatusBarColorText(CCmdUI* pCmdUI)
+{
+	auto pView = DYNAMIC_DOWNCAST(CEMFExplorerView, GetActiveView());
+	CString str;
+	BOOL bValid = pView->HasValidEMFInDoc();
+	pCmdUI->Enable(bValid);
+	if (bValid)
+	{
+		COLORREF clr = pView->GetCursorColor();
+		str.Format(_T("RGB(%d, %d, %d)"), GetRValue(clr), GetGValue(clr), GetBValue(clr));
+		m_wndStatusBar.SetPaneBackgroundColor(CMainStatusBar::StatusBarIndexColor, clr, TRUE);
+	}
+	else
+	{
+		str.LoadString(ID_STATUSBAR_PANE_COLOR_TEXT);
+	}
+	pCmdUI->SetText(str);
 }
 
 BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParentWnd, CCreateContext* pContext)

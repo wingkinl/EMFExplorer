@@ -20,6 +20,27 @@ enum MainFrameMsg
 
 class CEMFExplorerView;
 
+using CMainStatusBarBase = CMFCStatusBar;
+
+class CMainStatusBar : public CMainStatusBarBase
+{
+public:
+	enum StatusBarIndex
+	{
+		StatusBarIndexInfo,
+		StatusBarIndexColor,
+		StatusBarIndexColorText,
+		StatusBarIndexCoord,
+		StatusBarIndexZoom,
+	};
+
+	static UINT Indicators[];
+
+	BOOL Create(CWnd* pParentWnd);
+protected:
+	BOOL SetPaneText(int nIndex, LPCTSTR lpszNewText, BOOL bUpdate = TRUE) override;
+};
+
 class CMainFrame : public CFrameWndEx
 {
 	
@@ -29,7 +50,7 @@ protected: // create from serialization only
 
 // Attributes
 public:
-
+	
 // Operations
 public:
 	void SetTheme(BOOL bDark);
@@ -61,7 +82,7 @@ private:
 protected:  // control bar embedded members
 	CMFCMenuBar       m_wndMenuBar;
 	CMFCToolBar       m_wndToolBar;
-	CMFCStatusBar     m_wndStatusBar;
+	CMainStatusBar    m_wndStatusBar;
 	CMFCToolBarImages m_UserImages;
 	CFileView         m_wndFileView;
 	CPropertiesWnd    m_wndProperties;
@@ -84,6 +105,8 @@ protected:
 	afx_msg LRESULT OnCanOpenRecordItem(WPARAM wp, LPARAM lp);
 	afx_msg LRESULT OnOpenRecordItem(WPARAM wp, LPARAM lp);
 	afx_msg LRESULT OnViewUpdateSizeScroll(WPARAM wp, LPARAM lp);
+
+	afx_msg void OnUpdateStatusBarColorText(CCmdUI* pCmdUI);
 	DECLARE_MESSAGE_MAP()
 
 	BOOL CreateDockingWindows();

@@ -4,10 +4,10 @@
 //
 #define IDD_ABOUTBOX                    100
 #define IDR_POPUP_EDIT                  119
-#define ID_STATUSBAR_PANE1              120
-#define ID_STATUSBAR_PANE2              121
-#define IDS_STATUS_PANE1                122
-#define IDS_STATUS_PANE2                123
+#define ID_STATUSBAR_PANE_COLOR         120
+#define ID_STATUSBAR_PANE_COLOR_TEXT    121
+#define ID_STATUSBAR_PANE_COORD         122
+#define ID_STATUSBAR_PANE_ZOOM          123
 #define IDS_TOOLBAR_STANDARD            124
 #define IDS_TOOLBAR_CUSTOMIZE           125
 #define ID_VIEW_CUSTOMIZE               126

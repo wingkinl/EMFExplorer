@@ -57,6 +57,10 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_FITWIDTH, &CEMFExplorerView::OnUpdateZoomFitWidth)
 	ON_COMMAND(ID_ZOOM_FITHEIGHT, &CEMFExplorerView::OnZoomFitHeight)
 	ON_UPDATE_COMMAND_UI(ID_ZOOM_FITHEIGHT, &CEMFExplorerView::OnUpdateZoomFitHeight)
+#ifndef SHARED_HANDLERS
+	ON_UPDATE_COMMAND_UI(ID_STATUSBAR_PANE_COORD, &CEMFExplorerView::OnUpdateStatusBarCoordinates)
+	ON_UPDATE_COMMAND_UI(ID_STATUSBAR_PANE_ZOOM, &CEMFExplorerView::OnUpdateStatusBarZoom)
+#endif // SHARED_HANDLERS
 END_MESSAGE_MAP()
 
 // CEMFExplorerView construction/destruction
@@ -485,6 +489,63 @@ void CEMFExplorerView::OnUpdateZoomFitHeight(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetRadio(GetFitToWindow() == FitToHeight);
 }
+
+COLORREF CEMFExplorerView::GetCursorColor() const
+{
+	BOOL bValid = HasValidEMFInDoc();
+	if (bValid)
+	{
+		CPoint pos;
+		GetCursorPos(&pos);
+		ScreenToClient(&pos);
+		CClientDC dc(const_cast<CEMFExplorerView*>(this));
+		auto clr = dc.GetPixel(pos);
+		return clr;
+	}
+	return 0;
+}
+
+#ifndef SHARED_HANDLERS
+void CEMFExplorerView::OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI)
+{
+	BOOL bValid = HasValidEMFInDoc();
+	pCmdUI->Enable(bValid);
+	CString str;
+	if (bValid)
+	{
+		CPoint pos;
+		GetCursorPos(&pos);
+		ScreenToClient(&pos);
+		CPoint ptOffset = GetDeviceScrollPosition();
+		pos += ptOffset;
+		GetRealZoomFactor();
+ 		str.Format(_T("(%d, %d)"), pos.x, pos.y);
+	}
+	else
+	{
+		str.LoadString(ID_STATUSBAR_PANE_COORD);
+	}
+	pCmdUI->SetText(str);
+}
+
+void CEMFExplorerView::OnUpdateStatusBarZoom(CCmdUI* pCmdUI)
+{
+	BOOL bValid = HasValidEMFInDoc();
+	pCmdUI->Enable(bValid);
+	CString str;
+	if (bValid)
+	{
+		float factor = GetRealZoomFactor();
+		str.Format(_T("%d%%"), (int)(factor*100));
+		pCmdUI->SetText(str);
+	}
+	else
+	{
+		str.LoadString(ID_STATUSBAR_PANE_ZOOM);
+	}
+	pCmdUI->SetText(str);
+}
+#endif
 
 #ifdef SHARED_HANDLERS
 void CEMFExplorerView::OnInitMenuPopup(CMenu* popup, UINT nIndex, BOOL bSysMenu)
