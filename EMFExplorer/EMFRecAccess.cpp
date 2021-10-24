@@ -328,16 +328,16 @@ protected:
 		switch (pObj->Type)
 		{
 		case OBrushType::SolidColor:
-			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"SolidColor", pObj->BrushDataSolid.SolidColor));
+			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"SolidColor", pObj->BrushDataSolid->SolidColor));
 			break;
 		case OBrushType::HatchFill:
-			pNode->AddText(L"HatchStyle", EMFPlusHatchStyleText(pObj->BrushDataHatch.HatchStyle));
-			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"ForeColor", pObj->BrushDataHatch.ForeColor));
-			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"BackColor", pObj->BrushDataHatch.BackColor));
+			pNode->AddText(L"HatchStyle", EMFPlusHatchStyleText(pObj->BrushDataHatch->HatchStyle));
+			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"ForeColor", pObj->BrushDataHatch->ForeColor));
+			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"BackColor", pObj->BrushDataHatch->BackColor));
 			break;
 		case OBrushType::TextureFill:
-			pNode->AddValue(L"BrushDataFlags", (u32t)pObj->BrushDataTexture.BrushDataFlags, true);
-			pNode->AddText(L"WrapMode", EMFPlusWrapModeText(pObj->BrushDataTexture.WrapMode));
+			pNode->AddValue(L"BrushDataFlags", (u32t)pObj->BrushDataTexture->BrushDataFlags, true);
+			pNode->AddText(L"WrapMode", EMFPlusWrapModeText(pObj->BrushDataTexture->WrapMode));
 			// TODO
 			break;
 		case OBrushType::PathGradient:
@@ -421,15 +421,15 @@ protected:
 		switch (pImg->Type)
 		{
 		case OImageDataType::Bitmap:
-			pNode->AddValue(L"Width", pImg->ImageDataBmp.Width);
-			pNode->AddValue(L"Height", pImg->ImageDataBmp.Height);
-			pNode->AddValue(L"Stride", pImg->ImageDataBmp.Stride);
-			pNode->AddValue(L"PixelFormat", (u32t)pImg->ImageDataBmp.PixelFormat, true);
-			pNode->AddText(L"BitmapType", EMFPlusBitmapTypeText(pImg->ImageDataBmp.Type));
+			pNode->AddValue(L"Width", pImg->ImageDataBmp->Width);
+			pNode->AddValue(L"Height", pImg->ImageDataBmp->Height);
+			pNode->AddValue(L"Stride", pImg->ImageDataBmp->Stride);
+			pNode->AddValue(L"PixelFormat", (u32t)pImg->ImageDataBmp->PixelFormat, true);
+			pNode->AddText(L"BitmapType", EMFPlusBitmapTypeText(pImg->ImageDataBmp->Type));
 			break;
 		case OImageDataType::Metafile:
-			pNode->AddText(L"MetafileType", EMFPlusMetafileTypeText(pImg->ImageDataMetafile.Type));
-			pNode->AddValue(L"MetafileDataSize", pImg->ImageDataMetafile.MetafileDataSize);
+			pNode->AddText(L"MetafileType", EMFPlusMetafileTypeText(pImg->ImageDataMetafile->Type));
+			pNode->AddValue(L"MetafileDataSize", pImg->ImageDataMetafile->MetafileDataSize);
 			break;
 		}
 	}
@@ -445,7 +445,7 @@ protected:
 			// TODO
 			break;
 		case OImageDataType::Metafile:
-			m_emf = std::make_shared<EMFAccess>(pImg->ImageDataMetafile.MetafileData);
+			m_emf = std::make_shared<EMFAccess>(pImg->ImageDataMetafile->MetafileData);
 			m_emf->AddNestedPath(pEMF->GetNestedPath().c_str());
 			m_emf->AddNestedPath(std::to_wstring(m_pObjRec->GetIndex()+1).c_str());
 			break;
@@ -1619,10 +1619,22 @@ void EMFRecAccessGDIPlusRecSetPageTransform::CacheProperties(EMFAccess* pEMF)
 }
 
 
-EMFAccess::EMFAccess(const std::vector<u8t>& vData)
+EMFAccess::EMFAccess(const std::vector<u8t>& data)
+	: EMFAccess(data.data(), data.size())
+{
+	
+}
+
+EMFAccess::EMFAccess(const data_access::memory_wrapper& data)
+	: EMFAccess(data.data(), data.size())
+{
+
+}
+
+EMFAccess::EMFAccess(const emfplus::u8t* pData, size_t nSize)
 {
 	ATL::CComPtr<IStream> stream;
-	stream.Attach(SHCreateMemStream(vData.data(), (UINT)vData.size()));
+	stream.Attach(SHCreateMemStream(pData, (UINT)nSize));
 	m_pMetafile = std::make_unique<Gdiplus::Metafile>(stream);
 	m_pMetafile->GetMetafileHeader(&m_hdr);
 }

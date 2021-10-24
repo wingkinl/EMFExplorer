@@ -55,26 +55,26 @@ void OEmfPlusPointDataArray::Read(DataReader& reader, u32t Count, bool bRelative
 		ASSERT(0);
 		// EmfPlusPointR
 		// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/c861a0d4-39f0-4f6c-bad9-e3f7bf63205e
-		i.resize((size_t)Count);
+		ivals.resize((size_t)Count);
 		for (u32t ii = 0; ii < Count; ++ii)
 		{
-			i[ii].x = _ReadEmfPlusPointRInteger(reader);
-			i[ii].y = _ReadEmfPlusPointRInteger(reader);
+			ivals[ii].x = _ReadEmfPlusPointRInteger(reader);
+			ivals[ii].y = _ReadEmfPlusPointRInteger(reader);
 		}
 	}
 	else
 	{
 		if (asInt)
-			reader.ReadArray(i, (size_t)Count);
+			reader.ReadArray(ivals, (size_t)Count);
 		else
-			reader.ReadArray(f, (size_t)Count);
+			reader.ReadArray(fvals, (size_t)Count);
 	}
 }
 
 void OEmfPlusPointDataArray::Reset()
 {
-	i.clear();
-	f.clear();
+	ivals.clear();
+	fvals.clear();
 }
 
 bool OEmfPlusPath::Read(DataReader& reader, size_t nExpectedSize)
@@ -89,10 +89,10 @@ bool OEmfPlusPath::Read(DataReader& reader, size_t nExpectedSize)
 	{
 		// Not tested implementation, please check
 		ASSERT(0);
-		reader.ReadArray(PathPointTypes, (size_t)PathPointCount);
+		reader.ReadArray(PathPointTypesRLE, (size_t)PathPointCount);
 	}
 	else
-		reader.ReadArray(PathPointTypes, (size_t)PathPointCount, sizeof(OPathPointType));
+		reader.ReadArray(PathPointTypes, (size_t)PathPointCount);
 	readerCheck.SkipAlignmentPadding();
 	return true;
 }
@@ -128,7 +128,7 @@ OEmfPlusRegionNode& OEmfPlusRegionNode::operator=(const OEmfPlusRegionNode& othe
 {
 	Type = other.Type;
 	memcpy(transform, other.transform, sizeof(transform));
-	path.Reset();
+	path->Reset();
 	childNodes.reset();
 	switch (Type)
 	{
@@ -173,7 +173,7 @@ bool OEmfPlusRegionNode::Read(DataReader& reader, size_t nExpectedSize)
 		reader.ReadBytes(&rect, sizeof(rect));
 		break;
 	case ORegionNodeDataTypePath:
-		path.Read(reader);
+		path->Read(reader);
 		break;
 	case ORegionNodeDataTypeAnd:
 	case ORegionNodeDataTypeOr:
@@ -248,9 +248,9 @@ bool OEmfPlusCustomLineCapData::OEmfPlusCustomLineCapOptionalData::Read(DataRead
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	if (CustomLineCapDataFlags & (u32t)OCustomLineCapData::FillPath)
-		FillData.Read(reader);
+		FillData->Read(reader);
 	if (CustomLineCapDataFlags & (u32t)OCustomLineCapData::LinePath)
-		OutlineData.Read(reader, readerCheck.GetLeftoverSize());
+		OutlineData->Read(reader, readerCheck.GetLeftoverSize());
 	return true;
 }
 
@@ -278,7 +278,7 @@ bool OEmfPlusCustomLineCap::Read(DataReader& reader, size_t nExpectedSize)
 	reader.ReadBytes(&Type, sizeof(Type));
 	if (Type == OCustomLineCapDataType::Default)
 	{
-		CustomLineCapData.Read(reader, readerCheck.GetLeftoverSize());
+		CustomLineCapData->Read(reader, readerCheck.GetLeftoverSize());
 	}
 	else
 	{
@@ -324,15 +324,15 @@ bool OEmfPlusPenData::OEmfPlusPenOptionalData::Read(DataReader& reader, u32t Pen
 	if (PenDataFlags & (u32t)OPenData::DashedLineOffset)
 		reader.ReadBytes(&DashOffset, sizeof(DashOffset));
 	if (PenDataFlags & (u32t)OPenData::DashedLine)
-		DashedLineData.Read(reader);
+		DashedLineData->Read(reader);
 	if (PenDataFlags & (u32t)OPenData::NonCenter)
 		reader.ReadBytes(&PenAlignment, sizeof(PenAlignment));
 	if (PenDataFlags & (u32t)OPenData::CompoundLine)
-		CompoundLineData.Read(reader);
+		CompoundLineData->Read(reader);
 	if (PenDataFlags & (u32t)OPenData::CustomStartCap)
-		CustomStartCapData.Read(reader);
+		CustomStartCapData->Read(reader);
 	if (PenDataFlags & (u32t)OPenData::CustomEndCap)
-		CustomEndCapData.Read(reader);
+		CustomEndCapData->Read(reader);
 	return true;
 }
 
@@ -411,13 +411,13 @@ bool OEmfPlusLinearGradientBrushData::OEmfPlusLinearGradientBrushOptionalData::R
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	if (BrushDataFlags & (u32t)OBrushData::Transform)
-		reader.ReadBytes(TransformMatrix, sizeof(TransformMatrix));
+		reader.ReadBytes(&TransformMatrix, sizeof(TransformMatrix));
 	if (BrushDataFlags & (u32t)OBrushData::PresetColors)
-		BlendPattern.colors.Read(reader);
+		BlendPattern.colors->Read(reader);
 	if (BrushDataFlags & (u32t)OBrushData::BlendFactorsH)
-		BlendPattern.factorsH.Read(reader);
+		BlendPattern.factorsH->Read(reader);
 	if (BrushDataFlags & (u32t)OBrushData::BlendFactorsV)
-		BlendPattern.factorsV.Read(reader);
+		BlendPattern.factorsV->Read(reader);
 	return true;
 }
 
@@ -456,11 +456,11 @@ bool OEmfPlusPathGradientBrushData::OEmfPlusPathGradientBrushOptionalData::Read(
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	if (BrushDataFlags & (u32t)OBrushData::Transform)
-		reader.ReadBytes(TransformMatrix, sizeof(TransformMatrix));
+		reader.ReadBytes(&TransformMatrix, sizeof(TransformMatrix));
 	if (BrushDataFlags & (u32t)OBrushData::PresetColors)
-		BlendPattern.colors.Read(reader);
+		BlendPattern.colors->Read(reader);
 	if (BrushDataFlags & (u32t)OBrushData::BlendFactorsH)
-		BlendPattern.factors.Read(reader);
+		BlendPattern.factors->Read(reader);
 	if (BrushDataFlags & (u32t)OBrushData::FocusScales)
 		reader.ReadBytes(&FocusScaleData, sizeof(FocusScaleData));
 	return true;
@@ -476,9 +476,9 @@ bool OEmfPlusPathGradientBrushData::Read(DataReader& reader, size_t nExpectedSiz
 	reader.ReadBytes(&SurroundingColorCount, sizeof(SurroundingColorCount));
 	reader.ReadArray(SurroundingColor, (size_t)SurroundingColorCount);
 	if (BrushDataFlags & (u32t)OBrushData::Path)
-		BoundaryDataPath.Read(reader);
+		BoundaryDataPath->Read(reader);
 	else
-		BoundaryDataPoint.Read(reader);
+		BoundaryDataPoint->Read(reader);
 	OptionalData.Read(reader, BrushDataFlags, readerCheck.GetLeftoverSize());
 	return true;
 }
@@ -490,7 +490,7 @@ bool OEmfPlusTextureBrushData::OEmfPlusTextureBrushOptionalData::Read(DataReader
 		reader.ReadBytes(&TransformMatrix, sizeof(TransformMatrix));
 	auto nImgSize = readerCheck.GetLeftoverSize();
 	if (nImgSize > 0)
-		ImageObject.Read(reader, nImgSize);
+		ImageObject->Read(reader, nImgSize);
 	return true;
 }
 
@@ -517,13 +517,13 @@ bool OEmfPlusBrush::Read(DataReader& reader, size_t nExpectedSize)
 		reader.ReadBytes(&BrushDataHatch, sizeof(BrushDataHatch));
 		break;
 	case OBrushType::TextureFill:
-		BrushDataTexture.Read(reader, readerCheck.GetLeftoverSize());
+		BrushDataTexture->Read(reader, readerCheck.GetLeftoverSize());
 		break;
 	case OBrushType::PathGradient:
-		BrushDataPathGrad.Read(reader, readerCheck.GetLeftoverSize());
+		BrushDataPathGrad->Read(reader, readerCheck.GetLeftoverSize());
 		break;
 	case OBrushType::LinearGradient:
-		BrushDataLinearGrad.Read(reader, readerCheck.GetLeftoverSize());
+		BrushDataLinearGrad->Read(reader, readerCheck.GetLeftoverSize());
 		break;
 	}
 	return true;
@@ -573,17 +573,17 @@ bool OEmfPlusBitmapData::Read(DataReader& reader, OPixelFormat PixelFormat, size
 {
 	// TODO, OEmfPlusBitmapData::Read, not tested yet
 	ASSERT(0);
-	ASSERT(nExpectedSize != SIZE_MAX);
+	ASSERT(nExpectedSize != UNKNOWN_SIZE);
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	if ((u32t)PixelFormat & (u32t)OPixelFormat::FormatIFlag)
-		Colors.Read(reader);
+		Colors->Read(reader);
 	reader.ReadArray(PixelData, (size_t)readerCheck.GetLeftoverSize());
 	return true;
 }
 
 bool OEmfPlusCompressedImage::Read(DataReader& reader, size_t nExpectedSize)
 {
-	ASSERT(nExpectedSize != SIZE_MAX);
+	ASSERT(nExpectedSize != UNKNOWN_SIZE);
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	reader.ReadArray(CompressedImageData, (size_t)nExpectedSize);
 	return true;
@@ -598,9 +598,9 @@ bool OEmfPlusBitmap::Read(DataReader& reader, size_t nExpectedSize)
 	reader.ReadBytes(&PixelFormat, sizeof(PixelFormat));
 	reader.ReadBytes(&Type, sizeof(Type));
 	if (Type == OBitmapDataType::Pixel)
-		BitmapData.Read(reader, PixelFormat, readerCheck.GetLeftoverSize());
+		BitmapData->Read(reader, PixelFormat, readerCheck.GetLeftoverSize());
 	else
-		BitmapDataCompressed.Read(reader, readerCheck.GetLeftoverSize());
+		BitmapDataCompressed->Read(reader, readerCheck.GetLeftoverSize());
 	return true;
 }
 
@@ -615,10 +615,10 @@ bool OEmfPlusImage::Read(DataReader& reader, size_t nExpectedSize)
 		ASSERT(0);
 		break;
 	case OImageDataType::Bitmap:
-		ImageDataBmp.Read(reader, readerCheck.GetLeftoverSize());
+		ImageDataBmp->Read(reader, readerCheck.GetLeftoverSize());
 		break;
 	case OImageDataType::Metafile:
-		ImageDataMetafile.Read(reader, readerCheck.GetLeftoverSize());
+		ImageDataMetafile->Read(reader, readerCheck.GetLeftoverSize());
 		break;
 	}
 	return true;
@@ -638,7 +638,7 @@ bool OEmfPlusImageAttributes::Read(DataReader& reader, size_t nExpectedSize)
 
 bool OEmfPlusFont::Read(DataReader& reader, size_t nExpectedSize)
 {
-	ASSERT(nExpectedSize != SIZE_MAX);
+	ASSERT(nExpectedSize != UNKNOWN_SIZE);
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	OEmfPlusGraphObject::Read(reader);
 	reader.ReadBytes(&EmSize, sizeof(EmSize));
@@ -695,9 +695,9 @@ void OEmfPlusRectData::Read(DataReader& reader, bool asInt)
 {
 	AsInt = asInt;
 	if (asInt)
-		reader.ReadBytes(&i, sizeof(i));
+		reader.ReadBytes(&ival, sizeof(ival));
 	else
-		reader.ReadBytes(&f, sizeof(f));
+		reader.ReadBytes(&fval, sizeof(fval));
 }
 
 void OEmfPlusRectDataArray::Read(DataReader& reader, bool asInt)
@@ -706,9 +706,9 @@ void OEmfPlusRectDataArray::Read(DataReader& reader, bool asInt)
 	if (Count)
 	{
 		if (asInt)
-			reader.ReadArray(i, (size_t)Count);
+			reader.ReadArray(ivals, (size_t)Count);
 		else
-			reader.ReadArray(f, (size_t)Count);
+			reader.ReadArray(fvals, (size_t)Count);
 	}
 }
 

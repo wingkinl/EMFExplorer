@@ -1,5 +1,5 @@
-#ifndef EMF2SVG_EMFPLUSSTRUCT_H
-#define EMF2SVG_EMFPLUSSTRUCT_H
+#ifndef EMFPLUSSTRUCT_H
+#define EMFPLUSSTRUCT_H
 
 #ifdef _ENABLE_GDIPLUS_STRUCT
 
@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include "DataAccess.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -29,120 +30,7 @@
 
 namespace emfplus
 {
-
-class DataReader
-{
-public:
-	DataReader(const u8t* p, size_t nSize)
-	{
-		m_p = p;
-		m_pEnd = m_p + nSize;
-		m_pCur = p;
-	}
-public:
-	inline const u8t* GetPos() const
-	{
-		return m_pCur;
-	}
-
-	void ReadBytes(void* pData, size_t nSize)
-	{
-		ASSERT(m_pCur + nSize <= m_pEnd);
-		memcpy(pData, m_pCur, nSize);
-		m_pCur += nSize;
-	}
-
-	// nElemSize must be either 0 or smaller than sizeof(ValT)
-	template <typename ValT, std::enable_if_t<std::is_trivial_v<ValT>, bool> = true>
-	void ReadArray(std::vector<ValT>& arr, size_t nCount, int nElemSize = -1)
-	{
-		arr.resize(nCount);
-		if (nElemSize == -1 || nElemSize == (int)sizeof(ValT))
-		{
-			auto nSize = sizeof(ValT) * nCount;
-			ASSERT(m_pCur + nSize <= m_pEnd);
-			memcpy((void*)arr.data(), m_pCur, nSize);
-			m_pCur += nSize;
-		}
-		else if (0 < nElemSize && nElemSize < sizeof(ValT))
-		{
-			auto nSize = nElemSize * nCount;
-			ASSERT(m_pCur + nSize <= m_pEnd);
-			auto pCur = m_pCur;
-			for (auto& val : arr)
-			{
-				memcpy((void*)&val, pCur, nElemSize);
-				pCur += nElemSize;
-			}
-			m_pCur += nSize;
-			ASSERT(m_pCur == pCur);
-		}
-		else
-		{
-			ASSERT(0);
-		}
-	}
-
-	void Skip(size_t nSize)
-	{
-		m_pCur += nSize;
-	}
-protected:
-	const u8t* m_p;
-	const u8t* m_pEnd;
-	const u8t* m_pCur;
-};
-
-class ReaderChecker
-{
-public:
-	ReaderChecker(DataReader& reader, size_t nExpectedSize)
-		: m_reader(reader)
-	{
-		m_pStart = reader.GetPos();
-		m_nExpectedSize = nExpectedSize;
-	}
-	~ReaderChecker()
-	{
-	#ifdef _DEBUG
-		auto nReadSize = GetReadSize();
-	#endif // _DEBUG
-		ASSERT(SIZE_MAX == m_nExpectedSize || m_nExpectedSize == nReadSize);
-	}
-public:
-	inline size_t GetReadSize() const
-	{
-		return  (size_t)(m_reader.GetPos() - m_pStart);
-	}
-
-	inline size_t GetLeftoverSize() const
-	{
-		if (SIZE_MAX == m_nExpectedSize)
-			return SIZE_MAX;
-		return m_nExpectedSize - GetReadSize();
-	}
-	void SkipAlignmentPadding()
-	{
-		auto nAlignmentPadding = GetReadSize() % 4;
-		if (nAlignmentPadding)
-			m_reader.Skip(4-nAlignmentPadding);
-	}
-#ifdef _DEBUG
-	bool CheckLeftoverSize(size_t nExpectedSize) const
-	{
-		if (SIZE_MAX == nExpectedSize)
-			return true;
-		size_t nLeftover = GetLeftoverSize();
-		if (SIZE_MAX == nLeftover)
-			return true;
-		return nLeftover == nExpectedSize;
-	}
-#endif // _DEBUG
-protected:
-	DataReader&		m_reader;
-	const u8t*		m_pStart;
-	size_t			m_nExpectedSize;
-};
+	using namespace data_access;
 
 struct OEmfPlusRec
 {
@@ -250,8 +138,6 @@ struct OEmfPlusHeaderEx
 	const OEmfPlusHeader*	pPlus = nullptr;
 };
 
-#define GSOptional
-
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/a0558721-f6df-4325-b455-a0e6edf63cf4
 struct OEmfPlusPoint
 {
@@ -278,19 +164,48 @@ struct OEmfPlusGraphObject
 	OEmfPlusGraphObject() = default;
 	virtual ~OEmfPlusGraphObject() = default;
 
-	virtual bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	virtual bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 
 	virtual OObjType GetObjType() const = 0 { return OObjType::Invalid; }
 };
 
+#ifndef GSWrapArray
+	#ifdef DIABLE_GS_WRAP_TYPE
+		template <typename _Ty>
+		struct GSOptionalType
+		{
+			_Ty	val;
+			inline _Ty* operator->() { return &val; }
+			inline const _Ty* operator->() const { return &val; }
+
+			inline _Ty& operator*() { return val; }
+			inline const _Ty& operator*() const { return val; }
+
+			inline operator _Ty& () { return val; }
+			inline operator const _Ty& () { return val; }
+		};
+		#define GSWrapArray(_ty)		std::vector<_ty>
+		#define GSOptionalT(_ty)		GSOptionalType<_ty>
+		#define GSOptionalArray(_ty)	std::vector<_ty>
+		using GSWrapMemory = std::vector<u8t>;
+	#else
+		#define GSWrapArray(_ty)		object_wrapper<std::vector<_ty>>
+		#define GSOptionalT(_ty)		optional_wrapper<_ty>
+		#define GSOptionalArray(_ty)	GSOptionalT(GSWrapArray(_ty))
+		using GSWrapMemory = memory_wrapper;
+	#endif // DIABLE_GS_WRAP_TYPE
+#endif // GSWrapArray
+
+#define GSOptional
+
 struct OEmfPlusPointDataArray 
 {
-	GSOptional std::vector<OEmfPlusPoint>	i;
-	GSOptional std::vector<OEmfPlusPointF>	f;
+	GSOptionalArray(OEmfPlusPoint)	ivals;
+	GSOptionalArray(OEmfPlusPointF)	fvals;
 
 	inline size_t GetSize() const
 	{
-		return std::max(i.size(), f.size());
+		return std::max(ivals.size(), fvals.size());
 	}
 
 	void Read(DataReader& reader, u32t Count, bool bRelative, bool asInt);
@@ -330,7 +245,8 @@ struct OEmfPlusPath : public OEmfPlusGraphObject
 		RunCountMask	= 0x3F00,
 		PointTypeMask	= 0x00FF,
 	};
-	std::vector<u16t>		PathPointTypes;
+	GSOptionalArray(u8t)		PathPointTypes;
+	GSOptionalArray(u16t)		PathPointTypesRLE;
 
 	typedef u16t	OEmfPlusPathPointTypeRLE;
 
@@ -367,7 +283,7 @@ struct OEmfPlusPath : public OEmfPlusGraphObject
 		return (PathPointFlags & PathPointFlagW);
 	}
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	void Reset();
 
@@ -379,7 +295,7 @@ struct OEmfPlusRegionNodePath
 {
 	OEmfPlusPath	RegionNodePath;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 
 	inline void Reset()
 	{
@@ -471,15 +387,15 @@ struct OEmfPlusRegionNode
 {
 	ORegionNodeDataType		Type;
 
-	GSOptional OEmfPlusRectF			rect;
-	GSOptional OEmfPlusRegionNodePath	path;
+	GSOptionalT(OEmfPlusRectF)			rect;
+	GSOptionalT(OEmfPlusRegionNodePath)	path;
 	GSOptional std::unique_ptr<OEmfPlusRegionNodeChildNodes>	childNodes;
 
 	OEmfPlusRegionNode();
 	OEmfPlusRegionNode(const OEmfPlusRegionNode& other);
 	OEmfPlusRegionNode& operator=(const OEmfPlusRegionNode& other);
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 
 	inline void SetTransform(const OEmfPlusTransformMatrix& mat)
 	{
@@ -505,25 +421,25 @@ struct OEmfPlusRegionNodeChildNodes
 	OEmfPlusRegionNode	Left;
 	OEmfPlusRegionNode	Right;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/43d5fb61-3ee5-46ba-be9b-ff830c91ee05
 struct OEmfPlusDashedLineData 
 {
 	u32t				DashedLineDataSize;
-	std::vector<Float>	DashedLineData;
+	GSWrapArray(Float)	DashedLineData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/9b1387ba-6008-435b-9d13-878323083130
 struct OEmfPlusCompoundLineData
 {
 	u32t				CompoundLineDataSize;
-	std::vector<Float>	CompoundLineData;
+	GSWrapArray(Float)	CompoundLineData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/8958a5a3-2de1-469c-ad2d-f4b64a9132e7
@@ -532,7 +448,7 @@ struct OEmfPlusFillPath
 	i32t			FillPathLength;
 	OEmfPlusPath	FillPath;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/4b798085-3651-4287-a02a-12e692c8a546
@@ -541,7 +457,7 @@ struct OEmfPlusLinePath
 	i32t			LinePathLength;
 	OEmfPlusPath	LinePath;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/6fbd47ae-6c34-424c-b4cc-0e86e78d9bd4
@@ -561,15 +477,15 @@ struct OEmfPlusCustomLineCapData
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/967095e9-c2cf-4b25-936a-57136754baec
 	struct OEmfPlusCustomLineCapOptionalData
 	{
-		GSOptional OEmfPlusFillPath FillData;
-		GSOptional OEmfPlusLinePath OutlineData;
+		GSOptionalT(OEmfPlusFillPath) FillData;
+		GSOptionalT(OEmfPlusLinePath) OutlineData;
 
-		bool Read(DataReader& reader, u32t CustomLineCapDataFlags, size_t nExpectedSize = SIZE_MAX);
+		bool Read(DataReader& reader, u32t CustomLineCapDataFlags, size_t nExpectedSize = UNKNOWN_SIZE);
 	};
 
-	GSOptional OEmfPlusCustomLineCapOptionalData	OptionalData;
+	OEmfPlusCustomLineCapOptionalData	OptionalData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/f4c454d8-775b-4379-a0c7-bf7e64ca3480
@@ -592,10 +508,10 @@ struct OEmfPlusCustomLineCapArrowData
 struct OEmfPlusCustomLineCap : public OEmfPlusGraphObject
 {
 	OCustomLineCapDataType						Type;
-	GSOptional OEmfPlusCustomLineCapData		CustomLineCapData;
-	GSOptional OEmfPlusCustomLineCapArrowData	CustomLineCapDataArrow;
+	GSOptionalT(OEmfPlusCustomLineCapData)		CustomLineCapData;
+	GSOptionalT(OEmfPlusCustomLineCapArrowData)	CustomLineCapDataArrow;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::CustomLineCap; }
 };
@@ -606,7 +522,7 @@ struct OEmfPlusCustomStartCapData
 	u32t					CustomStartCapSize;
 	OEmfPlusCustomLineCap	CustomStartCap;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/c9ddf636-f172-4f1f-84e2-4e07ad536702
@@ -615,7 +531,7 @@ struct OEmfPlusCustomEndCapData
 	u32t					CustomEndCapSize;
 	OEmfPlusCustomLineCap	CustomEndCap;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/33d8ced5-7768-47aa-a082-a14e5dfabc96
@@ -628,26 +544,26 @@ struct OEmfPlusPenData
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/5ef071f3-f503-4f16-b027-7c4bcf2d1d81
 	struct OEmfPlusPenOptionalData
 	{
-		GSOptional OEmfPlusTransformMatrix		TransformMatrix;
-		GSOptional OLineCapType					StartCap;
-		GSOptional OLineCapType					EndCap;
-		GSOptional OLineJoinType				Join;
-		GSOptional Float						MiterLimit;
-		GSOptional OLineStyle					LineStyle;
-		GSOptional ODashedLineCap				DashedLineCapType;
-		GSOptional Float						DashOffset;
-		GSOptional OEmfPlusDashedLineData		DashedLineData;
-		GSOptional OPenAlignment				PenAlignment;
-		GSOptional OEmfPlusCompoundLineData		CompoundLineData;
-		GSOptional OEmfPlusCustomStartCapData	CustomStartCapData;
-		GSOptional OEmfPlusCustomEndCapData		CustomEndCapData;
+		GSOptionalT(OEmfPlusTransformMatrix)	TransformMatrix;
+		GSOptionalT(OLineCapType)				StartCap;
+		GSOptionalT(OLineCapType)				EndCap;
+		GSOptionalT(OLineJoinType)				Join;
+		GSOptionalT(Float)						MiterLimit;
+		GSOptionalT(OLineStyle)					LineStyle;
+		GSOptionalT(ODashedLineCap)				DashedLineCapType;
+		GSOptionalT(Float)						DashOffset;
+		GSOptionalT(OEmfPlusDashedLineData)		DashedLineData;
+		GSOptionalT(OPenAlignment)				PenAlignment;
+		GSOptionalT(OEmfPlusCompoundLineData)	CompoundLineData;
+		GSOptionalT(OEmfPlusCustomStartCapData)	CustomStartCapData;
+		GSOptionalT(OEmfPlusCustomEndCapData)	CustomEndCapData;
 
-		bool Read(DataReader& reader, u32t PenDataFlags, size_t nExpectedSize = SIZE_MAX);
+		bool Read(DataReader& reader, u32t PenDataFlags, size_t nExpectedSize = UNKNOWN_SIZE);
 	};
 
-	GSOptional OEmfPlusPenOptionalData	OptionalData;
+	OEmfPlusPenOptionalData	OptionalData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/10284df9-0c5e-48d0-9196-c91c09de069f
@@ -694,9 +610,9 @@ struct OEmfPlusMetafile
 {
 	OMetafileDataType	Type;
 	u32t				MetafileDataSize;
-	std::vector<u8t>	MetafileData;
+	GSWrapMemory		MetafileData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/dfb51d9c-7d65-45ec-ac00-9666e0578783
@@ -704,16 +620,16 @@ struct OEmfPlusPalette
 {
 	u32t	PaletteStyleFlags;	// see OPaletteStyle
 	u32t	PaletteCount;
-	std::vector<OEmfPlusARGB>	PaletteEntries;
+	GSWrapArray(OEmfPlusARGB)	PaletteEntries;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/c236db12-fc5d-4e5b-8266-0468881cd940
 struct OEmfPlusBitmapData
 {
-	GSOptional OEmfPlusPalette	Colors;
-	std::vector<u8t>			PixelData;
+	GSOptionalT(OEmfPlusPalette)	Colors;
+	GSWrapMemory					PixelData;
 
 	bool Read(DataReader& reader, OPixelFormat PixelFormat, size_t nExpectedSize);
 };
@@ -721,7 +637,7 @@ struct OEmfPlusBitmapData
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/9c00912b-adfa-469e-8baa-82d9d3d8d6ae
 struct OEmfPlusCompressedImage
 {
-	std::vector<u8t>	CompressedImageData;
+	GSWrapMemory	CompressedImageData;
 
 	bool Read(DataReader& reader, size_t nExpectedSize);
 };
@@ -734,10 +650,10 @@ struct OEmfPlusBitmap
 	i32t			Stride;
 	OPixelFormat	PixelFormat;
 	OBitmapDataType	Type;
-	GSOptional OEmfPlusBitmapData		BitmapData;
-	GSOptional OEmfPlusCompressedImage	BitmapDataCompressed;
+	GSOptionalT(OEmfPlusBitmapData)			BitmapData;
+	GSOptionalT(OEmfPlusCompressedImage)	BitmapDataCompressed;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/02c80141-208e-4335-ad51-190b40a1802c
@@ -745,10 +661,10 @@ struct OEmfPlusImage : public OEmfPlusGraphObject
 {
 	OImageDataType	Type;
 
-	GSOptional OEmfPlusBitmap	ImageDataBmp;
-	GSOptional OEmfPlusMetafile	ImageDataMetafile;
+	GSOptionalT(OEmfPlusBitmap)		ImageDataBmp;
+	GSOptionalT(OEmfPlusMetafile)	ImageDataMetafile;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::Image; }
 };
@@ -768,7 +684,7 @@ struct OEmfPlusImageAttributes : public OEmfPlusGraphObject
 	ClampType		ObjectClamp;
 	u32t			Reserved2;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::ImageAttributes; }
 };
@@ -842,9 +758,9 @@ struct OLevelsEffect
 struct ORedEyeCorrectionEffect
 {
 	i32t	NumberOfAreas;
-	std::vector<ORectL>	Areas;
+	GSWrapArray(ORectL)	Areas;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/1a41a97f-4c8e-4500-80bd-e4ea201ed99b
@@ -873,20 +789,20 @@ struct OEmfPlusHatchBrushData
 struct OEmfPlusBlendColors 
 {
 	u32t						PositionCount;
-	std::vector<Float>			BlendPositions;
-	std::vector<OEmfPlusARGB>	BlendColors;
+	GSWrapArray(Float)			BlendPositions;
+	GSWrapArray(OEmfPlusARGB)	BlendColors;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/c8a8d3db-09ed-4b79-b7b4-f2c502df1869
 struct OEmfPlusBlendFactors
 {
 	u32t					PositionCount;
-	std::vector<Float>		BlendPositions;
-	std::vector<Float>		BlendFactors;
+	GSWrapArray(Float)		BlendPositions;
+	GSWrapArray(Float)		BlendFactors;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/55bba6b0-bb57-4545-93f1-4c64f02b0a80
@@ -903,22 +819,22 @@ struct OEmfPlusLinearGradientBrushData
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/af50f5e3-e5c2-43ce-b819-d9476e93378e
 	struct OEmfPlusLinearGradientBrushOptionalData 
 	{
-		GSOptional OEmfPlusTransformMatrix		TransformMatrix;
+		GSOptionalT(OEmfPlusTransformMatrix)		TransformMatrix;
 
 		struct BlendPatternData
 		{
-			GSOptional OEmfPlusBlendColors	colors;
-			GSOptional OEmfPlusBlendFactors	factorsH;
-			GSOptional OEmfPlusBlendFactors	factorsV;
+			GSOptionalT(OEmfPlusBlendColors)	colors;
+			GSOptionalT(OEmfPlusBlendFactors)	factorsH;
+			GSOptionalT(OEmfPlusBlendFactors)	factorsV;
 		};
-		GSOptional BlendPatternData			BlendPattern;
+		BlendPatternData			BlendPattern;
 
-		bool Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize = SIZE_MAX);
+		bool Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize = UNKNOWN_SIZE);
 	};
 
-	GSOptional OEmfPlusLinearGradientBrushOptionalData OptionalData;
+	OEmfPlusLinearGradientBrushOptionalData OptionalData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/d90f9243-3d44-48e5-9baa-1db4ae5394b4
@@ -935,16 +851,16 @@ struct OEmfPlusBoundaryPathData
 	i32t			BoundaryPathSize;
 	OEmfPlusPath	BoundaryPathData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/6a55add5-6d97-4744-ac13-e5e9ef7b050a
 struct OEmfPlusBoundaryPointData
 {
 	i32t						BoundaryPointCount;
-	std::vector<OEmfPlusPointF>	BoundaryPointData;
+	GSWrapArray(OEmfPlusPointF)	BoundaryPointData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/cfe9439a-f2b6-4663-9032-67ce8feea5aa
@@ -955,29 +871,29 @@ struct OEmfPlusPathGradientBrushData
 	OEmfPlusARGB	CenterColor;
 	OEmfPlusPointF	CenterPointF;
 	u32t			SurroundingColorCount;
-	std::vector<OEmfPlusARGB>	SurroundingColor;
-	GSOptional OEmfPlusBoundaryPathData BoundaryDataPath;
-	GSOptional OEmfPlusBoundaryPointData BoundaryDataPoint;
+	GSWrapArray(OEmfPlusARGB)	SurroundingColor;
+	GSOptionalT(OEmfPlusBoundaryPathData) BoundaryDataPath;
+	GSOptionalT(OEmfPlusBoundaryPointData) BoundaryDataPoint;
 
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/0008fc6a-b678-41a6-ab99-9be99fc14092
 	struct OEmfPlusPathGradientBrushOptionalData 
 	{
-		GSOptional OEmfPlusTransformMatrix		TransformMatrix;
+		GSOptionalT(OEmfPlusTransformMatrix)		TransformMatrix;
 
 		struct BlendPatternData
 		{
-			GSOptional OEmfPlusBlendColors	colors;
-			GSOptional OEmfPlusBlendFactors	factors;
+			GSOptionalT(OEmfPlusBlendColors)	colors;
+			GSOptionalT(OEmfPlusBlendFactors)	factors;
 		};
-		GSOptional BlendPatternData			BlendPattern;
-		GSOptional OEmfPlusFocusScaleData	FocusScaleData;
+		BlendPatternData					BlendPattern;
+		GSOptionalT(OEmfPlusFocusScaleData)	FocusScaleData;
 
 		bool Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize);
 	};
 
-	GSOptional OEmfPlusPathGradientBrushOptionalData OptionalData;
+	OEmfPlusPathGradientBrushOptionalData OptionalData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/ac826aa5-7060-4161-af70-6b1a76a27e0f
@@ -995,15 +911,15 @@ struct OEmfPlusTextureBrushData
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/65bf0dda-baf3-4ee0-a6c4-f37a2f73c026
 	struct OEmfPlusTextureBrushOptionalData
 	{
-		GSOptional OEmfPlusTransformMatrix	TransformMatrix;
-		GSOptional OEmfPlusImage			ImageObject;
+		GSOptionalT(OEmfPlusTransformMatrix)	TransformMatrix;
+		GSOptionalT(OEmfPlusImage)				ImageObject;
 
 		bool Read(DataReader& reader, OBrushData BrushDataFlags, size_t nExpectedSize);
 	};
 
-	GSOptional OEmfPlusTextureBrushOptionalData	Optionaldata;
+	OEmfPlusTextureBrushOptionalData	Optionaldata;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX);
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/79c653fb-bf01-4f87-8bd2-eac1de71e140
@@ -1011,13 +927,13 @@ struct OEmfPlusBrush : public OEmfPlusGraphObject
 {
 	OBrushType		Type;
 
-	GSOptional OEmfPlusHatchBrushData BrushDataHatch;
-	GSOptional OEmfPlusLinearGradientBrushData BrushDataLinearGrad;
-	GSOptional OEmfPlusPathGradientBrushData BrushDataPathGrad;
-	GSOptional OEmfPlusSolidBrushData BrushDataSolid;
-	GSOptional OEmfPlusTextureBrushData BrushDataTexture;
+	GSOptionalT(OEmfPlusHatchBrushData)				BrushDataHatch;
+	GSOptionalT(OEmfPlusLinearGradientBrushData)	BrushDataLinearGrad;
+	GSOptionalT(OEmfPlusPathGradientBrushData)		BrushDataPathGrad;
+	GSOptionalT(OEmfPlusSolidBrushData)				BrushDataSolid;
+	GSOptionalT(OEmfPlusTextureBrushData)			BrushDataTexture;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::Brush; }
 };
@@ -1028,7 +944,7 @@ struct OEmfPlusPen : public OEmfPlusGraphObject
 	OEmfPlusPenData	PenData;
 	OEmfPlusBrush	BrushObject;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::Pen; }
 };
@@ -1038,7 +954,7 @@ struct OEmfPlusRegion : public OEmfPlusGraphObject
 {
 	OEmfPlusRegionNode	RegionNode;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::Region; }
 };
@@ -1053,7 +969,7 @@ struct OEmfPlusFont : public OEmfPlusGraphObject
 	u32t			Length;
 	std::wstring	FamilyName;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::Font; }
 };
@@ -1105,13 +1021,13 @@ struct OEmfPlusStringFormat : public OEmfPlusGraphObject
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/9567fbcd-d999-4c70-873f-12d320f02dc3
 	struct OEmfPlusStringFormatData 
 	{
-		std::vector<Float>					TabStops;
-		std::vector<OEmfPlusCharacterRange>	CharRange;
+		GSWrapArray(Float)					TabStops;
+		GSWrapArray(OEmfPlusCharacterRange)	CharRange;
 	};
 
 	OEmfPlusStringFormatData	StringFormatData;
 
-	bool Read(DataReader& reader, size_t nExpectedSize = SIZE_MAX) override;
+	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE) override;
 
 	OObjType GetObjType() const override { return OObjType::StringFormat; }
 };
@@ -1177,7 +1093,7 @@ struct OEmfPlusRecSetClipRegion
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/beb96556-0251-4b33-964f-b30aca0870ea
 struct OEmfPlusRecComment
 {
-	std::vector<u8t>	PrivateData;
+	GSWrapMemory	PrivateData;
 
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
@@ -1190,8 +1106,9 @@ struct OEmfPlusRecClear
 
 struct OEmfPlusRectData 
 {
-	GSOptional OEmfPlusRect		i;
-	GSOptional OEmfPlusRectF	f;
+	GSOptionalT(OEmfPlusRect)	ival;
+	GSOptionalT(OEmfPlusRectF)	fval;
+
 	bool AsInt;
 
 	void Read(DataReader& reader, bool asInt);
@@ -1200,8 +1117,13 @@ struct OEmfPlusRectData
 struct OEmfPlusRectDataArray 
 {
 	u32t	Count;
-	GSOptional std::vector<OEmfPlusRect>	i;
-	GSOptional std::vector<OEmfPlusRectF>	f;
+	GSOptionalArray(OEmfPlusRect)	ivals;
+	GSOptionalArray(OEmfPlusRectF)	fvals;
+
+	inline size_t GetSize() const
+	{
+		return std::max(ivals.size(), fvals.size());
+	}
 
 	void Read(DataReader& reader, bool asInt);
 };
@@ -1291,9 +1213,9 @@ struct OEmfPlusRecDrawDriverString
 	u32t	DriverStringOptionsFlags;	// see ODriverStringOptions
 	Bool	MatrixPresent;
 	u32t	GlyphCount;
-	std::vector<u16t> Glyphs;
-	std::vector<OEmfPlusPointF> GlyphPos;
-	GSOptional OEmfPlusTransformMatrix TransformMatrix;
+	GSWrapArray(u16t) Glyphs;
+	GSWrapArray(OEmfPlusPointF) GlyphPos;
+	GSOptionalT(OEmfPlusTransformMatrix) TransformMatrix;
 
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
@@ -1844,4 +1766,4 @@ struct OEmfPlusRecTranslateWorldTransform
 
 #endif // _ENABLE_GDIPLUS_STRUCT
 
-#endif // EMF2SVG_EMFPLUSSTRUCT_H
+#endif // EMFPLUSSTRUCT_H

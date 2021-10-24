@@ -1970,7 +1970,9 @@ CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter = false, f
 class EMFAccess final
 {
 public:
-	EMFAccess(const std::vector<emfplus::u8t>& vData);
+	EMFAccess(const std::vector<emfplus::u8t>& data);
+	EMFAccess(const data_access::memory_wrapper& data);
+	EMFAccess(const emfplus::u8t* pData, size_t nSize);
 	~EMFAccess();
 public:
 	const Gdiplus::MetafileHeader& GetMetafileHeader() const { return m_hdr; }

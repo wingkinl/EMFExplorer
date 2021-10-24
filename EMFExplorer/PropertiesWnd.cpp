@@ -177,10 +177,10 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 			auto& prop = (const PropertyNodePlusRectData&)node;
 			std::vector<std::tuple<LPCWSTR, emfplus::Float>> vals;
 			bool bFloat = !prop.data.AsInt;
-			vals.emplace_back(L"X", bFloat ? prop.data.f.X : prop.data.i.X);
-			vals.emplace_back(L"Y", bFloat ? prop.data.f.Y : prop.data.i.Y);
-			vals.emplace_back(L"Width", bFloat ? prop.data.f.Width : prop.data.i.Width);
-			vals.emplace_back(L"Height", bFloat ? prop.data.f.Height : prop.data.i.Height);
+			vals.emplace_back(L"X", bFloat ? prop.data.fval->X : prop.data.ival->X);
+			vals.emplace_back(L"Y", bFloat ? prop.data.fval->Y : prop.data.ival->Y);
+			vals.emplace_back(L"Width", bFloat ? prop.data.fval->Width : prop.data.ival->Width);
+			vals.emplace_back(L"Height", bFloat ? prop.data.fval->Height : prop.data.ival->Height);
 			for (auto& v : vals)
 			{
 				pSubProp = new CMFCPropertyGridProperty(std::get<0>(v), (_variant_t)std::get<1>(v), nullptr);
@@ -209,15 +209,16 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 			const size_t maxCount = 10;
 			auto nActualSize = prop.data.GetSize();
 			size_t nCount = std::min(maxCount, nActualSize);
-			bool bFloat = !prop.data.f.empty();
+			auto& data = prop.data;
+			bool bFloat = !data.fvals.empty();
 			for (size_t ii = 0; ii < nCount; ++ii)
 			{
 				CStringW strName, strVal;
 				strName.Format(L"[%llu]", ii);
 				if (bFloat)
-					strVal.Format(L"%g, %g", prop.data.f[ii].x, prop.data.f[ii].y);
+					strVal.Format(L"%g, %g", data.fvals[ii].x, data.fvals[ii].y);
 				else
-					strVal.Format(L"%d, %d", prop.data.i[ii].x, prop.data.i[ii].y);
+					strVal.Format(L"%d, %d", data.ivals[ii].x, data.ivals[ii].y);
 				pSubProp = new CMFCPropertyGridProperty(strName, strVal, nullptr);
 				pSubProp->AllowEdit(FALSE);
 				pGridProp->AddSubItem(pSubProp);
