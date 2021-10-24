@@ -101,10 +101,6 @@ IDB_FILE_VIEW           BITMAP                  "res\\fileview.bmp"
 
 IDB_FILE_VIEW_24        BITMAP                  "res\\fileview_hc.bmp"
 
-IDB_CLASS_VIEW          BITMAP                  "res\\classview.bmp"
-
-IDB_CLASS_VIEW_24       BITMAP                  "res\\classview_hc.bmp"
-
 IDR_EXPLORER            BITMAP                  "res\\explorer.bmp"
 
 IDB_EXPLORER_24         BITMAP                  "res\\explorer_hc.bmp"
@@ -531,7 +527,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_FILE_VIEW           "File View"
-    IDS_CLASS_VIEW          "Class View"
     IDS_PROPERTIES_WND      "Properties"
 END
 

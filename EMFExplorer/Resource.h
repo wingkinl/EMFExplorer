@@ -40,8 +40,6 @@
 #define IDR_POPUP_EXPLORER              174
 #define IDB_FILE_VIEW                   175
 #define IDB_FILE_VIEW_24                176
-#define IDB_CLASS_VIEW                  177
-#define IDB_CLASS_VIEW_24               178
 #define IDR_MENU_IMAGES                 179
 #define IDB_MENU_IMAGES_24              180
 #define ID_TOOLS_MACRO                  181
