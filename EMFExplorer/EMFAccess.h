@@ -67,18 +67,39 @@ public:
 		m_strNestedPath += szPath;
 	}
 
+	EMFRecAccess* GetGDISaveRecord(LONG nSavedDC) const;
+
 	EMFRecAccess* GetPlusSaveRecord(emfplus::u32t nStackIndex) const;
 private:
 	bool PopPlusState(uint32_t nStackIndex, bool bContainer);
 protected:
 	using EmfRecArray	= std::vector<EMFRecAccess*>;
 	
-	EmfRecArray				m_EMFRecords;
+	EmfRecArray			m_EMFRecords;
+	std::wstring		m_strNestedPath;
 
+	//////////////////////////////
+	// GDI
+	//////////////////////////////
+	struct EMFGDIState 
+	{
+		EMFRecAccess* pSavedRec;
+	};
+	std::vector<EMFGDIState> m_vGDIState;
+
+	struct EMFGDIObjInfo
+	{
+		EMFRecAccess* pRec;
+	};
+	std::vector<EMFGDIObjInfo>	m_vGDIObjTable;
+
+	//////////////////////////////
+	// GDI+
+	//////////////////////////////
 	struct EMFPlusState
 	{
 		bool			bContainer;
-		EMFRecAccess*	pSaveRec;
+		EMFRecAccess*	pSavedRec;
 	};
 	std::vector<EMFPlusState> m_vPlusState;
 
@@ -88,8 +109,6 @@ protected:
 	};
 	std::vector<EMFPlusObjInfo>			m_vPlusObjTable;
 	emfplus::OEmfPlusRecObjectReader	m_PlusRecObjReader;
-
-	std::wstring		m_strNestedPath;
 };
 
 #endif // SHARED_HANDLERS

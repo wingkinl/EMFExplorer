@@ -40,6 +40,9 @@ Gdiplus::Image* EMFAccessBase::CloneMetafile() const
 #ifndef SHARED_HANDLERS
 using namespace emfplus;
 
+#include "EMFRecAccessGDI.h"
+#include "EMFRecAccessPlus.h"
+
 EMFAccess::EMFAccess(const data_access::memory_wrapper& data)
 	: EMFAccess(data.data(), data.size())
 {
@@ -198,6 +201,11 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 		break;
 	case EmfRecordTypeSaveDC:
 		pRecAccess = new EMFRecAccessGDIRecSaveDC;
+		{
+			EMFGDIState state;
+			state.pSavedRec = pRecAccess;
+			m_vGDIState.emplace_back(state);
+		}
 		break;
 	case EmfRecordTypeRestoreDC:
 		pRecAccess = new EMFRecAccessGDIRecRestoreDC;
@@ -585,7 +593,7 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 			ASSERT((u32t)m_vPlusState.size() == pRec->StackIndex);
 			EMFPlusState state;
 			state.bContainer = false;
-			state.pSaveRec = pRecAccess;
+			state.pSavedRec = pRecAccess;
 			m_vPlusState.emplace_back(state);
 		}
 		break;
@@ -599,7 +607,7 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 			ASSERT((u32t)m_vPlusState.size() == pRec->StackIndex);
 			EMFPlusState state;
 			state.bContainer = true;
-			state.pSaveRec = pRecAccess;
+			state.pSavedRec = pRecAccess;
 			m_vPlusState.emplace_back(state);
 		}
 		break;
@@ -610,7 +618,7 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 			ASSERT((u32t)m_vPlusState.size() == pRec->StackIndex);
 			EMFPlusState state;
 			state.bContainer = true;
-			state.pSaveRec = pRecAccess;
+			state.pSavedRec = pRecAccess;
 			m_vPlusState.emplace_back(state);
 		}
 		break;
@@ -681,6 +689,17 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 
 	switch (type)
 	{
+	case EmfRecordTypeRestoreDC:
+		{
+			auto pRec = EMFRecAccessGDIRec::GetGDIRecord(rec);
+			auto nSavedDC = ((EMRRESTOREDC*)pRec)->iRelative;
+			if (nSavedDC < 0)
+				nSavedDC = (int)m_vGDIState.size() + nSavedDC;
+			if (nSavedDC < 0 || nSavedDC >= (int)m_vGDIState.size())
+				break;
+			m_vGDIState.resize(nSavedDC);
+		}
+		break;
 	case EmfPlusRecordTypeRestore:
 		PopPlusState(((OEmfPlusRecRestore*)rec.Data)->StackIndex, false);
 		break;
@@ -734,6 +753,15 @@ bool EMFAccess::SaveToFile(LPCWSTR szPath) const
 	return true;
 }
 
+EMFRecAccess* EMFAccess::GetGDISaveRecord(LONG nSavedDC) const
+{
+	if (nSavedDC < 0)
+		nSavedDC = (LONG)m_vGDIState.size() + nSavedDC;
+	if (nSavedDC < 0 || nSavedDC >= (LONG)m_vGDIState.size())
+		return nullptr;
+	return m_vGDIState[nSavedDC].pSavedRec;
+}
+
 EMFRecAccess* EMFAccess::GetPlusSaveRecord(u32t nStackIndex) const
 {
 	if (nStackIndex >= (u32t)m_vPlusState.size())
@@ -741,7 +769,7 @@ EMFRecAccess* EMFAccess::GetPlusSaveRecord(u32t nStackIndex) const
 		ASSERT(0);
 		return nullptr;
 	}
-	return m_vPlusState[nStackIndex].pSaveRec;
+	return m_vPlusState[nStackIndex].pSavedRec;
 }
 
 bool EMFAccess::PopPlusState(uint32_t nStackIndex, bool bContainer)

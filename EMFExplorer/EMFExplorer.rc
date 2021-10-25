@@ -526,7 +526,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FILE_VIEW           "File View"
+    IDS_FILE_VIEW           "Records"
     IDS_PROPERTIES_WND      "Properties"
 END
 

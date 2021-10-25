@@ -8,6 +8,8 @@
 
 #include "MainFrm.h"
 #include "EMFExplorerView.h"
+#include "EMFRecAccessGDI.h"
+#include "EMFRecAccessPlus.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
