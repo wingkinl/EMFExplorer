@@ -13,6 +13,7 @@ struct optional_wrapper
 	inline operator bool() const { return _enabled; }
 	inline void enable() { _enabled = true; }
 	inline _Ty& get() { enable(); return _val; }
+	inline const _Ty& get() const { ASSERT(_enabled); return _val; }
 
 	inline _Ty* operator->() { enable(); return &_val; }
 	inline const _Ty* operator->() const { ASSERT(_enabled); return &_val; }
@@ -142,13 +143,23 @@ struct object_wrapper <std::vector<_Ty>>
 
 	inline auto data() { return _ptr ? _ptr : _val.data(); }
 	inline auto data() const { return _ptr ? _ptr : _val.data(); }
-private:
-	using vector_object_wrapper_trait = void;
 protected:
 	_Ty*				_ptr = nullptr;
 	size_t				_size = 0;
 	std::vector<_Ty>	_val;
 };
+
+template <typename T> struct is_optional_wrapper : public std::false_type {};
+
+template <typename T> struct is_optional_wrapper<optional_wrapper<T>> : public std::true_type {};
+
+template <typename T> struct is_object_wrapper : public std::false_type {};
+
+template <typename T> struct is_object_wrapper<object_wrapper<T>> : public std::true_type {};
+
+template <class _Ty>
+constexpr bool is_optional_wrapper_v =
+	is_optional_wrapper<_Ty>::value;
 
 template<typename ...>
 using to_void = void; // maps everything to void, used in non-evaluated contexts
@@ -159,7 +170,7 @@ struct is_vector_object_wrapper : std::false_type
 
 template<typename T>
 struct is_vector_object_wrapper<T,
-	to_void<typename T::vector_object_wrapper_trait>> : std::true_type
+	to_void<typename T::vector_type>> : std::true_type
 {};
 
 using memory_wrapper = object_wrapper<std::vector<byte>>;
@@ -217,7 +228,7 @@ public:
 	{
 		if (m_bAttachMemMode)
 		{
-			arr.attach((ValT::value_type*)m_pCur);
+			arr.attach( (typename ValT::value_type*)m_pCur );
 			arr.resize(nCount);
 			auto nSize = sizeof(ValT::value_type) * nCount;
 			ASSERT(m_pCur + nSize <= m_pEnd);

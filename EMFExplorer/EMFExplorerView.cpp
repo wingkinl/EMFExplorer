@@ -18,7 +18,6 @@
 #define new DEBUG_NEW
 #endif
 
-
 // CEMFExplorerView
 
 IMPLEMENT_DYNCREATE(CEMFExplorerView, CEMFExplorerViewBase)

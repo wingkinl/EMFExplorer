@@ -48,6 +48,35 @@ int GdiplusEnd()
 	return (l_nGdiplusRequire);
 }
 
+CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter, float* pfScale)
+{
+	CRect rcFit = rcDest;
+	CSize szDest = rcDest.Size();
+	auto fScaleDst = (float)szDest.cy / szDest.cx;
+	auto fScaleSrc = (float)szSrc.cy / szSrc.cx;
+	float fScale = 1.f;
+	if (fScaleSrc <= fScaleDst)
+	{
+		// source image is flatter than the target rectangle, so we fit the width
+		fScale = (float)szDest.cx / szSrc.cx;
+		szDest.cy	= (int)(szSrc.cy * fScale);
+		rcFit.bottom = rcFit.top + szDest.cy;
+		if (bCenter)
+			rcFit.OffsetRect(0, (rcDest.Height() - rcFit.Height()) / 2);
+	}
+	else
+	{
+		fScale = (float)szDest.cy / szSrc.cy;
+		szDest.cx	= (int)(szSrc.cx * fScale);
+		rcFit.right = rcFit.left + szDest.cx;
+		if (bCenter)
+			rcFit.OffsetRect((rcDest.Width() - rcFit.Width()) / 2, 0);
+	}
+	if (pfScale)
+		*pfScale = fScale;
+	return rcFit;
+}
+
 // CEMFExplorerDoc
 
 IMPLEMENT_DYNCREATE(CEMFExplorerDoc, CDocument)
@@ -81,18 +110,18 @@ BOOL CEMFExplorerDoc::OnNewDocument()
 	return TRUE;
 }
 
-void CEMFExplorerDoc::UpdateEMFData(const std::vector<emfplus::u8t>& data, EMFType type)
+void CEMFExplorerDoc::UpdateEMFData(const std::vector<BYTE>& data, EMFType type)
 {
-	m_emf = std::make_shared<EMFAccess>(data);
+	m_emf = std::make_shared<EMFAccessT>(data);
 	m_type = type;
 }
 
-void CEMFExplorerDoc::SetEMFAccess(std::shared_ptr<EMFAccess> emf, EMFType type)
+#ifndef SHARED_HANDLERS
+void CEMFExplorerDoc::SetEMFAccess(std::shared_ptr<EMFAccessT> emf, EMFType type)
 {
 	m_emf = emf;
 	m_type = type;
 }
-
 
 BOOL CEMFExplorerDoc::DoFileSave()
 {
@@ -113,6 +142,7 @@ BOOL CEMFExplorerDoc::OnSaveDocument(LPCTSTR lpszPathName)
 		return FALSE;
 	return m_emf->SaveToFile(lpszPathName);
 }
+#endif // SHARED_HANDLERS
 
 // CEMFExplorerDoc serialization
 

@@ -5,7 +5,15 @@
 
 #pragma once
 #include <memory>
-#include "EMFRecAccess.h"
+#include "EMFAccess.h"
+
+#ifdef SHARED_HANDLERS
+using EMFAccessT = EMFAccessBase;
+#else
+using EMFAccessT = EMFAccess;
+#endif // SHARED_HANDLERS
+
+CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter = false, float* pfScale = nullptr);
 
 class CEMFExplorerDoc : public CDocument
 {
@@ -24,17 +32,21 @@ public:
 	};
 	inline EMFType GetEMFType() const { return m_type; }
 
-	void UpdateEMFData(const std::vector<emfplus::u8t>& data, EMFType type);
+	std::shared_ptr<EMFAccessT> GetEMFAccess() const { return m_emf; }
 
-	std::shared_ptr<EMFAccess> GetEMFAccess() const { return m_emf; }
+	void UpdateEMFData(const std::vector<BYTE>& data, EMFType type);
 
-	void SetEMFAccess(std::shared_ptr<EMFAccess> emf, EMFType type);
+#ifndef SHARED_HANDLERS
+	void SetEMFAccess(std::shared_ptr<EMFAccessT> emf, EMFType type);
+#endif // SHARED_HANDLERS
 
 // Operations
 public:
+#ifndef SHARED_HANDLERS
 	BOOL DoFileSave() override;
 
 	BOOL OnSaveDocument(LPCTSTR lpszPathName) override;
+#endif // SHARED_HANDLERS
 // Overrides
 public:
 	virtual BOOL OnNewDocument();
@@ -61,7 +73,7 @@ public:
 #endif
 
 protected:
-	std::shared_ptr<EMFAccess>	m_emf;
+	std::shared_ptr<EMFAccessT>	m_emf;
 
 	EMFType			m_type = EMFType::Invalid;
 

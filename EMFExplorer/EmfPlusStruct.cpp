@@ -407,7 +407,7 @@ bool OEmfPlusBlendFactors::Read(DataReader& reader, size_t nExpectedSize)
 	return true;
 }
 
-bool OEmfPlusLinearGradientBrushData::OEmfPlusLinearGradientBrushOptionalData::Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize)
+bool OEmfPlusLinearGradientBrushOptionalData::Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	if (BrushDataFlags & (u32t)OBrushData::Transform)
@@ -452,7 +452,7 @@ bool OEmfPlusBoundaryPointData::Read(DataReader& reader, size_t nExpectedSize)
 	return true;
 }
 
-bool OEmfPlusPathGradientBrushData::OEmfPlusPathGradientBrushOptionalData::Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize)
+bool OEmfPlusPathGradientBrushOptionalData::Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	if (BrushDataFlags & (u32t)OBrushData::Transform)
@@ -499,7 +499,7 @@ bool OEmfPlusTextureBrushData::Read(DataReader& reader, size_t nExpectedSize)
 	ReaderChecker readerCheck(reader, nExpectedSize);
 	reader.ReadBytes(&BrushDataFlags, sizeof(BrushDataFlags));
 	reader.ReadBytes(&WrapMode, sizeof(WrapMode));
-	Optionaldata.Read(reader, BrushDataFlags, readerCheck.GetLeftoverSize());
+	OptionalData.Read(reader, BrushDataFlags, readerCheck.GetLeftoverSize());
 	return true;
 }
 

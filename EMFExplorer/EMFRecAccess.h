@@ -1713,8 +1713,6 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSave; }
 private:
-	void Preprocess(EMFAccess* pEMF) override;
-
 	void CacheProperties(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecSave	m_recDataCached;
@@ -1741,8 +1739,6 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeBeginContainer; }
 private:
-	void Preprocess(EMFAccess* pEMF) override;
-
 	void CacheProperties(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecBeginContainer	m_recDataCached;
@@ -1755,8 +1751,6 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeBeginContainerNoParams; }
 private:
-	void Preprocess(EMFAccess* pEMF) override;
-
 	void CacheProperties(EMFAccess* pEMF) override;
 private:
 	emfplus::OEmfPlusRecBeginContainerNoParams	m_recDataCached;
@@ -1964,70 +1958,5 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetTSClip; }
 };
 
-CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter = false, float* pfScale = nullptr);
-
-
-class EMFAccess final
-{
-public:
-	EMFAccess(const std::vector<emfplus::u8t>& data);
-	EMFAccess(const data_access::memory_wrapper& data);
-	EMFAccess(const emfplus::u8t* pData, size_t nSize);
-	~EMFAccess();
-public:
-	const Gdiplus::MetafileHeader& GetMetafileHeader() const { return m_hdr; }
-
-	void DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const;
-
-	Gdiplus::Image* CloneMetafile() const;
-
-	inline size_t GetRecordCount() const { return m_EMFRecords.size(); }
-
-	inline EMFRecAccess* GetRecord(size_t index) const
-	{
-		if (index >= m_EMFRecords.size())
-			return nullptr;
-		return m_EMFRecords[index];
-	}
-
-	bool GetRecords();
-
-	void FreeRecords();
-
-	bool HandleEMFRecord(emfplus::OEmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data);
-
-	EMFRecAccess* GetObjectCreationRecord(size_t index, bool bPlus) const;
-
-	bool SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus);
-
-	bool SaveToFile(LPCWSTR szPath) const;
-
-	const std::wstring GetNestedPath() const
-	{
-		return m_strNestedPath;
-	}
-	inline void AddNestedPath(LPCWSTR szPath)
-	{
-		if (!m_strNestedPath.empty())
-			m_strNestedPath += L"/";
-		m_strNestedPath += szPath;
-	}
-protected:
-	using EmfRecArray	= std::vector<EMFRecAccess*>;
-	using EMFPtr		= std::unique_ptr<Gdiplus::Metafile>;
-
-	EMFPtr					m_pMetafile;
-	EmfRecArray				m_EMFRecords;
-	Gdiplus::MetafileHeader	m_hdr;
-
-	struct EMFPlusObjInfo 
-	{
-		EMFRecAccess* pRec;
-	};
-	std::vector<EMFPlusObjInfo>			m_vPlusObjTable;
-	emfplus::OEmfPlusRecObjectReader	m_PlusRecObjReader;
-
-	std::wstring		m_strNestedPath;
-};
 
 #endif // EMF_REC_ACCESS_H

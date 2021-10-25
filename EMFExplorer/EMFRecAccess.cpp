@@ -1,41 +1,9 @@
 #include "pch.h"
 #include "framework.h"
 #include "EMFRecAccess.h"
-
-#include <atlbase.h>
-#include <Shlwapi.h>
-#pragma comment(lib, "Shlwapi.lib")
+#include "EMFAccess.h"
 
 using namespace emfplus;
-
-CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter, float* pfScale)
-{
-	CRect rcFit = rcDest;
-	CSize szDest = rcDest.Size();
-	auto fScaleDst = (float)szDest.cy / szDest.cx;
-	auto fScaleSrc = (float)szSrc.cy / szSrc.cx;
-	float fScale = 1.f;
-	if (fScaleSrc <= fScaleDst)
-	{
-		// source image is flatter than the target rectangle, so we fit the width
-		fScale = (float)szDest.cx / szSrc.cx;
-		szDest.cy	= (int)(szSrc.cy * fScale);
-		rcFit.bottom = rcFit.top + szDest.cy;
-		if (bCenter)
-			rcFit.OffsetRect(0, (rcDest.Height() - rcFit.Height()) / 2);
-	}
-	else
-	{
-		fScale = (float)szDest.cy / szSrc.cy;
-		szDest.cx	= (int)(szSrc.cx * fScale);
-		rcFit.right = rcFit.left + szDest.cx;
-		if (bCenter)
-			rcFit.OffsetRect((rcDest.Width() - rcFit.Width()) / 2, 0);
-	}
-	if (pfScale)
-		*pfScale = fScale;
-	return rcFit;
-}
 
 bool EMFRecAccess::IsDrawingRecord() const
 {
@@ -65,9 +33,9 @@ bool EMFRecAccess::IsLinked(const EMFRecAccess* pRec) const
 
 void EMFRecAccess::CacheProperties(EMFAccess* pEMF)
 {
-	m_propsCached->AddText(L"Name", GetRecordName());
+	m_propsCached->AddText(L"RecordName", GetRecordName());
 	m_propsCached->AddValue(L"RecordType", m_recInfo.Type);
-	m_propsCached->AddValue(L"DataSize", m_recInfo.DataSize);
+	m_propsCached->AddValue(L"RecordDataSize", m_recInfo.DataSize);
 }
 
 void EMFRecAccess::AddLinkRecord(EMFRecAccess* pRecAccess, bool bMutually)
@@ -208,7 +176,7 @@ void EMFRecAccessGDIRecGdiComment::CachePropertiesFromGDI(EMFAccess* pEMF, const
 void EMFRecAccessGDIPlusRec::CacheProperties(EMFAccess* pEMF)
 {
 	EMFRecAccess::CacheProperties(pEMF);
-	m_propsCached->AddValue(L"Flags", m_recInfo.Flags, true);
+	m_propsCached->AddValue(L"RecordFlags", m_recInfo.Flags, true);
 }
 
 void EMFRecAccessGDIPlusRecHeader::CacheProperties(EMFAccess* pEMF)
@@ -225,8 +193,7 @@ void EMFRecAccessGDIPlusRecHeader::CacheProperties(EMFAccess* pEMF)
 
 void EMFRecAccessGDIPlusRecObject::Preprocess(EMFAccess* pEMF)
 {
-	auto nObjectID = (u8t)(m_recInfo.Flags & OEmfPlusRecObjectReader::FlagObjectIDMask);
-	pEMF->SetObjectToTable(nObjectID, this, true);
+	
 }
 
 static inline LPCWSTR EMFPlusHatchStyleText(OHatchStyle val)
@@ -313,84 +280,7 @@ static inline LPCWSTR EMFPlusBrushTypeText(OBrushType val)
 	return aText[(int)val];
 }
 
-class EMFRecAccessGDIPlusBrushWrapper : public EMFRecAccessGDIPlusObjWrapper
-{
-public:
-	EMFRecAccessGDIPlusBrushWrapper()
-	{
-		m_obj.reset(new OEmfPlusBrush);
-	}
-protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
-	{
-		auto pObj = (OEmfPlusBrush*)m_obj.get();
-		pNode->AddText(L"BrushType", EMFPlusBrushTypeText(pObj->Type));
-		switch (pObj->Type)
-		{
-		case OBrushType::SolidColor:
-			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"SolidColor", pObj->BrushDataSolid->SolidColor));
-			break;
-		case OBrushType::HatchFill:
-			pNode->AddText(L"HatchStyle", EMFPlusHatchStyleText(pObj->BrushDataHatch->HatchStyle));
-			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"ForeColor", pObj->BrushDataHatch->ForeColor));
-			pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"BackColor", pObj->BrushDataHatch->BackColor));
-			break;
-		case OBrushType::TextureFill:
-			pNode->AddValue(L"BrushDataFlags", (u32t)pObj->BrushDataTexture->BrushDataFlags, true);
-			pNode->AddText(L"WrapMode", EMFPlusWrapModeText(pObj->BrushDataTexture->WrapMode));
-			// TODO
-			break;
-		case OBrushType::PathGradient:
-			break;
-		case OBrushType::LinearGradient:
-			break;
-		}
-	}
-};
-
-class EMFRecAccessGDIPlusPenWrapper : public EMFRecAccessGDIPlusObjWrapper
-{
-public:
-	EMFRecAccessGDIPlusPenWrapper()
-	{
-		m_obj.reset(new OEmfPlusPen);
-	}
-protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
-	{
-		// TODO
-	}
-};
-
-class EMFRecAccessGDIPlusPathWrapper : public EMFRecAccessGDIPlusObjWrapper
-{
-public:
-	EMFRecAccessGDIPlusPathWrapper()
-	{
-		m_obj.reset(new OEmfPlusPath);
-	}
-protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
-	{
-		// TODO
-	}
-};
-
-class EMFRecAccessGDIPlusRegionWrapper : public EMFRecAccessGDIPlusObjWrapper
-{
-public:
-	EMFRecAccessGDIPlusRegionWrapper()
-	{
-		m_obj.reset(new OEmfPlusRegion);
-	}
-protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
-	{
-		// TODO
-	}
-};
-
-static inline LPCWSTR EMFPlusImageTypeText(OImageDataType type)
+static inline LPCWSTR EMFPlusImageDataTypeText(OImageDataType type)
 {
 	static const LPCWSTR aText[] = {
 		L"Unknown", L"Bitmap", L"Metafile"
@@ -406,6 +296,354 @@ static inline LPCWSTR EMFPlusBitmapTypeText(OBitmapDataType type)
 	return aText[(int)type];
 }
 
+static inline LPCWSTR EMFPlusUnitTypeText(OUnitType type)
+{
+	static const LPCWSTR aText[] = {
+		L"World", L"Display", L"Pixel", L"Point", L"Inch", L"Document", L"Millimeter"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusLineJoinTypeText(OLineJoinType type)
+{
+	static const LPCWSTR aText[] = {
+		L"Miter", L"Bevel", L"Round", L"MiterClipped"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusLineStyleText(OLineStyle type)
+{
+	static const LPCWSTR aText[] = {
+		L"Solid", L"Dash", L"Dot", L"DashDot", L"DashDotDot", L"Custom"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusDashedLineCapText(ODashedLineCap type)
+{
+	static const LPCWSTR aText[] = {
+		L"Flat", L"Invalid", L"Round", L"Triangle"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusPenAlignmentText(OPenAlignment type)
+{
+	static const LPCWSTR aText[] = {
+		L"Center", L"Inset", L"Left", L"Outset", L"Right"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusCustomLineCapDataTypeText(OCustomLineCapDataType type)
+{
+	static const LPCWSTR aText[] = {
+		L"Default", L"AdjustableArrow"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusStringAlignmentText(OStringAlignment type)
+{
+	static const LPCWSTR aText[] = {
+		L"Near", L"Center", L"Far"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusStringDigitSubstitutionText(OStringDigitSubstitution type)
+{
+	static const LPCWSTR aText[] = {
+		L"User", L"None", L"National", L"Traditional"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusHotkeyPrefixText(OHotkeyPrefix type)
+{
+	static const LPCWSTR aText[] = {
+		L"None", L"Show", L"Hide"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusStringTrimmingText(OStringTrimming type)
+{
+	static const LPCWSTR aText[] = {
+		L"None", L"Character", L"Word", L"EllipsisCharacter", L"EllipsisWord", L"EllipsisPath"
+	};
+	return aText[(int)type];
+}
+
+static inline LPCWSTR EMFPlusImageAttributesClampTypeText(OEmfPlusImageAttributes::ClampType type)
+{
+	static const LPCWSTR aText[] = {
+		L"Rect", L"Bitmap"
+	};
+	return aText[(int)type];
+}
+
+
+#define GS_VISITABLE_STRUCT		VISITABLE_STRUCT
+#include "visit_struct.hpp"
+#include "EmfStructVisit.h"
+
+struct EmfStruct2Properties 
+{
+	template <typename ValT>
+	static inline void Build(const ValT& obj, PropertyNode* pNode)
+	{
+		visit_struct::for_each(obj, [&](const char* name, auto& value)
+			{
+				BuildField(name, value, pNode);
+			});
+	}
+
+#if __cpp_if_constexpr
+	template <typename ValT>
+	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
+	{
+		if constexpr (data_access::is_optional_wrapper_v<ValT>)
+		{
+			if (value)
+				BuildField(name, value.get(), pNode);
+		}
+		else if constexpr (std::is_class_v<ValT>)
+		{
+			if constexpr (data_access::is_vector_object_wrapper<ValT>::value)
+			{
+				if constexpr (std::is_arithmetic_v<typename ValT::value_type>)
+				{
+					if (!value.empty())
+						pNode->AddValue(L"junk", value[0]);
+				}
+			}
+			else if constexpr (data_access::is_object_wrapper<ValT>::value)
+			{
+				auto pBranchNode = pNode->AddBranch(CStringW(name));
+				if (pBranchNode)
+					Build(value.get(), pBranchNode.get());
+			}
+			else
+			{
+				auto pBranchNode = pNode->AddBranch(CStringW(name));
+				if (pBranchNode)
+					Build(value, pBranchNode.get());
+			}
+		}
+		else if constexpr (std::is_arithmetic_v<ValT>)
+		{
+			CStringW str(name);
+			pNode->AddValue(str, value);
+		}
+		else if constexpr (std::is_enum_v<ValT>)
+		{
+			CStringW str(name);
+			pNode->AddText(str, GetEnumText(value));
+		}
+	}
+#else
+	template <typename ValT, typename std::enable_if_t<std::is_class<ValT>::value>* = nullptr>
+	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
+	{
+		//EmfStruct2Properties::Build(value, pNode);
+	}
+
+	template <typename ValT, typename std::enable_if_t<std::is_arithmetic<ValT>::value>* = nullptr>
+	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
+	{
+		CStringW str(name);
+		pNode->AddValue(str, value);
+	}
+
+	template <typename ValT, typename std::enable_if_t<std::is_enum<ValT>::value>* = nullptr>
+	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
+	{
+		CStringW str(name);
+		pNode->AddText(str, GetEnumText(value));
+	}
+
+	template <typename ValT>
+	static inline void BuildField(const char* name, const optional_wrapper<ValT>& value, PropertyNode* pNode)
+	{
+		if (value)
+			BuildField(name, value.get(), pNode);
+	}
+#endif
+	template <typename ValT>
+	static inline void BuildField(const char* name, const std::unique_ptr<ValT>& value, PropertyNode* pNode)
+	{
+		if (value)
+			BuildField(name, *value, pNode);
+	}
+
+	static inline void BuildField(const char* name, const OEmfPlusARGB& value, PropertyNode* pNode)
+	{
+		pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(CStringW(name), value));
+	}
+
+	static inline void BuildField(const char* name, const OEmfPlusPointDataArray& value, PropertyNode* pNode)
+	{
+	}
+
+	static inline void BuildField(const char* name, const std::wstring& value, PropertyNode* pNode)
+	{
+		pNode->AddText(CStringW(name), value.c_str());
+	}
+
+	static inline LPCWSTR GetEnumText(OBrushType value)
+	{
+		return EMFPlusBrushTypeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OHatchStyle value)
+	{
+		return EMFPlusHatchStyleText(value);
+	}
+	static inline LPCWSTR GetEnumText(OWrapMode value)
+	{
+		return EMFPlusWrapModeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OImageDataType value)
+	{
+		return EMFPlusImageDataTypeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OBitmapDataType value)
+	{
+		return EMFPlusBitmapTypeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OMetafileDataType value)
+	{
+		return EMFPlusMetafileTypeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OUnitType value)
+	{
+		return EMFPlusUnitTypeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OLineJoinType value)
+	{
+		return EMFPlusLineJoinTypeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OLineStyle value)
+	{
+		return EMFPlusLineStyleText(value);
+	}
+	static inline LPCWSTR GetEnumText(ODashedLineCap value)
+	{
+		return EMFPlusDashedLineCapText(value);
+	}
+	static inline LPCWSTR GetEnumText(OPenAlignment value)
+	{
+		return EMFPlusPenAlignmentText(value);
+	}
+	static inline LPCWSTR GetEnumText(OCustomLineCapDataType value)
+	{
+		return EMFPlusCustomLineCapDataTypeText(value);
+	}
+	static inline LPCWSTR GetEnumText(OStringAlignment value)
+	{
+		return EMFPlusStringAlignmentText(value);
+	}
+	static inline LPCWSTR GetEnumText(OStringDigitSubstitution value)
+	{
+		return EMFPlusStringDigitSubstitutionText(value);
+	}
+	static inline LPCWSTR GetEnumText(OHotkeyPrefix value)
+	{
+		return EMFPlusHotkeyPrefixText(value);
+	}
+	static inline LPCWSTR GetEnumText(OStringTrimming value)
+	{
+		return EMFPlusStringTrimmingText(value);
+	}
+	static inline LPCWSTR GetEnumText(OEmfPlusImageAttributes::ClampType value)
+	{
+		return EMFPlusImageAttributesClampTypeText(value);
+	}
+	static inline CStringW GetEnumText(OLineCapType value)
+	{
+		return GetEnumTextAsHex((u32t)value);
+	}
+	static inline CStringW GetEnumText(OPixelFormat value)
+	{
+		return GetEnumTextAsHex((u32t)value);
+	}
+	static inline CStringW GetEnumText(OBrushData value)
+	{
+		return GetEnumTextAsHex((u32t)value);
+	}
+	static inline CStringW GetEnumTextAsHex(u32t value)
+	{
+		CStringW str;
+		str.Format(L"%08X", value);
+		return str;
+	}
+};
+
+class EMFRecAccessGDIPlusBrushWrapper : public EMFRecAccessGDIPlusObjWrapper
+{
+public:
+	EMFRecAccessGDIPlusBrushWrapper()
+	{
+		m_obj.reset(new OEmfPlusBrush);
+	}
+protected:
+	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	{
+		auto pObj = (OEmfPlusBrush*)m_obj.get();
+		auto pBranch = pNode->AddBranch(L"Brush");
+		EmfStruct2Properties::Build(*pObj, pBranch.get());
+	}
+};
+
+class EMFRecAccessGDIPlusPenWrapper : public EMFRecAccessGDIPlusObjWrapper
+{
+public:
+	EMFRecAccessGDIPlusPenWrapper()
+	{
+		m_obj.reset(new OEmfPlusPen);
+	}
+protected:
+	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	{
+		auto pObj = (OEmfPlusPen*)m_obj.get();
+		auto pBranch = pNode->AddBranch(L"Pen");
+		EmfStruct2Properties::Build(*pObj, pBranch.get());
+	}
+};
+
+class EMFRecAccessGDIPlusPathWrapper : public EMFRecAccessGDIPlusObjWrapper
+{
+public:
+	EMFRecAccessGDIPlusPathWrapper()
+	{
+		m_obj.reset(new OEmfPlusPath);
+	}
+protected:
+	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	{
+		auto pObj = (OEmfPlusPath*)m_obj.get();
+		auto pBranch = pNode->AddBranch(L"Path");
+		EmfStruct2Properties::Build(*pObj, pBranch.get());
+	}
+};
+
+class EMFRecAccessGDIPlusRegionWrapper : public EMFRecAccessGDIPlusObjWrapper
+{
+public:
+	EMFRecAccessGDIPlusRegionWrapper()
+	{
+		m_obj.reset(new OEmfPlusRegion);
+	}
+protected:
+	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	{
+ 		auto pObj = (OEmfPlusRegion*)m_obj.get();
+ 		auto pBranch = pNode->AddBranch(L"Region");
+ 		EmfStruct2Properties::Build(*pObj, pBranch.get());
+	}
+};
+
 class EMFRecAccessGDIPlusImageWrapper : public EMFRecAccessGDIPlusObjWrapper
 {
 public:
@@ -417,21 +655,23 @@ protected:
 	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
 	{
 		auto pImg = (OEmfPlusImage*)m_obj.get();
-		pNode->AddText(L"ImageType", EMFPlusImageTypeText(pImg->Type));
-		switch (pImg->Type)
-		{
-		case OImageDataType::Bitmap:
-			pNode->AddValue(L"Width", pImg->ImageDataBmp->Width);
-			pNode->AddValue(L"Height", pImg->ImageDataBmp->Height);
-			pNode->AddValue(L"Stride", pImg->ImageDataBmp->Stride);
-			pNode->AddValue(L"PixelFormat", (u32t)pImg->ImageDataBmp->PixelFormat, true);
-			pNode->AddText(L"BitmapType", EMFPlusBitmapTypeText(pImg->ImageDataBmp->Type));
-			break;
-		case OImageDataType::Metafile:
-			pNode->AddText(L"MetafileType", EMFPlusMetafileTypeText(pImg->ImageDataMetafile->Type));
-			pNode->AddValue(L"MetafileDataSize", pImg->ImageDataMetafile->MetafileDataSize);
-			break;
-		}
+		//pNode->AddText(L"ImageType", EMFPlusImageDataTypeText(pImg->Type));
+		//switch (pImg->Type)
+		//{
+		//case OImageDataType::Bitmap:
+		//	pNode->AddValue(L"Width", pImg->ImageDataBmp->Width);
+		//	pNode->AddValue(L"Height", pImg->ImageDataBmp->Height);
+		//	pNode->AddValue(L"Stride", pImg->ImageDataBmp->Stride);
+		//	pNode->AddValue(L"PixelFormat", (u32t)pImg->ImageDataBmp->PixelFormat, true);
+		//	pNode->AddText(L"BitmapType", EMFPlusBitmapTypeText(pImg->ImageDataBmp->Type));
+		//	break;
+		//case OImageDataType::Metafile:
+		//	pNode->AddText(L"MetafileType", EMFPlusMetafileTypeText(pImg->ImageDataMetafile->Type));
+		//	pNode->AddValue(L"MetafileDataSize", pImg->ImageDataMetafile->MetafileDataSize);
+		//	break;
+		//}
+		auto pBranch = pNode->AddBranch(L"Image");
+		EmfStruct2Properties::Build(*pImg, pBranch.get());
 	}
 
 	bool CacheGDIPlusObject(EMFAccess* pEMF) override
@@ -471,7 +711,9 @@ public:
 protected:
 	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
 	{
-		// TODO
+		auto pObj = (OEmfPlusFont*)m_obj.get();
+		auto pBranch = pNode->AddBranch(L"Font");
+		EmfStruct2Properties::Build(*pObj, pBranch.get());
 	}
 };
 
@@ -485,7 +727,9 @@ public:
 protected:
 	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
 	{
-		// TODO
+		auto pObj = (OEmfPlusStringFormat*)m_obj.get();
+		auto pBranch = pNode->AddBranch(L"StringFormat");
+		EmfStruct2Properties::Build(*pObj, pBranch.get());
 	}
 };
 
@@ -499,7 +743,9 @@ public:
 protected:
 	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
 	{
-		// TODO
+		auto pObj = (OEmfPlusImageAttributes*)m_obj.get();
+		auto pBranch = pNode->AddBranch(L"ImageAttributes");
+		EmfStruct2Properties::Build(*pObj, pBranch.get());
 	}
 };
 
@@ -513,7 +759,9 @@ public:
 protected:
 	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
 	{
-		// TODO
+		auto pObj = (OEmfPlusCustomLineCap*)m_obj.get();
+		auto pBranch = pNode->AddBranch(L"CustomLineCap");
+		EmfStruct2Properties::Build(*pObj, pBranch.get());
 	}
 };
 
@@ -1219,14 +1467,6 @@ void EMFRecAccessGDIPlusRecDrawImage::Preprocess(EMFAccess* pEMF)
 	}
 }
 
-static inline LPCWSTR EMFPlusUnitTypeText(OUnitType type)
-{
-	static const LPCWSTR aText[] = {
-		L"World", L"Display", L"Pixel", L"Point", L"Inch", L"Document", L"Millimeter"
-	};
-	return aText[(int)type];
-}
-
 void EMFRecAccessGDIPlusRecDrawImage::CacheProperties(EMFAccess* pEMF)
 {
 	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
@@ -1506,12 +1746,6 @@ void EMFRecAccessGDIPlusRecSetCompositingQuality::CacheProperties(EMFAccess* pEM
 	m_propsCached->AddText(L"CompositingQuality", EMFPlusCompositingQualityText(val));
 }
 
-void EMFRecAccessGDIPlusRecSave::Preprocess(EMFAccess* pEMF)
-{
-	//auto pRec = (OEmfPlusRecSave*)m_recInfo.Data;
-	// TODO
-}
-
 void EMFRecAccessGDIPlusRecSave::CacheProperties(EMFAccess* pEMF)
 {
 	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
@@ -1521,8 +1755,12 @@ void EMFRecAccessGDIPlusRecSave::CacheProperties(EMFAccess* pEMF)
 
 void EMFRecAccessGDIPlusRecRestore::Preprocess(EMFAccess* pEMF)
 {
-	//auto pRec = (OEmfPlusRecRestore*)m_recInfo.Data;
-	// TODO
+	auto pRec = (OEmfPlusRecRestore*)m_recInfo.Data;
+	auto pSaveRec = pEMF->GetPlusSaveRecord(pRec->StackIndex);
+	if (pSaveRec)
+	{
+		AddLinkRecord(pSaveRec);
+	}
 }
 
 void EMFRecAccessGDIPlusRecRestore::CacheProperties(EMFAccess* pEMF)
@@ -1530,12 +1768,6 @@ void EMFRecAccessGDIPlusRecRestore::CacheProperties(EMFAccess* pEMF)
 	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
 	auto pRec = (OEmfPlusRecRestore*)m_recInfo.Data;
 	m_propsCached->AddValue(L"StackIndex", pRec->StackIndex);
-}
-
-void EMFRecAccessGDIPlusRecBeginContainer::Preprocess(EMFAccess* pEMF)
-{
-	//auto pRec = (OEmfPlusRecBeginContainer*)m_recInfo.Data;
-	// TODO
 }
 
 void EMFRecAccessGDIPlusRecBeginContainer::CacheProperties(EMFAccess* pEMF)
@@ -1547,12 +1779,6 @@ void EMFRecAccessGDIPlusRecBeginContainer::CacheProperties(EMFAccess* pEMF)
 	m_propsCached->AddValue(L"StackIndex", pRec->StackIndex);
 }
 
-void EMFRecAccessGDIPlusRecBeginContainerNoParams::Preprocess(EMFAccess* pEMF)
-{
-	//auto pRec = (OEmfPlusRecBeginContainerNoParams*)m_recInfo.Data;
-	// TODO
-}
-
 void EMFRecAccessGDIPlusRecBeginContainerNoParams::CacheProperties(EMFAccess* pEMF)
 {
 	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
@@ -1562,8 +1788,12 @@ void EMFRecAccessGDIPlusRecBeginContainerNoParams::CacheProperties(EMFAccess* pE
 
 void EMFRecAccessGDIPlusRecEndContainer::Preprocess(EMFAccess* pEMF)
 {
-	//auto pRec = (OEmfPlusRecEndContainer*)m_recInfo.Data;
-	// TODO
+	auto pRec = (OEmfPlusRecEndContainer*)m_recInfo.Data;
+	auto pSaveRec = pEMF->GetPlusSaveRecord(pRec->StackIndex);
+	if (pSaveRec)
+	{
+		AddLinkRecord(pSaveRec);
+	}
 }
 
 void EMFRecAccessGDIPlusRecEndContainer::CacheProperties(EMFAccess* pEMF)
@@ -1616,689 +1846,5 @@ void EMFRecAccessGDIPlusRecSetPageTransform::CacheProperties(EMFAccess* pEMF)
 	EMFRecAccessGDIPlusTransformCat::CacheProperties(pEMF);
 	auto* pRec = (OEmfPlusRecSetPageTransform*)m_recInfo.Data;
 	m_propsCached->AddValue(L"PageScale", pRec->PageScale);
-}
-
-
-EMFAccess::EMFAccess(const std::vector<u8t>& data)
-	: EMFAccess(data.data(), data.size())
-{
-	
-}
-
-EMFAccess::EMFAccess(const data_access::memory_wrapper& data)
-	: EMFAccess(data.data(), data.size())
-{
-
-}
-
-EMFAccess::EMFAccess(const emfplus::u8t* pData, size_t nSize)
-{
-	ATL::CComPtr<IStream> stream;
-	stream.Attach(SHCreateMemStream(pData, (UINT)nSize));
-	m_pMetafile = std::make_unique<Gdiplus::Metafile>(stream);
-	m_pMetafile->GetMetafileHeader(&m_hdr);
-}
-
-EMFAccess::~EMFAccess()
-{
-	FreeRecords();
-}
-
-void EMFAccess::DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const
-{
-	ASSERT(m_pMetafile.get());
-	Gdiplus::Rect rcDrawP(rcDraw.left, rcDraw.top, rcDraw.Width(), rcDraw.Height());
-	gg.DrawImage(m_pMetafile.get(), rcDrawP);
-}
-
-Gdiplus::Image* EMFAccess::CloneMetafile() const
-{
-	ASSERT(m_pMetafile.get());
-	return m_pMetafile->Clone();
-}
-
-struct EnumEmfPlusContext
-{
-	Gdiplus::Metafile*	pMetafile;
-	Gdiplus::Graphics*	pGraphics;
-	EMFAccess*			pAccess;
-};
-
-BOOL EnumMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data, VOID* pCallbackData)
-{
-	auto& ctxt = *(EnumEmfPlusContext*)pCallbackData;
-	auto ret = ctxt.pAccess->HandleEMFRecord((OEmfPlusRecordType)type, flags, dataSize, data);
-	if (ret)
-		ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
-	return ret;
-}
-
-bool EMFAccess::GetRecords()
-{
-	if (!m_EMFRecords.empty())
-		return true;
-	CDC dcMem;
-	dcMem.CreateCompatibleDC(nullptr);
-	Gdiplus::Graphics gg(dcMem.GetSafeHdc());
-	Gdiplus::Point pt(m_hdr.X, m_hdr.Y);
-	EnumEmfPlusContext ctxt{ m_pMetafile.get(), &gg, this };
-	auto sts = gg.EnumerateMetafile(m_pMetafile.get(), pt, EnumMetafilePlusProc, (void*)&ctxt);
-	return sts == Gdiplus::Ok;
-}
-
-void EMFAccess::FreeRecords()
-{
-	for (auto pRec : m_EMFRecords)
-	{
-		delete pRec;
-	}
-	m_EMFRecords.clear();
-	m_vPlusObjTable.clear();
-}
-
-bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data)
-{
-	OEmfPlusRecInfo rec;
-	rec.Type = (u16t)type;
-	rec.Flags = (u16t)flags;
-	rec.Size = sizeof(OEmfPlusRec) + dataSize;
-	rec.DataSize = dataSize;
-	rec.Data = (u8t*)data;
-	EMFRecAccess* pRecAccess = nullptr;
-	switch (type)
-	{
-	case EmfRecordTypeHeader:
-		pRecAccess = new EMFRecAccessGDIRecHeader;
-		break;
-	case EmfRecordTypePolyBezier:
-		pRecAccess = new EMFRecAccessGDIRecPolyBezier;
-		break;
-	case EmfRecordTypePolygon:
-		pRecAccess = new EMFRecAccessGDIRecPolygon;
-		break;
-	case EmfRecordTypePolyline:
-		pRecAccess = new EMFRecAccessGDIRecPolyline;
-		break;
-	case EmfRecordTypePolyBezierTo:
-		pRecAccess = new EMFRecAccessGDIRecPolyBezierTo;
-		break;
-	case EmfRecordTypePolyLineTo:
-		pRecAccess = new EMFRecAccessGDIRecPolyLineTo;
-		break;
-	case EmfRecordTypePolyPolyline:
-		pRecAccess = new EMFRecAccessGDIRecPolyPolyline;
-		break;
-	case EmfRecordTypePolyPolygon:
-		pRecAccess = new EMFRecAccessGDIRecPolyPolygon;
-		break;
-	case EmfRecordTypeSetWindowExtEx:
-		pRecAccess = new EMFRecAccessGDIRecSetWindowExtEx;
-		break;
-	case EmfRecordTypeSetWindowOrgEx:
-		pRecAccess = new EMFRecAccessGDIRecSetWindowOrgEx;
-		break;
-	case EmfRecordTypeSetViewportExtEx:
-		pRecAccess = new EMFRecAccessGDIRecSetViewportExtEx;
-		break;
-	case EmfRecordTypeSetViewportOrgEx:
-		pRecAccess = new EMFRecAccessGDIRecSetViewportOrgEx;
-		break;
-	case EmfRecordTypeSetBrushOrgEx:
-		pRecAccess = new EMFRecAccessGDIRecSetBrushOrgEx;
-		break;
-	case EmfRecordTypeEOF:
-		pRecAccess = new EMFRecAccessGDIRecEOF;
-		break;
-	case EmfRecordTypeSetPixelV:
-		pRecAccess = new EMFRecAccessGDIRecSetPixelV;
-		break;
-	case EmfRecordTypeSetMapperFlags:
-		pRecAccess = new EMFRecAccessGDIRecSetMapperFlags;
-		break;
-	case EmfRecordTypeSetMapMode:
-		pRecAccess = new EMFRecAccessGDIRecSetMapMode;
-		break;
-	case EmfRecordTypeSetBkMode:
-		pRecAccess = new EMFRecAccessGDIRecSetBkMode;
-		break;
-	case EmfRecordTypeSetPolyFillMode:
-		pRecAccess = new EMFRecAccessGDIRecSetPolyFillMode;
-		break;
-	case EmfRecordTypeSetROP2:
-		pRecAccess = new EMFRecAccessGDIRecSetROP2;
-		break;
-	case EmfRecordTypeSetStretchBltMode:
-		pRecAccess = new EMFRecAccessGDIRecSetStretchBltMode;
-		break;
-	case EmfRecordTypeSetTextAlign:
-		pRecAccess = new EMFRecAccessGDIRecSetTextAlign;
-		break;
-	case EmfRecordTypeSetColorAdjustment:
-		pRecAccess = new EMFRecAccessGDIRecSetColorAdjustment;
-		break;
-	case EmfRecordTypeSetTextColor:
-		pRecAccess = new EMFRecAccessGDIRecSetTextColor;
-		break;
-	case EmfRecordTypeSetBkColor:
-		pRecAccess = new EMFRecAccessGDIRecSetBkColor;
-		break;
-	case EmfRecordTypeOffsetClipRgn:
-		pRecAccess = new EMFRecAccessGDIRecOffsetClipRgn;
-		break;
-	case EmfRecordTypeMoveToEx:
-		pRecAccess = new EMFRecAccessGDIRecMoveToEx;
-		break;
-	case EmfRecordTypeSetMetaRgn:
-		pRecAccess = new EMFRecAccessGDIRecSetMetaRgn;
-		break;
-	case EmfRecordTypeExcludeClipRect:
-		pRecAccess = new EMFRecAccessGDIRecExcludeClipRect;
-		break;
-	case EmfRecordTypeIntersectClipRect:
-		pRecAccess = new EMFRecAccessGDIRecIntersectClipRect;
-		break;
-	case EmfRecordTypeScaleViewportExtEx:
-		pRecAccess = new EMFRecAccessGDIRecScaleViewportExtEx;
-		break;
-	case EmfRecordTypeScaleWindowExtEx:
-		pRecAccess = new EMFRecAccessGDIRecScaleWindowExtEx;
-		break;
-	case EmfRecordTypeSaveDC:
-		pRecAccess = new EMFRecAccessGDIRecSaveDC;
-		break;
-	case EmfRecordTypeRestoreDC:
-		pRecAccess = new EMFRecAccessGDIRecRestoreDC;
-		break;
-	case EmfRecordTypeSetWorldTransform:
-		pRecAccess = new EMFRecAccessGDIRecSetWorldTransform;
-		break;
-	case EmfRecordTypeModifyWorldTransform:
-		pRecAccess = new EMFRecAccessGDIRecModifyWorldTransform;
-		break;
-	case EmfRecordTypeSelectObject:
-		pRecAccess = new EMFRecAccessGDIRecSelectObject;
-		break;
-	case EmfRecordTypeCreatePen:
-		pRecAccess = new EMFRecAccessGDIRecCreatePen;
-		break;
-	case EmfRecordTypeCreateBrushIndirect:
-		pRecAccess = new EMFRecAccessGDIRecCreateBrushIndirect;
-		break;
-	case EmfRecordTypeDeleteObject:
-		pRecAccess = new EMFRecAccessGDIRecDeleteObject;
-		break;
-	case EmfRecordTypeAngleArc:
-		pRecAccess = new EMFRecAccessGDIRecAngleArc;
-		break;
-	case EmfRecordTypeEllipse:
-		pRecAccess = new EMFRecAccessGDIRecEllipse;
-		break;
-	case EmfRecordTypeRectangle:
-		pRecAccess = new EMFRecAccessGDIRecRectangle;
-		break;
-	case EmfRecordTypeRoundRect:
-		pRecAccess = new EMFRecAccessGDIRecRoundRect;
-		break;
-	case EmfRecordTypeArc:
-		pRecAccess = new EMFRecAccessGDIRecArc;
-		break;
-	case EmfRecordTypeChord:
-		pRecAccess = new EMFRecAccessGDIRecChord;
-		break;
-	case EmfRecordTypePie:
-		pRecAccess = new EMFRecAccessGDIRecPie;
-		break;
-	case EmfRecordTypeSelectPalette:
-		pRecAccess = new EMFRecAccessGDIRecSelectPalette;
-		break;
-	case EmfRecordTypeCreatePalette:
-		pRecAccess = new EMFRecAccessGDIRecCreatePalette;
-		break;
-	case EmfRecordTypeSetPaletteEntries:
-		pRecAccess = new EMFRecAccessGDIRecSetPaletteEntries;
-		break;
-	case EmfRecordTypeResizePalette:
-		pRecAccess = new EMFRecAccessGDIRecResizePalette;
-		break;
-	case EmfRecordTypeRealizePalette:
-		pRecAccess = new EMFRecAccessGDIRecRealizePalette;
-		break;
-	case EmfRecordTypeExtFloodFill:
-		pRecAccess = new EMFRecAccessGDIRecExtFloodFill;
-		break;
-	case EmfRecordTypeLineTo:
-		pRecAccess = new EMFRecAccessGDIRecLineTo;
-		break;
-	case EmfRecordTypeArcTo:
-		pRecAccess = new EMFRecAccessGDIRecArcTo;
-		break;
-	case EmfRecordTypePolyDraw:
-		pRecAccess = new EMFRecAccessGDIRecPolyDraw;
-		break;
-	case EmfRecordTypeSetArcDirection:
-		pRecAccess = new EMFRecAccessGDIRecSetArcDirection;
-		break;
-	case EmfRecordTypeSetMiterLimit:
-		pRecAccess = new EMFRecAccessGDIRecSetMiterLimit;
-		break;
-	case EmfRecordTypeBeginPath:
-		pRecAccess = new EMFRecAccessGDIRecBeginPath;
-		break;
-	case EmfRecordTypeEndPath:
-		pRecAccess = new EMFRecAccessGDIRecEndPath;
-		break;
-	case EmfRecordTypeCloseFigure:
-		pRecAccess = new EMFRecAccessGDIRecCloseFigure;
-		break;
-	case EmfRecordTypeFillPath:
-		pRecAccess = new EMFRecAccessGDIRecFillPath;
-		break;
-	case EmfRecordTypeStrokeAndFillPath:
-		pRecAccess = new EMFRecAccessGDIRecStrokeAndFillPath;
-		break;
-	case EmfRecordTypeStrokePath:
-		pRecAccess = new EMFRecAccessGDIRecStrokePath;
-		break;
-	case EmfRecordTypeFlattenPath:
-		pRecAccess = new EMFRecAccessGDIRecFlattenPath;
-		break;
-	case EmfRecordTypeWidenPath:
-		pRecAccess = new EMFRecAccessGDIRecWidenPath;
-		break;
-	case EmfRecordTypeSelectClipPath:
-		pRecAccess = new EMFRecAccessGDIRecSelectClipPath;
-		break;
-	case EmfRecordTypeAbortPath:
-		pRecAccess = new EMFRecAccessGDIRecAbortPath;
-		break;
-	case EmfRecordTypeReserved_069:
-		pRecAccess = new EMFRecAccessGDIRecReserved_069;
-		break;
-	case EmfRecordTypeGdiComment:
-		pRecAccess = new EMFRecAccessGDIRecGdiComment;
-		break;
-	case EmfRecordTypeFillRgn:
-		pRecAccess = new EMFRecAccessGDIRecFillRgn;
-		break;
-	case EmfRecordTypeFrameRgn:
-		pRecAccess = new EMFRecAccessGDIRecFrameRgn;
-		break;
-	case EmfRecordTypeInvertRgn:
-		pRecAccess = new EMFRecAccessGDIRecInvertRgn;
-		break;
-	case EmfRecordTypePaintRgn:
-		pRecAccess = new EMFRecAccessGDIRecPaintRgn;
-		break;
-	case EmfRecordTypeExtSelectClipRgn:
-		pRecAccess = new EMFRecAccessGDIRecExtSelectClipRgn;
-		break;
-	case EmfRecordTypeBitBlt:
-		pRecAccess = new EMFRecAccessGDIRecBitBlt;
-		break;
-	case EmfRecordTypeStretchBlt:
-		pRecAccess = new EMFRecAccessGDIRecStretchBlt;
-		break;
-	case EmfRecordTypeMaskBlt:
-		pRecAccess = new EMFRecAccessGDIRecMaskBlt;
-		break;
-	case EmfRecordTypePlgBlt:
-		pRecAccess = new EMFRecAccessGDIRecPlgBlt;
-		break;
-	case EmfRecordTypeSetDIBitsToDevice:
-		pRecAccess = new EMFRecAccessGDIRecSetDIBitsToDevice;
-		break;
-	case EmfRecordTypeStretchDIBits:
-		pRecAccess = new EMFRecAccessGDIRecStretchDIBits;
-		break;
-	case EmfRecordTypeExtCreateFontIndirect:
-		pRecAccess = new EMFRecAccessGDIRecExtCreateFontIndirect;
-		break;
-	case EmfRecordTypeExtTextOutA:
-		pRecAccess = new EMFRecAccessGDIRecExtTextOutA;
-		break;
-	case EmfRecordTypeExtTextOutW:
-		pRecAccess = new EMFRecAccessGDIRecExtTextOutW;
-		break;
-	case EmfRecordTypePolyBezier16:
-		pRecAccess = new EMFRecAccessGDIRecPolyBezier16;
-		break;
-	case EmfRecordTypePolygon16:
-		pRecAccess = new EMFRecAccessGDIRecPolygon16;
-		break;
-	case EmfRecordTypePolyline16:
-		pRecAccess = new EMFRecAccessGDIRecPolyline16;
-		break;
-	case EmfRecordTypePolyBezierTo16:
-		pRecAccess = new EMFRecAccessGDIRecPolyBezierTo16;
-		break;
-	case EmfRecordTypePolylineTo16:
-		pRecAccess = new EMFRecAccessGDIRecPolylineTo16;
-		break;
-	case EmfRecordTypePolyPolyline16:
-		pRecAccess = new EMFRecAccessGDIRecPolyPolyline16;
-		break;
-	case EmfRecordTypePolyPolygon16:
-		pRecAccess = new EMFRecAccessGDIRecPolyPolygon16;
-		break;
-	case EmfRecordTypePolyDraw16:
-		pRecAccess = new EMFRecAccessGDIRecPolyDraw16;
-		break;
-	case EmfRecordTypeCreateMonoBrush:
-		pRecAccess = new EMFRecAccessGDIRecCreateMonoBrush;
-		break;
-	case EmfRecordTypeCreateDIBPatternBrushPt:
-		pRecAccess = new EMFRecAccessGDIRecCreateDIBPatternBrushPt;
-		break;
-	case EmfRecordTypeExtCreatePen:
-		pRecAccess = new EMFRecAccessGDIRecExtCreatePen;
-		break;
-	case EmfRecordTypePolyTextOutA:
-		pRecAccess = new EMFRecAccessGDIRecPolyTextOutA;
-		break;
-	case EmfRecordTypePolyTextOutW:
-		pRecAccess = new EMFRecAccessGDIRecPolyTextOutW;
-		break;
-	case EmfRecordTypeSetICMMode:
-		pRecAccess = new EMFRecAccessGDIRecSetICMMode;
-		break;
-	case EmfRecordTypeCreateColorSpace:
-		pRecAccess = new EMFRecAccessGDIRecCreateColorSpace;
-		break;
-	case EmfRecordTypeSetColorSpace:
-		pRecAccess = new EMFRecAccessGDIRecSetColorSpace;
-		break;
-	case EmfRecordTypeDeleteColorSpace:
-		pRecAccess = new EMFRecAccessGDIRecDeleteColorSpace;
-		break;
-	case EmfRecordTypeGLSRecord:
-		pRecAccess = new EMFRecAccessGDIRecGLSRecord;
-		break;
-	case EmfRecordTypeGLSBoundedRecord:
-		pRecAccess = new EMFRecAccessGDIRecGLSBoundedRecord;
-		break;
-	case EmfRecordTypePixelFormat:
-		pRecAccess = new EMFRecAccessGDIRecPixelFormat;
-		break;
-	case EmfRecordTypeDrawEscape:
-		pRecAccess = new EMFRecAccessGDIRecDrawEscape;
-		break;
-	case EmfRecordTypeExtEscape:
-		pRecAccess = new EMFRecAccessGDIRecExtEscape;
-		break;
-	case EmfRecordTypeStartDoc:
-		pRecAccess = new EMFRecAccessGDIRecStartDoc;
-		break;
-	case EmfRecordTypeSmallTextOut:
-		pRecAccess = new EMFRecAccessGDIRecSmallTextOut;
-		break;
-	case EmfRecordTypeForceUFIMapping:
-		pRecAccess = new EMFRecAccessGDIRecForceUFIMapping;
-		break;
-	case EmfRecordTypeNamedEscape:
-		pRecAccess = new EMFRecAccessGDIRecNamedEscape;
-		break;
-	case EmfRecordTypeColorCorrectPalette:
-		pRecAccess = new EMFRecAccessGDIRecColorCorrectPalette;
-		break;
-	case EmfRecordTypeSetICMProfileA:
-		pRecAccess = new EMFRecAccessGDIRecSetICMProfileA;
-		break;
-	case EmfRecordTypeSetICMProfileW:
-		pRecAccess = new EMFRecAccessGDIRecSetICMProfileW;
-		break;
-	case EmfRecordTypeAlphaBlend:
-		pRecAccess = new EMFRecAccessGDIRecAlphaBlend;
-		break;
-	case EmfRecordTypeSetLayout:
-		pRecAccess = new EMFRecAccessGDIRecSetLayout;
-		break;
-	case EmfRecordTypeTransparentBlt:
-		pRecAccess = new EMFRecAccessGDIRecTransparentBlt;
-		break;
-	case EmfRecordTypeReserved_117:
-		pRecAccess = new EMFRecAccessGDIRecReserved_117;
-		break;
-	case EmfRecordTypeGradientFill:
-		pRecAccess = new EMFRecAccessGDIRecGradientFill;
-		break;
-	case EmfRecordTypeSetLinkedUFIs:
-		pRecAccess = new EMFRecAccessGDIRecSetLinkedUFIs;
-		break;
-	case EmfRecordTypeSetTextJustification:
-		pRecAccess = new EMFRecAccessGDIRecSetTextJustification;
-		break;
-	case EmfRecordTypeColorMatchToTargetW:
-		pRecAccess = new EMFRecAccessGDIRecColorMatchToTargetW;
-		break;
-	case EmfRecordTypeCreateColorSpaceW:
-		pRecAccess = new EMFRecAccessGDIRecCreateColorSpaceW;
-		break;
-	case EmfPlusRecordTypeHeader:
-		pRecAccess = new EMFRecAccessGDIPlusRecHeader;
-		break;
-	case EmfPlusRecordTypeEndOfFile:
-		pRecAccess = new EMFRecAccessGDIPlusRecEndOfFile;
-		break;
-	case EmfPlusRecordTypeComment:
-		pRecAccess = new EMFRecAccessGDIPlusRecComment;
-		break;
-	case EmfPlusRecordTypeGetDC:
-		pRecAccess = new EMFRecAccessGDIPlusRecGetDC;
-		break;
-	case EmfPlusRecordTypeMultiFormatStart:
-		pRecAccess = new EMFRecAccessGDIPlusRecMultiFormatStart;
-		break;
-	case EmfPlusRecordTypeMultiFormatSection:
-		pRecAccess = new EMFRecAccessGDIPlusRecMultiFormatSection;
-		break;
-	case EmfPlusRecordTypeMultiFormatEnd:
-		pRecAccess = new EMFRecAccessGDIPlusRecMultiFormatEnd;
-		break;
-	case EmfPlusRecordTypeObject:
-		pRecAccess = new EMFRecAccessGDIPlusRecObject;
-		break;
-	case EmfPlusRecordTypeClear:
-		pRecAccess = new EMFRecAccessGDIPlusRecClear;
-		break;
-	case EmfPlusRecordTypeFillRects:
-		pRecAccess = new EMFRecAccessGDIPlusRecFillRects;
-		break;
-	case EmfPlusRecordTypeDrawRects:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawRects;
-		break;
-	case EmfPlusRecordTypeFillPolygon:
-		pRecAccess = new EMFRecAccessGDIPlusRecFillPolygon;
-		break;
-	case EmfPlusRecordTypeDrawLines:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawLines;
-		break;
-	case EmfPlusRecordTypeFillEllipse:
-		pRecAccess = new EMFRecAccessGDIPlusRecFillEllipse;
-		break;
-	case EmfPlusRecordTypeDrawEllipse:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawEllipse;
-		break;
-	case EmfPlusRecordTypeFillPie:
-		pRecAccess = new EMFRecAccessGDIPlusRecFillPie;
-		break;
-	case EmfPlusRecordTypeDrawPie:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawPie;
-		break;
-	case EmfPlusRecordTypeDrawArc:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawArc;
-		break;
-	case EmfPlusRecordTypeFillRegion:
-		pRecAccess = new EMFRecAccessGDIPlusRecFillRegion;
-		break;
-	case EmfPlusRecordTypeFillPath:
-		pRecAccess = new EMFRecAccessGDIPlusRecFillPath;
-		break;
-	case EmfPlusRecordTypeDrawPath:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawPath;
-		break;
-	case EmfPlusRecordTypeFillClosedCurve:
-		pRecAccess = new EMFRecAccessGDIPlusRecFillClosedCurve;
-		break;
-	case EmfPlusRecordTypeDrawClosedCurve:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawClosedCurve;
-		break;
-	case EmfPlusRecordTypeDrawCurve:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawCurve;
-		break;
-	case EmfPlusRecordTypeDrawBeziers:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawBeziers;
-		break;
-	case EmfPlusRecordTypeDrawImage:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawImage;
-		break;
-	case EmfPlusRecordTypeDrawImagePoints:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawImagePoints;
-		break;
-	case EmfPlusRecordTypeDrawString:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawString;
-		break;
-	case EmfPlusRecordTypeSetRenderingOrigin:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetRenderingOrigin;
-		break;
-	case EmfPlusRecordTypeSetAntiAliasMode:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetAntiAliasMode;
-		break;
-	case EmfPlusRecordTypeSetTextRenderingHint:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetTextRenderingHint;
-		break;
-	case EmfPlusRecordTypeSetTextContrast:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetTextContrast;
-		break;
-	case EmfPlusRecordTypeSetInterpolationMode:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetInterpolationMode;
-		break;
-	case EmfPlusRecordTypeSetPixelOffsetMode:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetPixelOffsetMode;
-		break;
-	case EmfPlusRecordTypeSetCompositingMode:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetCompositingMode;
-		break;
-	case EmfPlusRecordTypeSetCompositingQuality:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetCompositingQuality;
-		break;
-	case EmfPlusRecordTypeSave:
-		pRecAccess = new EMFRecAccessGDIPlusRecSave;
-		break;
-	case EmfPlusRecordTypeRestore:
-		pRecAccess = new EMFRecAccessGDIPlusRecRestore;
-		break;
-	case EmfPlusRecordTypeBeginContainer:
-		pRecAccess = new EMFRecAccessGDIPlusRecBeginContainer;
-		break;
-	case EmfPlusRecordTypeBeginContainerNoParams:
-		pRecAccess = new EMFRecAccessGDIPlusRecBeginContainerNoParams;
-		break;
-	case EmfPlusRecordTypeEndContainer:
-		pRecAccess = new EMFRecAccessGDIPlusRecEndContainer;
-		break;
-	case EmfPlusRecordTypeSetWorldTransform:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetWorldTransform;
-		break;
-	case EmfPlusRecordTypeResetWorldTransform:
-		pRecAccess = new EMFRecAccessGDIPlusRecResetWorldTransform;
-		break;
-	case EmfPlusRecordTypeMultiplyWorldTransform:
-		pRecAccess = new EMFRecAccessGDIPlusRecMultiplyWorldTransform;
-		break;
-	case EmfPlusRecordTypeTranslateWorldTransform:
-		pRecAccess = new EMFRecAccessGDIPlusRecTranslateWorldTransform;
-		break;
-	case EmfPlusRecordTypeScaleWorldTransform:
-		pRecAccess = new EMFRecAccessGDIPlusRecScaleWorldTransform;
-		break;
-	case EmfPlusRecordTypeRotateWorldTransform:
-		pRecAccess = new EMFRecAccessGDIPlusRecRotateWorldTransform;
-		break;
-	case EmfPlusRecordTypeSetPageTransform:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetPageTransform;
-		break;
-	case EmfPlusRecordTypeResetClip:
-		pRecAccess = new EMFRecAccessGDIPlusRecResetClip;
-		break;
-	case EmfPlusRecordTypeSetClipRect:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetClipRect;
-		break;
-	case EmfPlusRecordTypeSetClipPath:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetClipPath;
-		break;
-	case EmfPlusRecordTypeSetClipRegion:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetClipRegion;
-		break;
-	case EmfPlusRecordTypeOffsetClip:
-		pRecAccess = new EMFRecAccessGDIPlusRecOffsetClip;
-		break;
-	case EmfPlusRecordTypeDrawDriverString:
-		pRecAccess = new EMFRecAccessGDIPlusRecDrawDriverString;
-		break;
-	case EmfPlusRecordTypeStrokeFillPath:
-		pRecAccess = new EMFRecAccessGDIPlusRecStrokeFillPath;
-		break;
-	case EmfPlusRecordTypeSerializableObject:
-		pRecAccess = new EMFRecAccessGDIPlusRecSerializableObject;
-		break;
-	case EmfPlusRecordTypeSetTSGraphics:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetTSGraphics;
-		break;
-	case EmfPlusRecordTypeSetTSClip:
-		pRecAccess = new EMFRecAccessGDIPlusRecSetTSClip;
-		break;
-	}
-	if (!pRecAccess)
-	{
-		ASSERT(0);
-		return false;
-	}
-	pRecAccess->SetRecInfo(rec);
-	pRecAccess->SetIndex(m_EMFRecords.size());
-	pRecAccess->Preprocess(this);
-	m_EMFRecords.push_back(pRecAccess);
-	return true;
-}
-
-EMFRecAccess* EMFAccess::GetObjectCreationRecord(size_t index, bool bPlus) const
-{
-	if (bPlus)
-	{
-		if (index < m_vPlusObjTable.size())
-			return m_vPlusObjTable[index].pRec;
-	}
-	else
-	{
-		// TODO
-	}
-	return nullptr;
-}
-
-bool EMFAccess::SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus)
-{
-	if (bPlus)
-	{
-		if (index >= m_vPlusObjTable.size())
-			m_vPlusObjTable.resize(index + 1);
-		m_vPlusObjTable[index].pRec = pRec;
-	}
-	else
-	{
-		// TODO
-	}
-	return true;
-}
-
-bool EMFAccess::SaveToFile(LPCWSTR szPath) const
-{
-	if (!m_pMetafile || !szPath)
-		return false;
-	{
-		CClientDC dc(nullptr);
-		Gdiplus::Metafile mf(szPath, dc.GetSafeHdc());
-		Gdiplus::Graphics gg(&mf);
-		gg.DrawImage(m_pMetafile.get(), 0, 0);
-	}
-	return true;
 }
 

@@ -2,9 +2,8 @@
 #include "pch.h"
 #include "framework.h"
 #include "EMFRecListCtrl.h"
-#ifndef SHARED_HANDLERS
 #include "EMFExplorer.h"
-#endif
+#include "EMFAccess.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

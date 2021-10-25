@@ -805,6 +805,22 @@ struct OEmfPlusBlendFactors
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
+// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/af50f5e3-e5c2-43ce-b819-d9476e93378e
+struct OEmfPlusLinearGradientBrushOptionalData 
+{
+	GSOptionalT(OEmfPlusTransformMatrix)		TransformMatrix;
+
+	struct BlendPatternData
+	{
+		GSOptionalT(OEmfPlusBlendColors)	colors;
+		GSOptionalT(OEmfPlusBlendFactors)	factorsH;
+		GSOptionalT(OEmfPlusBlendFactors)	factorsV;
+	};
+	BlendPatternData			BlendPattern;
+
+	bool Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize = UNKNOWN_SIZE);
+};
+
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/55bba6b0-bb57-4545-93f1-4c64f02b0a80
 struct OEmfPlusLinearGradientBrushData
 {
@@ -815,22 +831,6 @@ struct OEmfPlusLinearGradientBrushData
 	OEmfPlusARGB	EndColor;
 	u32t			Reserved1;
 	u32t			Reserved2;
-
-	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/af50f5e3-e5c2-43ce-b819-d9476e93378e
-	struct OEmfPlusLinearGradientBrushOptionalData 
-	{
-		GSOptionalT(OEmfPlusTransformMatrix)		TransformMatrix;
-
-		struct BlendPatternData
-		{
-			GSOptionalT(OEmfPlusBlendColors)	colors;
-			GSOptionalT(OEmfPlusBlendFactors)	factorsH;
-			GSOptionalT(OEmfPlusBlendFactors)	factorsV;
-		};
-		BlendPatternData			BlendPattern;
-
-		bool Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize = UNKNOWN_SIZE);
-	};
 
 	OEmfPlusLinearGradientBrushOptionalData OptionalData;
 
@@ -863,6 +863,22 @@ struct OEmfPlusBoundaryPointData
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };
 
+// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/0008fc6a-b678-41a6-ab99-9be99fc14092
+struct OEmfPlusPathGradientBrushOptionalData 
+{
+	GSOptionalT(OEmfPlusTransformMatrix)		TransformMatrix;
+
+	struct BlendPatternData
+	{
+		GSOptionalT(OEmfPlusBlendColors)	colors;
+		GSOptionalT(OEmfPlusBlendFactors)	factors;
+	};
+	BlendPatternData					BlendPattern;
+	GSOptionalT(OEmfPlusFocusScaleData)	FocusScaleData;
+
+	bool Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize);
+};
+
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/cfe9439a-f2b6-4663-9032-67ce8feea5aa
 struct OEmfPlusPathGradientBrushData
 {
@@ -874,23 +890,6 @@ struct OEmfPlusPathGradientBrushData
 	GSWrapArray(OEmfPlusARGB)	SurroundingColor;
 	GSOptionalT(OEmfPlusBoundaryPathData) BoundaryDataPath;
 	GSOptionalT(OEmfPlusBoundaryPointData) BoundaryDataPoint;
-
-	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/0008fc6a-b678-41a6-ab99-9be99fc14092
-	struct OEmfPlusPathGradientBrushOptionalData 
-	{
-		GSOptionalT(OEmfPlusTransformMatrix)		TransformMatrix;
-
-		struct BlendPatternData
-		{
-			GSOptionalT(OEmfPlusBlendColors)	colors;
-			GSOptionalT(OEmfPlusBlendFactors)	factors;
-		};
-		BlendPatternData					BlendPattern;
-		GSOptionalT(OEmfPlusFocusScaleData)	FocusScaleData;
-
-		bool Read(DataReader& reader, u32t BrushDataFlags, size_t nExpectedSize);
-	};
-
 	OEmfPlusPathGradientBrushOptionalData OptionalData;
 
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
@@ -917,7 +916,7 @@ struct OEmfPlusTextureBrushData
 		bool Read(DataReader& reader, OBrushData BrushDataFlags, size_t nExpectedSize);
 	};
 
-	OEmfPlusTextureBrushOptionalData	Optionaldata;
+	OEmfPlusTextureBrushOptionalData	OptionalData;
 
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 };

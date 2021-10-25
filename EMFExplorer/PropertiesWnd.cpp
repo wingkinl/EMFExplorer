@@ -132,7 +132,7 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 		}
 		break;
 	case PropertyNode::NodeTypeText:
-		pGridProp = new CMFCPropertyGridProperty(node.name, CString(node.text));
+		pGridProp = new CMFCPropertyGridProperty(node.name, (_variant_t)node.text, nullptr);
 		break;
 	case PropertyNode::NodeTypeRectInt:
 		pGridProp = new CMFCPropertyGridProperty(node.name, 0, TRUE);

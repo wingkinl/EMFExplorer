@@ -29,14 +29,14 @@
 
 #include <afxwin.h>
 #include <afxext.h>
-#include <afxole.h>
-#include <afxodlgs.h>
+//#include <afxole.h>
+//#include <afxodlgs.h>
 #include <afxrich.h>
-#include <afxhtml.h>
+//#include <afxhtml.h>
 #include <afxcview.h>
-#include <afxwinappex.h>
-#include <afxframewndex.h>
-#include <afxmdiframewndex.h>
+//#include <afxwinappex.h>
+//#include <afxframewndex.h>
+//#include <afxmdiframewndex.h>
 
 #ifndef _AFX_NO_OLE_SUPPORT
 #include <afxdisp.h>        // MFC Automation classes
@@ -48,3 +48,13 @@
 #include <atlbase.h>
 #include <atlcom.h>
 #include <atlctl.h>
+
+#ifdef GDIPVER
+	#undef GDIPVER
+#endif
+#define GDIPVER 0x0110
+
+#pragma warning(push)
+#pragma warning(disable:4458)
+#include <GdiPlus.h>
+#pragma warning(pop)

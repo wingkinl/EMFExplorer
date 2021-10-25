@@ -66,6 +66,9 @@
     <ClInclude Include="ThumbnailWnd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EMFAccess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EMFExplorer.cpp">
@@ -105,6 +108,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ThumbnailWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EMFAccess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

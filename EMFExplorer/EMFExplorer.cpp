@@ -347,7 +347,7 @@ bool CEMFExplorerApp::CreateNewFrameForSubEMF(std::shared_ptr<EMFAccess> emf)
 			RUNTIME_CLASS(CSubEMFFrame),       // main SDI frame window
 			RUNTIME_CLASS(CEMFExplorerView));
 		if (!m_pSubDocTemplate)
-			return nullptr;
+			return false;
 		m_pSubDocTemplate->LoadTemplate();
 	}
 

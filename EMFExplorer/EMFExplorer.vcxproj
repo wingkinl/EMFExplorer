@@ -93,6 +93,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>PCH_FNAME="pch.h";WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -115,6 +117,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>PCH_FNAME="pch.h";_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -139,6 +143,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>PCH_FNAME="pch.h";WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -165,6 +171,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>PCH_FNAME="pch.h";_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -183,6 +191,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="EMFAccess.h" />
     <ClInclude Include="EMFExplorer.h" />
     <ClInclude Include="EMFExplorerDoc.h" />
     <ClInclude Include="EMFExplorerView.h" />
@@ -202,6 +211,7 @@
     <ClInclude Include="ThumbnailWnd.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EMFAccess.cpp" />
     <ClCompile Include="EMFExplorer.cpp" />
     <ClCompile Include="EMFExplorerDoc.cpp" />
     <ClCompile Include="EMFExplorerView.cpp" />
