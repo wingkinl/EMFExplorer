@@ -11,43 +11,43 @@ bool EMFRecAccess::IsDrawingRecord() const
 	return cate == RecCategoryDrawing || cate == RecCategoryBitmap;
 }
 
-std::shared_ptr<PropertyNode> EMFRecAccess::GetProperties(EMFAccess* pEMF)
+std::shared_ptr<PropertyNode> EMFRecAccess::GetProperties(const CachePropertiesContext& ctxt)
 {
 	if (!m_propsCached)
 	{
 		m_propsCached = std::make_shared<PropertyNode>();
-		CacheProperties(pEMF);
+		CacheProperties(ctxt);
 	}
 	return m_propsCached;
 }
 
-bool EMFRecAccess::IsLinked(const EMFRecAccess* pRec) const
+auto EMFRecAccess::IsLinked(const EMFRecAccess* pRec) const -> LinkedObjType
 {
-	for (auto link : m_linkRecs)
+	for (auto& link : m_linkRecs)
 	{
-		if (link == pRec)
-			return true;
+		if (link.pRec == pRec)
+			return link.nType;
 	}
-	return false;
+	return LinkedObjTypeInvalid;
 }
 
-void EMFRecAccess::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccess::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	m_propsCached->AddText(L"RecordName", GetRecordName());
 	m_propsCached->AddValue(L"RecordType", m_recInfo.Type);
 	m_propsCached->AddValue(L"RecordDataSize", m_recInfo.DataSize);
 }
 
-void EMFRecAccess::AddLinkRecord(EMFRecAccess* pRecAccess, bool bMutually)
+void EMFRecAccess::AddLinkRecord(EMFRecAccess* pRec, LinkedObjType nType, LinkedObjType nTypeThis)
 {
-	m_linkRecs.push_back(pRecAccess);
-	if (bMutually)
-		pRecAccess->AddLinkRecord(this, false);
+	m_linkRecs.emplace_back(pRec, nType);
+	if (nTypeThis != LinkedObjTypeInvalid)
+		pRec->AddLinkRecord(this, nTypeThis, LinkedObjTypeInvalid);
 }
 
-void EMFRecAccessGDIRec::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIRec::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccess::CacheProperties(pEMF);
+	EMFRecAccess::CacheProperties(ctxt);
 	ENHMETARECORD recTemp{ 0 };
 	const ENHMETARECORD* pRec = nullptr;
 	if (m_recInfo.Data)
@@ -61,7 +61,7 @@ void EMFRecAccessGDIRec::CacheProperties(EMFAccess* pEMF)
 		recTemp.nSize = sizeof(EMR);
 		pRec = &recTemp;
 	}
-	CachePropertiesFromGDI(pEMF, pRec);
+	CachePropertiesFromGDI(ctxt, pRec);
 }
 
 static inline LPCWSTR EMFPlusMetafileTypeText(OMetafileDataType type)
@@ -87,7 +87,7 @@ static void GetPropertiesFromGDIPlusHeader(PropertyNode* pNode, const Gdiplus::M
 	pNode->AddValue(L"LogicalDpiY", hdr.LogicalDpiY);
 }
 
-void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec)
+void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(const CachePropertiesContext& ctxt, const ENHMETARECORD* pEMFRec)
 {
 	auto pRec = (const ENHMETAHEADER*)pEMFRec;
 	ASSERT(pRec->dSignature == ENHMETA_SIGNATURE);
@@ -113,11 +113,11 @@ void EMFRecAccessGDIRecHeader::CachePropertiesFromGDI(EMFAccess* pEMF, const ENH
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeSizeInt>(L"szlMicrometers", pRec->szlMicrometers));
 
 	auto pPlusNode = m_propsCached->AddBranch(L"GDI+ Header");
-	auto& hdr = pEMF->GetMetafileHeader();
+	auto& hdr = ctxt.pEMF->GetMetafileHeader();
 	GetPropertiesFromGDIPlusHeader(pPlusNode.get(), hdr);
 }
 
-void EMFRecAccessGDIRecGdiComment::CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec)
+void EMFRecAccessGDIRecGdiComment::CachePropertiesFromGDI(const CachePropertiesContext& ctxt, const ENHMETARECORD* pEMFRec)
 {
 	auto pRec = (const EMRCOMMENT_BASE*)pEMFRec;
 	CStringW str;
@@ -173,17 +173,17 @@ void EMFRecAccessGDIRecGdiComment::CachePropertiesFromGDI(EMFAccess* pEMF, const
 		m_propsCached->AddText(L"Text", strText);
 }
 
-void EMFRecAccessGDIPlusRec::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRec::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccess::CacheProperties(pEMF);
+	EMFRecAccess::CacheProperties(ctxt);
 	m_propsCached->AddValue(L"RecordFlags", m_recInfo.Flags, true);
 }
 
-void EMFRecAccessGDIPlusRecHeader::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecHeader::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusControlCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusControlCat::CacheProperties(ctxt);
 	auto pHdrRec = (OEmfPlusHeader*)m_recInfo.Data;
-	auto& hdr = pEMF->GetMetafileHeader();
+	auto& hdr = ctxt.pEMF->GetMetafileHeader();
 	ASSERT(pHdrRec->Version == hdr.Version);
 	ASSERT(pHdrRec->LogicalDpiX == hdr.LogicalDpiX);
 	ASSERT(pHdrRec->EmfPlusFlags == hdr.EmfPlusFlags);
@@ -384,6 +384,65 @@ static inline LPCWSTR EMFPlusImageAttributesClampTypeText(OEmfPlusImageAttribute
 	return aText[(int)type];
 }
 
+static inline LPCWSTR EMFPlusRegionNodeDataTypeText(ORegionNodeDataType type)
+{
+	switch (type)
+	{
+	case ORegionNodeDataTypeAnd:
+		return L"And";
+	case ORegionNodeDataTypeOr:
+		return L"Or";
+	case ORegionNodeDataTypeXor:
+		return L"Xor";
+	case ORegionNodeDataTypeExclude:
+		return L"Exclude";
+	case ORegionNodeDataTypeComplement:
+		return L"Complement";
+	case ORegionNodeDataTypeRect:
+		return L"Rect";
+	case ORegionNodeDataTypePath:
+		return L"Path";
+	case ORegionNodeDataTypeEmpty:
+		return L"Empty";
+	case ORegionNodeDataTypeInfinite:
+		return L"infinite";
+	}
+	return L"Unknown";
+}
+
+static inline LPCWSTR EMFPlusLinkedObjText(EMFRecAccess::LinkedObjType val)
+{
+	switch (val)
+	{
+	case EMFRecAccess::LinkedObjTypeInvalid:
+		return L"Invalid";
+	case EMFRecAccess::LinkedObjTypeBrush:
+		return L"Brush";
+	case EMFRecAccess::LinkedObjTypePen:
+		return L"Pen";
+	case EMFRecAccess::LinkedObjTypePath:
+		return L"Path";
+	case EMFRecAccess::LinkedObjTypeRegion:
+		return L"Region";
+	case EMFRecAccess::LinkedObjTypeImage:
+		return L"Image";
+	case EMFRecAccess::LinkedObjTypeFont:
+		return L"Font";
+	case EMFRecAccess::LinkedObjTypeStringFormat:
+		return L"StringFormat";
+	case EMFRecAccess::LinkedObjTypeImageAttributes:
+		return L"ImageAttributes";
+	case EMFRecAccess::LinkedObjTypeCustomLineCap:
+		return L"CustomLineCap";
+	case EMFRecAccess::LinkedObjTypeDrawingRecord:
+		return L"DrawingRecord";
+	case EMFRecAccess::LinkedObjTypeGraphicState:
+		return L"GraphicState";
+	default:
+		break;
+	}
+	return L"Unknown";
+}
 
 #define GS_VISITABLE_STRUCT		VISITABLE_STRUCT
 #include "visit_struct.hpp"
@@ -400,7 +459,6 @@ struct EmfStruct2Properties
 			});
 	}
 
-#if __cpp_if_constexpr
 	template <typename ValT>
 	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
 	{
@@ -411,10 +469,11 @@ struct EmfStruct2Properties
 		}
 		else if constexpr (std::is_class_v<ValT>)
 		{
-			if constexpr (data_access::is_vector_object_wrapper<ValT>::value)
+			if constexpr (data_access::is_vector_wrapper<ValT>::value)
 			{
 				if constexpr (std::is_arithmetic_v<typename ValT::value_type>)
 				{
+					// TODO
 					if (!value.empty())
 						pNode->AddValue(L"junk", value[0]);
 				}
@@ -443,34 +502,6 @@ struct EmfStruct2Properties
 			pNode->AddText(str, GetEnumText(value));
 		}
 	}
-#else
-	template <typename ValT, typename std::enable_if_t<std::is_class<ValT>::value>* = nullptr>
-	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
-	{
-		//EmfStruct2Properties::Build(value, pNode);
-	}
-
-	template <typename ValT, typename std::enable_if_t<std::is_arithmetic<ValT>::value>* = nullptr>
-	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
-	{
-		CStringW str(name);
-		pNode->AddValue(str, value);
-	}
-
-	template <typename ValT, typename std::enable_if_t<std::is_enum<ValT>::value>* = nullptr>
-	static inline void BuildField(const char* name, const ValT& value, PropertyNode* pNode)
-	{
-		CStringW str(name);
-		pNode->AddText(str, GetEnumText(value));
-	}
-
-	template <typename ValT>
-	static inline void BuildField(const char* name, const optional_wrapper<ValT>& value, PropertyNode* pNode)
-	{
-		if (value)
-			BuildField(name, value.get(), pNode);
-	}
-#endif
 	template <typename ValT>
 	static inline void BuildField(const char* name, const std::unique_ptr<ValT>& value, PropertyNode* pNode)
 	{
@@ -485,6 +516,7 @@ struct EmfStruct2Properties
 
 	static inline void BuildField(const char* name, const OEmfPlusPointDataArray& value, PropertyNode* pNode)
 	{
+		pNode->sub.emplace_back(std::make_shared<PropertyNodePlusPointDataArray>(CStringW(name), value));
 	}
 
 	static inline void BuildField(const char* name, const std::wstring& value, PropertyNode* pNode)
@@ -556,6 +588,10 @@ struct EmfStruct2Properties
 	{
 		return EMFPlusStringTrimmingText(value);
 	}
+	static inline LPCWSTR GetEnumText(ORegionNodeDataType value)
+	{
+		return EMFPlusRegionNodeDataTypeText(value);
+	}
 	static inline LPCWSTR GetEnumText(OEmfPlusImageAttributes::ClampType value)
 	{
 		return EMFPlusImageAttributesClampTypeText(value);
@@ -588,7 +624,7 @@ public:
 		m_obj.reset(new OEmfPlusBrush);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pObj = (OEmfPlusBrush*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Brush");
@@ -604,7 +640,7 @@ public:
 		m_obj.reset(new OEmfPlusPen);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pObj = (OEmfPlusPen*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Pen");
@@ -620,7 +656,7 @@ public:
 		m_obj.reset(new OEmfPlusPath);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pObj = (OEmfPlusPath*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Path");
@@ -636,7 +672,7 @@ public:
 		m_obj.reset(new OEmfPlusRegion);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
  		auto pObj = (OEmfPlusRegion*)m_obj.get();
  		auto pBranch = pNode->AddBranch(L"Region");
@@ -652,24 +688,9 @@ public:
 		m_obj.reset(new OEmfPlusImage);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pImg = (OEmfPlusImage*)m_obj.get();
-		//pNode->AddText(L"ImageType", EMFPlusImageDataTypeText(pImg->Type));
-		//switch (pImg->Type)
-		//{
-		//case OImageDataType::Bitmap:
-		//	pNode->AddValue(L"Width", pImg->ImageDataBmp->Width);
-		//	pNode->AddValue(L"Height", pImg->ImageDataBmp->Height);
-		//	pNode->AddValue(L"Stride", pImg->ImageDataBmp->Stride);
-		//	pNode->AddValue(L"PixelFormat", (u32t)pImg->ImageDataBmp->PixelFormat, true);
-		//	pNode->AddText(L"BitmapType", EMFPlusBitmapTypeText(pImg->ImageDataBmp->Type));
-		//	break;
-		//case OImageDataType::Metafile:
-		//	pNode->AddText(L"MetafileType", EMFPlusMetafileTypeText(pImg->ImageDataMetafile->Type));
-		//	pNode->AddValue(L"MetafileDataSize", pImg->ImageDataMetafile->MetafileDataSize);
-		//	break;
-		//}
 		auto pBranch = pNode->AddBranch(L"Image");
 		EmfStruct2Properties::Build(*pImg, pBranch.get());
 	}
@@ -709,7 +730,7 @@ public:
 		m_obj.reset(new OEmfPlusFont);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pObj = (OEmfPlusFont*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Font");
@@ -725,7 +746,7 @@ public:
 		m_obj.reset(new OEmfPlusStringFormat);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pObj = (OEmfPlusStringFormat*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"StringFormat");
@@ -741,7 +762,7 @@ public:
 		m_obj.reset(new OEmfPlusImageAttributes);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pObj = (OEmfPlusImageAttributes*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"ImageAttributes");
@@ -757,7 +778,7 @@ public:
 		m_obj.reset(new OEmfPlusCustomLineCap);
 	}
 protected:
-	void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const override
+	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
 		auto pObj = (OEmfPlusCustomLineCap*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"CustomLineCap");
@@ -831,9 +852,9 @@ EMFRecAccessGDIPlusObjWrapper* EMFRecAccessGDIPlusRecObject::GetObjectWrapper()
 	return m_recDataCached.get();
 }
 
-void EMFRecAccessGDIPlusRecObject::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecObject::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusObjectCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusObjectCat::CacheProperties(ctxt);
 	auto nObjType = OEmfPlusRecObjectReader::GetObjectType(m_recInfo);
 	m_propsCached->AddText(L"ObjectType", EMFPlusObjectTypeText(nObjType));
 	auto nObjectID = (u8t)(m_recInfo.Flags & OEmfPlusRecObjectReader::FlagObjectIDMask);
@@ -841,13 +862,13 @@ void EMFRecAccessGDIPlusRecObject::CacheProperties(EMFAccess* pEMF)
 	auto pObjWrapper = GetObjectWrapper();
 	if (pObjWrapper)
 	{
-		pObjWrapper->CacheProperties(pEMF, m_propsCached.get());
+		pObjWrapper->CacheProperties(ctxt, m_propsCached.get());
 	}
 }
 
-void EMFRecAccessGDIPlusRecClear::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecClear::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecClear*)m_recInfo.Data;
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"Color", pRec->Color));
 }
@@ -859,13 +880,13 @@ void EMFRecAccessGDIPlusRecFillRects::Preprocess(EMFAccess* pEMF)
 		auto nID = ((OEmfPlusRecFillRects*)m_recInfo.Data)->BrushId;
 		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 		if (pRec)
-			AddLinkRecord(pRec);
+			AddLinkRecord(pRec, LinkedObjTypeBrush);
 	}
 }
 
-void EMFRecAccessGDIPlusRecFillRects::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecFillRects::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectDataArray>(L"RectData", m_recDataCached.RectData));
@@ -876,10 +897,10 @@ void EMFRecAccessGDIPlusRecFillRects::CacheProperties(EMFAccess* pEMF)
 	else
 	{
 		m_propsCached->AddValue(L"BrushID", m_recDataCached.BrushId);
-		auto pBrushRec = GetLinkedObject(0);
+		auto pBrushRec = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrushRec)
 		{
-			auto pBrushProp = pBrushRec->GetProperties(pEMF);
+			auto pBrushProp = pBrushRec->GetProperties(ctxt);
 			auto pBrushNode = m_propsCached->AddBranch(L"Brush");
 			pBrushNode->sub = pBrushProp->sub;
 		}
@@ -892,22 +913,22 @@ void EMFRecAccessGDIPlusRecDrawRects::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawRects::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawRects::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectDataArray>(L"RectData", m_recDataCached.RectData));
-	auto pPenRec = GetLinkedObject(0);
+	auto pPenRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pPenRec)
 	{
 		auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawRects::FlagObjectIDMask);
 		m_propsCached->AddValue(L"PenID", nID);
-		auto pPenProp = pPenRec->GetProperties(pEMF);
+		auto pPenProp = pPenRec->GetProperties(ctxt);
 		auto pPenNode = m_propsCached->AddBranch(L"Pen");
 		pPenNode->sub = pPenProp->sub;
 	}
@@ -920,13 +941,13 @@ void EMFRecAccessGDIPlusRecFillPolygon::Preprocess(EMFAccess* pEMF)
 		auto nID = ((OEmfPlusRecFillPolygon*)m_recInfo.Data)->BrushId;
 		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 		if (pRec)
-			AddLinkRecord(pRec);
+			AddLinkRecord(pRec, LinkedObjTypeBrush);
 	}
 }
 
-void EMFRecAccessGDIPlusRecFillPolygon::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecFillPolygon::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	if (m_recInfo.Flags & OEmfPlusRecFillPolygon::FlagS)
@@ -936,10 +957,10 @@ void EMFRecAccessGDIPlusRecFillPolygon::CacheProperties(EMFAccess* pEMF)
 	else
 	{
 		m_propsCached->AddValue(L"BrushID", m_recDataCached.BrushId);
-		auto pBrushRec = GetLinkedObject(0);
+		auto pBrushRec = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrushRec)
 		{
-			auto pBrushProp = pBrushRec->GetProperties(pEMF);
+			auto pBrushProp = pBrushRec->GetProperties(ctxt);
 			auto pBrushNode = m_propsCached->AddBranch(L"Brush");
 			pBrushNode->sub = pBrushProp->sub;
 		}
@@ -954,13 +975,13 @@ void EMFRecAccessGDIPlusRecDrawLines::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawLines::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawLines::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawLines::FlagObjectIDMask);
@@ -968,10 +989,10 @@ void EMFRecAccessGDIPlusRecDrawLines::CacheProperties(EMFAccess* pEMF)
 	m_propsCached->AddValue(L"Closed", m_recInfo.Flags & OEmfPlusRecDrawLines::FlagL);
 	bool bRelative = (m_recInfo.Flags & OEmfPlusRecDrawLines::FlagP);
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusPointDataArray>(L"PointData", m_recDataCached.PointData, bRelative));
-	auto pPenRec = GetLinkedObject(0);
+	auto pPenRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pPenRec)
 	{
-		auto pPenProp = pPenRec->GetProperties(pEMF);
+		auto pPenProp = pPenRec->GetProperties(ctxt);
 		auto pPenNode = m_propsCached->AddBranch(L"Pen");
 		pPenNode->sub = pPenProp->sub;
 	}
@@ -984,13 +1005,13 @@ void EMFRecAccessGDIPlusRecFillEllipse::Preprocess(EMFAccess* pEMF)
 		auto nID = ((OEmfPlusRecFillEllipse*)m_recInfo.Data)->BrushId;
 		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 		if (pRec)
-			AddLinkRecord(pRec);
+			AddLinkRecord(pRec, LinkedObjTypeBrush);
 	}
 }
 
-void EMFRecAccessGDIPlusRecFillEllipse::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecFillEllipse::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	if (m_recInfo.Flags & OEmfPlusRecFillEllipse::FlagS)
@@ -1000,10 +1021,10 @@ void EMFRecAccessGDIPlusRecFillEllipse::CacheProperties(EMFAccess* pEMF)
 	else
 	{
 		m_propsCached->AddValue(L"BrushID", m_recDataCached.BrushId);
-		auto pBrushRec = GetLinkedObject(0);
+		auto pBrushRec = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrushRec)
 		{
-			auto pBrushProp = pBrushRec->GetProperties(pEMF);
+			auto pBrushProp = pBrushRec->GetProperties(ctxt);
 			auto pBrushNode = m_propsCached->AddBranch(L"Brush");
 			pBrushNode->sub = pBrushProp->sub;
 		}
@@ -1017,22 +1038,22 @@ void EMFRecAccessGDIPlusRecDrawEllipse::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawEllipse::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawEllipse::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawEllipse::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PenID", nID);
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectData>(L"RectData", m_recDataCached.RectData));
-	auto pPenRec = GetLinkedObject(0);
+	auto pPenRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pPenRec)
 	{
-		auto pPenProp = pPenRec->GetProperties(pEMF);
+		auto pPenProp = pPenRec->GetProperties(ctxt);
 		auto pPenNode = m_propsCached->AddBranch(L"Pen");
 		pPenNode->sub = pPenProp->sub;
 	}
@@ -1045,13 +1066,13 @@ void EMFRecAccessGDIPlusRecFillPie::Preprocess(EMFAccess* pEMF)
 		auto nID = ((OEmfPlusRecFillPie*)m_recInfo.Data)->BrushId;
 		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 		if (pRec)
-			AddLinkRecord(pRec);
+			AddLinkRecord(pRec, LinkedObjTypeBrush);
 	}
 }
 
-void EMFRecAccessGDIPlusRecFillPie::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecFillPie::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	if (m_recInfo.Flags & OEmfPlusRecFillPie::FlagS)
@@ -1061,10 +1082,10 @@ void EMFRecAccessGDIPlusRecFillPie::CacheProperties(EMFAccess* pEMF)
 	else
 	{
 		m_propsCached->AddValue(L"BrushID", m_recDataCached.BrushId);
-		auto pBrushRec = GetLinkedObject(0);
+		auto pBrushRec = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrushRec)
 		{
-			auto pBrushProp = pBrushRec->GetProperties(pEMF);
+			auto pBrushProp = pBrushRec->GetProperties(ctxt);
 			auto pBrushNode = m_propsCached->AddBranch(L"Brush");
 			pBrushNode->sub = pBrushProp->sub;
 		}
@@ -1078,22 +1099,22 @@ void EMFRecAccessGDIPlusRecDrawPie::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawPie::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawPie::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawPie::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PenID", nID);
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusArcData>(L"ArcData", m_recDataCached.ArcData));
-	auto pPenRec = GetLinkedObject(0);
+	auto pPenRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pPenRec)
 	{
-		auto pPenProp = pPenRec->GetProperties(pEMF);
+		auto pPenProp = pPenRec->GetProperties(ctxt);
 		auto pPenNode = m_propsCached->AddBranch(L"Pen");
 		pPenNode->sub = pPenProp->sub;
 	}
@@ -1105,22 +1126,22 @@ void EMFRecAccessGDIPlusRecDrawArc::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawArc::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawArc::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawArc::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PenID", nID);
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusArcData>(L"ArcData", m_recDataCached.ArcData));
-	auto pPenRec = GetLinkedObject(0);
+	auto pPenRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pPenRec)
 	{
-		auto pPenProp = pPenRec->GetProperties(pEMF);
+		auto pPenProp = pPenRec->GetProperties(ctxt);
 		auto pPenNode = m_propsCached->AddBranch(L"Pen");
 		pPenNode->sub = pPenProp->sub;
 	}
@@ -1134,9 +1155,9 @@ static inline LPCWSTR EMFPlusCombineModeText(OCombineMode type)
 	return aText[(int)type];
 }
 
-void EMFRecAccessGDIPlusRecSetClipRect::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetClipRect::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusClippingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusClippingCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecSetClipRect*)m_recInfo.Data;
 	auto mode = OEmfPlusRecSetClipRect::GetCombineMode(m_recInfo.Flags);
 	m_propsCached->AddText(L"CombineMode", EMFPlusCombineModeText(mode));
@@ -1148,19 +1169,19 @@ void EMFRecAccessGDIPlusRecSetClipPath::Preprocess(EMFAccess* pEMF)
 	auto nID = OEmfPlusRecSetClipPath::GetObjectID(m_recInfo.Flags);
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePath);
 }
 
-void EMFRecAccessGDIPlusRecSetClipPath::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetClipPath::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusClippingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusClippingCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecSetClipPath*)m_recInfo.Data;
 	auto mode = OEmfPlusRecSetClipPath::GetCombineMode(m_recInfo.Flags);
 	m_propsCached->AddText(L"CombineMode", EMFPlusCombineModeText(mode));
-	auto pPath = GetLinkedObject(0);
+	auto pPath = GetLinkedRecord(LinkedObjTypePath);
 	if (pPath)
 	{
-		auto pProp = pPath->GetProperties(pEMF);
+		auto pProp = pPath->GetProperties(ctxt);
 		auto pNode = m_propsCached->AddBranch(L"Path");
 		pNode->sub = pProp->sub;
 	}
@@ -1171,27 +1192,27 @@ void EMFRecAccessGDIPlusRecSetClipRegion::Preprocess(EMFAccess* pEMF)
 	auto nID = OEmfPlusRecSetClipRegion::GetObjectID(m_recInfo.Flags);
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypeRegion);
 }
 
-void EMFRecAccessGDIPlusRecSetClipRegion::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetClipRegion::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusClippingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusClippingCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecSetClipRegion*)m_recInfo.Data;
 	auto mode = OEmfPlusRecSetClipRegion::GetCombineMode(m_recInfo.Flags);
 	m_propsCached->AddText(L"CombineMode", EMFPlusCombineModeText(mode));
-	auto pPath = GetLinkedObject(0);
+	auto pPath = GetLinkedRecord(LinkedObjTypeRegion);
 	if (pPath)
 	{
-		auto pProp = pPath->GetProperties(pEMF);
+		auto pProp = pPath->GetProperties(ctxt);
 		auto pNode = m_propsCached->AddBranch(L"Region");
 		pNode->sub = pProp->sub;
 	}
 }
 
-void EMFRecAccessGDIPlusRecOffsetClip::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecOffsetClip::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusClippingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusClippingCat::CacheProperties(ctxt);
 	auto* pRec = (OEmfPlusRecOffsetClip*)m_recInfo.Data;
 	m_propsCached->AddValue(L"dx", pRec->dx);
 	m_propsCached->AddValue(L"dy", pRec->dy);
@@ -1203,20 +1224,20 @@ void EMFRecAccessGDIPlusRecFillRegion::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypeRegion);
 		if (!(m_recInfo.Flags & OEmfPlusRecFillRegion::FlagS))
 		{
 			auto pFillRec = (const OEmfPlusRecFillRegion*)m_recInfo.Data;
 			auto pRecBrush = pEMF->GetObjectCreationRecord(pFillRec->BrushId, true);
 			if (pRecBrush)
-				AddLinkRecord(pRecBrush);
+				AddLinkRecord(pRecBrush, LinkedObjTypeBrush);
 		}
 	}
 }
 
-void EMFRecAccessGDIPlusRecFillRegion::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecFillRegion::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecFillRegion::FlagObjectIDMask);
 	m_propsCached->AddValue(L"RegionID", nID);
 	auto pFillRec = (const OEmfPlusRecFillRegion*)m_recInfo.Data;
@@ -1227,18 +1248,18 @@ void EMFRecAccessGDIPlusRecFillRegion::CacheProperties(EMFAccess* pEMF)
 	else
 	{
 		m_propsCached->AddValue(L"BrushID", pFillRec->BrushId);
-		auto pBrushRec = GetLinkedObject(LinkedObjTypeBrush);
+		auto pBrushRec = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrushRec)
 		{
-			auto pBrushProp = pBrushRec->GetProperties(pEMF);
+			auto pBrushProp = pBrushRec->GetProperties(ctxt);
 			auto pBrushNode = m_propsCached->AddBranch(L"Brush");
 			pBrushNode->sub = pBrushProp->sub;
 		}
 	}
-	auto pRgnRec = GetLinkedObject(LinkedObjTypeRegion);
+	auto pRgnRec = GetLinkedRecord(LinkedObjTypeRegion);
 	if (pRgnRec)
 	{
-		auto pRgnProp = pRgnRec->GetProperties(pEMF);
+		auto pRgnProp = pRgnRec->GetProperties(ctxt);
 		auto pRgnNode = m_propsCached->AddBranch(L"Region");
 		pRgnNode->sub = pRgnProp->sub;
 	}
@@ -1250,20 +1271,20 @@ void EMFRecAccessGDIPlusRecFillPath::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePath);
 		if (!(m_recInfo.Flags & OEmfPlusRecFillPath::FlagS))
 		{
 			auto pFillRec = (const OEmfPlusRecFillPath*)m_recInfo.Data;
 			auto pRecBrush = pEMF->GetObjectCreationRecord(pFillRec->BrushId, true);
 			if (pRecBrush)
-				AddLinkRecord(pRecBrush);
+				AddLinkRecord(pRecBrush, LinkedObjTypeBrush);
 		}
 	}
 }
 
-void EMFRecAccessGDIPlusRecFillPath::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecFillPath::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecFillPath::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PathID", nID);
 	auto pFillRec = (const OEmfPlusRecFillPath*)m_recInfo.Data;
@@ -1274,18 +1295,18 @@ void EMFRecAccessGDIPlusRecFillPath::CacheProperties(EMFAccess* pEMF)
 	else
 	{
 		m_propsCached->AddValue(L"BrushID", pFillRec->BrushId);
-		auto pBrushRec = GetLinkedObject(LinkedObjTypeBrush);
+		auto pBrushRec = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrushRec)
 		{
-			auto pBrushProp = pBrushRec->GetProperties(pEMF);
+			auto pBrushProp = pBrushRec->GetProperties(ctxt);
 			auto pBrushNode = m_propsCached->AddBranch(L"Brush");
 			pBrushNode->sub = pBrushProp->sub;
 		}
 	}
-	auto pRgnRec = GetLinkedObject(LinkedObjTypePath);
+	auto pRgnRec = GetLinkedRecord(LinkedObjTypePath);
 	if (pRgnRec)
 	{
-		auto pRgnProp = pRgnRec->GetProperties(pEMF);
+		auto pRgnProp = pRgnRec->GetProperties(ctxt);
 		auto pRgnNode = m_propsCached->AddBranch(L"Path");
 		pRgnNode->sub = pRgnProp->sub;
 	}
@@ -1297,32 +1318,32 @@ void EMFRecAccessGDIPlusRecDrawPath::Preprocess(EMFAccess* pEMF)
 	auto pPathRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pPathRec)
 	{
-		AddLinkRecord(pPathRec);
+		AddLinkRecord(pPathRec, LinkedObjTypePath);
 		auto pRec = (const OEmfPlusRecDrawPath*)m_recInfo.Data;
 		auto pPen = pEMF->GetObjectCreationRecord(pRec->PenId, true);
 		if (pPen)
-			AddLinkRecord(pPen);
+			AddLinkRecord(pPen, LinkedObjTypePen);
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawPath::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawPath::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawPath::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PathID", nID);
-	auto pPathRec = GetLinkedObject(LinkedObjTypePath);
+	auto pPathRec = GetLinkedRecord(LinkedObjTypePath);
 	if (pPathRec)
 	{
-		auto pProp = pPathRec->GetProperties(pEMF);
+		auto pProp = pPathRec->GetProperties(ctxt);
 		auto pNode = m_propsCached->AddBranch(L"Path");
 		pNode->sub = pProp->sub;
 	}
 	auto pRec = (const OEmfPlusRecDrawPath*)m_recInfo.Data;
 	m_propsCached->AddValue(L"PenID", pRec->PenId);
-	auto pPenRec = GetLinkedObject(LinkedObjTypePen);
+	auto pPenRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pPenRec)
 	{
-		auto pPenProp = pPenRec->GetProperties(pEMF);
+		auto pPenProp = pPenRec->GetProperties(ctxt);
 		auto pPenNode = m_propsCached->AddBranch(L"Pen");
 		pPenNode->sub = pPenProp->sub;
 	}
@@ -1335,7 +1356,7 @@ void EMFRecAccessGDIPlusRecFillClosedCurve::Preprocess(EMFAccess* pEMF)
 		auto nID = ((OEmfPlusRecFillClosedCurve*)m_recInfo.Data)->BrushId;
 		auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 		if (pRec)
-			AddLinkRecord(pRec);
+			AddLinkRecord(pRec, LinkedObjTypeBrush);
 	}
 }
 
@@ -1344,9 +1365,9 @@ static inline LPCWSTR EMFPlusWindingModeText(bool bWinding)
 	return bWinding ? L"Winding" : L"Alternate";
 }
 
-void EMFRecAccessGDIPlusRecFillClosedCurve::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecFillClosedCurve::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	m_propsCached->AddText(L"FillMode", EMFPlusWindingModeText(m_recInfo.Flags & OEmfPlusRecFillClosedCurve::FlagW));
@@ -1358,10 +1379,10 @@ void EMFRecAccessGDIPlusRecFillClosedCurve::CacheProperties(EMFAccess* pEMF)
 	}
 	else
 	{
-		auto pBrushRec = GetLinkedObject(0);
+		auto pBrushRec = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrushRec)
 		{
-			auto pBrushProp = pBrushRec->GetProperties(pEMF);
+			auto pBrushProp = pBrushRec->GetProperties(ctxt);
 			auto pBrushNode = m_propsCached->AddBranch(L"Brush");
 			pBrushNode->sub = pBrushProp->sub;
 		}
@@ -1376,20 +1397,20 @@ void EMFRecAccessGDIPlusRecDrawClosedCurve::Preprocess(EMFAccess* pEMF)
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawClosedCurve::FlagObjectIDMask);
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 }
 
-void EMFRecAccessGDIPlusRecDrawClosedCurve::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawClosedCurve::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawClosedCurve::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PenID", nID);
-	auto pRec = GetLinkedObject(0);
+	auto pRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pRec)
 	{
-		auto pProp = pRec->GetProperties(pEMF);
+		auto pProp = pRec->GetProperties(ctxt);
 		auto pNode = m_propsCached->AddBranch(L"Pen");
 		pNode->sub = pProp->sub;
 	}
@@ -1403,20 +1424,20 @@ void EMFRecAccessGDIPlusRecDrawCurve::Preprocess(EMFAccess* pEMF)
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawCurve::FlagObjectIDMask);
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 }
 
-void EMFRecAccessGDIPlusRecDrawCurve::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawCurve::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawCurve::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PenID", nID);
-	auto pRec = GetLinkedObject(0);
+	auto pRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pRec)
 	{
-		auto pProp = pRec->GetProperties(pEMF);
+		auto pProp = pRec->GetProperties(ctxt);
 		auto pNode = m_propsCached->AddBranch(L"Pen");
 		pNode->sub = pProp->sub;
 	}
@@ -1431,20 +1452,20 @@ void EMFRecAccessGDIPlusRecDrawBeziers::Preprocess(EMFAccess* pEMF)
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawBeziers::FlagObjectIDMask);
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypePen);
 }
 
-void EMFRecAccessGDIPlusRecDrawBeziers::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawBeziers::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawBeziers::FlagObjectIDMask);
 	m_propsCached->AddValue(L"PenID", nID);
-	auto pRec = GetLinkedObject(0);
+	auto pRec = GetLinkedRecord(LinkedObjTypePen);
 	if (pRec)
 	{
-		auto pProp = pRec->GetProperties(pEMF);
+		auto pProp = pRec->GetProperties(ctxt);
 		auto pNode = m_propsCached->AddBranch(L"Pen");
 		pNode->sub = pProp->sub;
 	}
@@ -1458,18 +1479,20 @@ void EMFRecAccessGDIPlusRecDrawImage::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypeImage);
 		auto pImgRec = (const OEmfPlusRecDrawImage*)m_recInfo.Data;
-		if (pImgRec->ImageAttributesID)
+		if (pImgRec->ImageAttributesID != (u32t)InvalidObjectID)
 		{
-			// TODO
+			pRec = pEMF->GetObjectCreationRecord(pImgRec->ImageAttributesID, true);
+			if (pRec)
+				AddLinkRecord(pRec, LinkedObjTypeImageAttributes);
 		}
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawImage::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawImage::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
@@ -1481,17 +1504,17 @@ void EMFRecAccessGDIPlusRecDrawImage::CacheProperties(EMFAccess* pEMF)
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectF>(L"SrcRect", m_recDataCached.SrcRect));
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectData>(L"RectData", m_recDataCached.RectData));
 
-	auto pImg = GetLinkedObject(LinkedObjTypeImage);
+	auto pImg = GetLinkedRecord(LinkedObjTypeImage);
 	if (pImg)
 	{
-		auto pImgProp = pImg->GetProperties(pEMF);
+		auto pImgProp = pImg->GetProperties(ctxt);
 		auto pImgNode = m_propsCached->AddBranch(L"Image");
 		pImgNode->sub = pImgProp->sub;
 
-		auto pAttrRec = GetLinkedObject(LinkedObjTypeImageAttribute);
+		auto pAttrRec = GetLinkedRecord(LinkedObjTypeImageAttributes);
 		if (pAttrRec)
 		{
-			auto pAttrProp = pAttrRec->GetProperties(pEMF);
+			auto pAttrProp = pAttrRec->GetProperties(ctxt);
 			auto pAttrNode = m_propsCached->AddBranch(L"ImageAttribute");
 			pAttrNode->sub = pAttrProp->sub;
 		}
@@ -1504,18 +1527,20 @@ void EMFRecAccessGDIPlusRecDrawImagePoints::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypeImage);
 		auto pImgRec = (const OEmfPlusRecDrawImage*)m_recInfo.Data;
-		if (pImgRec->ImageAttributesID)
+		if (pImgRec->ImageAttributesID != (u32t)InvalidObjectID)
 		{
-			// TODO
+			pRec = pEMF->GetObjectCreationRecord(pImgRec->ImageAttributesID, true);
+			if (pRec)
+				AddLinkRecord(pRec, LinkedObjTypeImageAttributes);
 		}
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawImagePoints::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawImagePoints::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
@@ -1527,17 +1552,17 @@ void EMFRecAccessGDIPlusRecDrawImagePoints::CacheProperties(EMFAccess* pEMF)
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectF>(L"SrcRect", m_recDataCached.SrcRect));
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusPointDataArray>(L"PointData", m_recDataCached.PointData));
 
-	auto pImg = GetLinkedObject(LinkedObjTypeImage);
+	auto pImg = GetLinkedRecord(LinkedObjTypeImage);
 	if (pImg)
 	{
-		auto pImgProp = pImg->GetProperties(pEMF);
+		auto pImgProp = pImg->GetProperties(ctxt);
 		auto pImgNode = m_propsCached->AddBranch(L"Image");
 		pImgNode->sub = pImgProp->sub;
 
-		auto pAttrRec = GetLinkedObject(LinkedObjTypeImageAttribute);
+		auto pAttrRec = GetLinkedRecord(LinkedObjTypeImageAttributes);
 		if (pAttrRec)
 		{
-			auto pAttrProp = pAttrRec->GetProperties(pEMF);
+			auto pAttrProp = pAttrRec->GetProperties(ctxt);
 			auto pAttrNode = m_propsCached->AddBranch(L"ImageAttribute");
 			pAttrNode->sub = pAttrProp->sub;
 		}
@@ -1550,43 +1575,67 @@ void EMFRecAccessGDIPlusRecDrawString::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypeFont);
+		auto pDrawRec = (OEmfPlusRecDrawString*)m_recInfo.Data;
 		if (!(m_recInfo.Flags & OEmfPlusRecDrawString::FlagS))
 		{
-			auto nID = ((OEmfPlusRecDrawString*)m_recInfo.Data)->BrushId;
+			auto nID = pDrawRec->BrushId;
 			pRec = pEMF->GetObjectCreationRecord(nID, true);
 			if (pRec)
-				AddLinkRecord(pRec);
+				AddLinkRecord(pRec, LinkedObjTypeBrush);
+		}
+		if (pDrawRec->FormatID != (u32t)InvalidObjectID)
+		{
+			pRec = pEMF->GetObjectCreationRecord(pDrawRec->FormatID, true);
+			if (pRec)
+				AddLinkRecord(pRec, LinkedObjTypeStringFormat);
 		}
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawString::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawString::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawString::FlagObjectIDMask);
 	m_propsCached->AddValue(L"FontID", nID);
+	auto pFont = GetLinkedRecord(LinkedObjTypeFont);
+	if (pFont)
+	{
+		auto pProp = pFont->GetProperties(ctxt);
+		auto pNode = m_propsCached->AddBranch(EMFPlusLinkedObjText(LinkedObjTypeFont));
+		pNode->sub = pProp->sub;
+	}
 	if (m_recInfo.Flags & OEmfPlusRecDrawString::FlagS)
 	{
 		m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"Brush", (emfplus::OEmfPlusARGB&)m_recDataCached.BrushId));
 	}
 	else
 	{
-		auto pBrush = GetLinkedObject(LinkedObjTypeBrush);
+		auto pBrush = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrush)
 		{
-			auto pProp = pBrush->GetProperties(pEMF);
-			auto pNode = m_propsCached->AddBranch(L"Brush");
+			auto pProp = pBrush->GetProperties(ctxt);
+			auto pNode = m_propsCached->AddBranch(EMFPlusLinkedObjText(LinkedObjTypeBrush));
 			pNode->sub = pProp->sub;
 		}
 	}
-	// TODO, format id
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectF>(L"LayoutRect", m_recDataCached.LayoutRect));
 	m_propsCached->AddText(L"StringData", m_recDataCached.StringData.data());
+
+	if (m_recDataCached.FormatID != (u32t)InvalidObjectID)
+	{
+		auto pFormat = GetLinkedRecord(LinkedObjTypeStringFormat);
+		if (pFormat)
+		{
+			auto pProp = pFormat->GetProperties(ctxt);
+			auto pNode = m_propsCached->AddBranch(EMFPlusLinkedObjText(LinkedObjTypeStringFormat));
+			pNode->sub = pProp->sub;
+		}
+	}
 }
 
 void EMFRecAccessGDIPlusRecDrawDriverString::Preprocess(EMFAccess* pEMF)
@@ -1595,52 +1644,74 @@ void EMFRecAccessGDIPlusRecDrawDriverString::Preprocess(EMFAccess* pEMF)
 	auto pRec = pEMF->GetObjectCreationRecord(nID, true);
 	if (pRec)
 	{
-		AddLinkRecord(pRec);
+		AddLinkRecord(pRec, LinkedObjTypeFont);
 		if (!(m_recInfo.Flags & OEmfPlusRecDrawDriverString::FlagS))
 		{
 			auto nID = ((OEmfPlusRecDrawDriverString*)m_recInfo.Data)->BrushId;
 			pRec = pEMF->GetObjectCreationRecord(nID, true);
 			if (pRec)
-				AddLinkRecord(pRec);
+				AddLinkRecord(pRec, LinkedObjTypeBrush);
 		}
 	}
 }
 
-void EMFRecAccessGDIPlusRecDrawDriverString::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecDrawDriverString::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusDrawingCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusDrawingCat::CacheProperties(ctxt);
 
 	DataReader reader(m_recInfo.Data, m_recInfo.DataSize);
 	VERIFY(m_recDataCached.Read(reader, m_recInfo.Flags, m_recInfo.DataSize));
 
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawDriverString::FlagObjectIDMask);
 	m_propsCached->AddValue(L"FontID", nID);
+	auto pFont = GetLinkedRecord(LinkedObjTypeFont);
+	if (pFont)
+	{
+		auto pProp = pFont->GetProperties(ctxt);
+		auto pNode = m_propsCached->AddBranch(EMFPlusLinkedObjText(LinkedObjTypeFont));
+		pNode->sub = pProp->sub;
+	}
 	if (m_recInfo.Flags & OEmfPlusRecDrawString::FlagS)
 	{
 		m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeColor>(L"Brush", (emfplus::OEmfPlusARGB&)m_recDataCached.BrushId));
 	}
 	else
 	{
-		auto pBrush = GetLinkedObject(LinkedObjTypeBrush);
+		auto pBrush = GetLinkedRecord(LinkedObjTypeBrush);
 		if (pBrush)
 		{
-			auto pProp = pBrush->GetProperties(pEMF);
-			auto pNode = m_propsCached->AddBranch(L"Brush");
+			auto pProp = pBrush->GetProperties(ctxt);
+			auto pNode = m_propsCached->AddBranch(EMFPlusLinkedObjText(LinkedObjTypeBrush));
 			pNode->sub = pProp->sub;
 		}
 	}
 	m_propsCached->AddValue(L"DriverStringOptionsFlags", m_recDataCached.DriverStringOptionsFlags, true);
 	m_propsCached->AddValue(L"MatrixPresent", m_recDataCached.MatrixPresent);
 	// TODO, Glyphs, GlyphPos
+	if (!m_recDataCached.Glyphs.empty())
+	{
+		if ((u32t)ODriverStringOptions::CmapLookup & m_recDataCached.DriverStringOptionsFlags)
+		{
+			m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusUnicodeArrayWrapper>(L"Glyphs", m_recDataCached.Glyphs));
+		}
+		else
+		{
+
+		}
+	}
+	if (!m_recDataCached.GlyphPos.empty())
+	{
+		m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusPointFArrayWrapper>(L"GlyphPos", m_recDataCached.GlyphPos));
+	}
 	if (m_recDataCached.MatrixPresent)
 	{
 		m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusTransform>(L"TransformMatrix", m_recDataCached.TransformMatrix));
 	}
 }
 
-void EMFRecAccessGDIPlusRecSetRenderingOrigin::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetRenderingOrigin::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecSetRenderingOrigin*)m_recInfo.Data;
 	m_propsCached->AddValue(L"x", pRec->x);
 	m_propsCached->AddValue(L"y", pRec->y);
@@ -1654,9 +1725,9 @@ static inline LPCWSTR EMFPlusSmoothingModeText(OSmoothingMode val)
 	return aText[(int)val];
 }
 
-void EMFRecAccessGDIPlusRecSetAntiAliasMode::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetAntiAliasMode::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto val = OEmfPlusRecSetAntiAliasMode::GetSmoothingMode(m_recInfo.Flags);
 	m_propsCached->AddText(L"SmoothingMode", EMFPlusSmoothingModeText(val));
 	m_propsCached->AddValue(L"Anti-aliasing", m_recInfo.Flags & OEmfPlusRecSetAntiAliasMode::FlagA);
@@ -1671,16 +1742,16 @@ static inline LPCWSTR EMFPlusTextRenderingHintText(OTextRenderingHint val)
 	return aText[(int)val];
 }
 
-void EMFRecAccessGDIPlusRecSetTextRenderingHint::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetTextRenderingHint::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto val = OEmfPlusRecSetTextRenderingHint::GetTextRenderingHint(m_recInfo.Flags);
 	m_propsCached->AddText(L"TextRenderingHint", EMFPlusTextRenderingHintText(val));
 }
 
-void EMFRecAccessGDIPlusRecSetTextContrast::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetTextContrast::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto val = OEmfPlusRecSetTextContrast::GetTextContrast(m_recInfo.Flags);
 	m_propsCached->AddValue(L"TextContrast", val);
 }
@@ -1694,9 +1765,9 @@ static inline LPCWSTR EMFPlusInterpolationModeText(OInterpolationMode val)
 	return aText[(int)val];
 }
 
-void EMFRecAccessGDIPlusRecSetInterpolationMode::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetInterpolationMode::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto val = OEmfPlusRecSetInterpolationMode::GetInterpolationMode(m_recInfo.Flags);
 	m_propsCached->AddText(L"InterpolationMode", EMFPlusInterpolationModeText(val));
 }
@@ -1709,9 +1780,9 @@ static inline LPCWSTR EMFPlusPixelOffsetModeText(OPixelOffsetMode val)
 	return aText[(int)val];
 }
 
-void EMFRecAccessGDIPlusRecSetPixelOffsetMode::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetPixelOffsetMode::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto val = OEmfPlusRecSetPixelOffsetMode::GetPixelOffsetMode(m_recInfo.Flags);
 	m_propsCached->AddText(L"PixelOffsetMode", EMFPlusPixelOffsetModeText(val));
 }
@@ -1724,9 +1795,9 @@ static inline LPCWSTR EMFPlusCompositingModeText(OCompositingMode val)
 	return aText[(int)val];
 }
 
-void EMFRecAccessGDIPlusRecSetCompositingMode::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetCompositingMode::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto val = OEmfPlusRecSetCompositingMode::GetCompositingMode(m_recInfo.Flags);
 	m_propsCached->AddText(L"CompositingMode", EMFPlusCompositingModeText(val));
 }
@@ -1739,16 +1810,16 @@ static inline LPCWSTR EMFPlusCompositingQualityText(OCompositingQuality val)
 	return aText[(int)val];
 }
 
-void EMFRecAccessGDIPlusRecSetCompositingQuality::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetCompositingQuality::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusPropertyCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusPropertyCat::CacheProperties(ctxt);
 	auto val = OEmfPlusRecSetCompositingQuality::GetCompositingQuality(m_recInfo.Flags);
 	m_propsCached->AddText(L"CompositingQuality", EMFPlusCompositingQualityText(val));
 }
 
-void EMFRecAccessGDIPlusRecSave::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSave::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusStateCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecSave*)m_recInfo.Data;
 	m_propsCached->AddValue(L"StackIndex", pRec->StackIndex);
 }
@@ -1759,29 +1830,29 @@ void EMFRecAccessGDIPlusRecRestore::Preprocess(EMFAccess* pEMF)
 	auto pSaveRec = pEMF->GetPlusSaveRecord(pRec->StackIndex);
 	if (pSaveRec)
 	{
-		AddLinkRecord(pSaveRec);
+		AddLinkRecord(pSaveRec, LinkedObjTypeGraphicState, LinkedObjTypeGraphicState);
 	}
 }
 
-void EMFRecAccessGDIPlusRecRestore::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecRestore::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusStateCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecRestore*)m_recInfo.Data;
 	m_propsCached->AddValue(L"StackIndex", pRec->StackIndex);
 }
 
-void EMFRecAccessGDIPlusRecBeginContainer::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecBeginContainer::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusStateCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecBeginContainer*)m_recInfo.Data;
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectF>(L"DestRect", pRec->DestRect));
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusRectF>(L"SrcRect", pRec->SrcRect));
 	m_propsCached->AddValue(L"StackIndex", pRec->StackIndex);
 }
 
-void EMFRecAccessGDIPlusRecBeginContainerNoParams::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecBeginContainerNoParams::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusStateCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecBeginContainerNoParams*)m_recInfo.Data;
 	m_propsCached->AddValue(L"StackIndex", pRec->StackIndex);
 }
@@ -1792,58 +1863,58 @@ void EMFRecAccessGDIPlusRecEndContainer::Preprocess(EMFAccess* pEMF)
 	auto pSaveRec = pEMF->GetPlusSaveRecord(pRec->StackIndex);
 	if (pSaveRec)
 	{
-		AddLinkRecord(pSaveRec);
+		AddLinkRecord(pSaveRec, LinkedObjTypeGraphicState, LinkedObjTypeGraphicState);
 	}
 }
 
-void EMFRecAccessGDIPlusRecEndContainer::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecEndContainer::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusStateCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusStateCat::CacheProperties(ctxt);
 	auto pRec = (OEmfPlusRecEndContainer*)m_recInfo.Data;
 	m_propsCached->AddValue(L"StackIndex", pRec->StackIndex);
 }
 
 
-void EMFRecAccessGDIPlusRecSetWorldTransform::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetWorldTransform::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusTransformCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusTransformCat::CacheProperties(ctxt);
 	auto* pRec = (OEmfPlusRecSetWorldTransform*)m_recInfo.Data;
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusTransform>(L"MatrixData", pRec->MatrixData));
 }
 
-void EMFRecAccessGDIPlusRecMultiplyWorldTransform::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecMultiplyWorldTransform::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusTransformCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusTransformCat::CacheProperties(ctxt);
 	auto* pRec = (OEmfPlusRecMultiplyWorldTransform*)m_recInfo.Data;
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusTransform>(L"MatrixData", pRec->MatrixData));
 }
 
-void EMFRecAccessGDIPlusRecTranslateWorldTransform::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecTranslateWorldTransform::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusTransformCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusTransformCat::CacheProperties(ctxt);
 	auto* pRec = (OEmfPlusRecTranslateWorldTransform*)m_recInfo.Data;
 	m_propsCached->AddValue(L"dx", pRec->dx);
 	m_propsCached->AddValue(L"dy", pRec->dy);
 }
 
-void EMFRecAccessGDIPlusRecScaleWorldTransform::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecScaleWorldTransform::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusTransformCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusTransformCat::CacheProperties(ctxt);
 	auto* pRec = (OEmfPlusRecScaleWorldTransform*)m_recInfo.Data;
 	m_propsCached->AddValue(L"Sx", pRec->Sx);
 	m_propsCached->AddValue(L"Sy", pRec->Sy);
 }
 
-void EMFRecAccessGDIPlusRecRotateWorldTransform::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecRotateWorldTransform::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusTransformCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusTransformCat::CacheProperties(ctxt);
 	auto* pRec = (OEmfPlusRecRotateWorldTransform*)m_recInfo.Data;
 	m_propsCached->AddValue(L"Angle", pRec->Angle);
 }
 
-void EMFRecAccessGDIPlusRecSetPageTransform::CacheProperties(EMFAccess* pEMF)
+void EMFRecAccessGDIPlusRecSetPageTransform::CacheProperties(const CachePropertiesContext& ctxt)
 {
-	EMFRecAccessGDIPlusTransformCat::CacheProperties(pEMF);
+	EMFRecAccessGDIPlusTransformCat::CacheProperties(ctxt);
 	auto* pRec = (OEmfPlusRecSetPageTransform*)m_recInfo.Data;
 	m_propsCached->AddValue(L"PageScale", pRec->PageScale);
 }

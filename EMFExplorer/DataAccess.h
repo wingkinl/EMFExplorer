@@ -81,7 +81,7 @@ protected:
 };
 
 template <typename _Ty>
-struct object_wrapper <std::vector<_Ty>>
+struct vector_wrapper
 {
 	using value_type      = _Ty;
 	using vector_type     = std::vector<_Ty>;
@@ -158,22 +158,16 @@ template <typename T> struct is_object_wrapper : public std::false_type {};
 template <typename T> struct is_object_wrapper<object_wrapper<T>> : public std::true_type {};
 
 template <class _Ty>
-constexpr bool is_optional_wrapper_v =
-	is_optional_wrapper<_Ty>::value;
+constexpr bool is_optional_wrapper_v = is_optional_wrapper<_Ty>::value;
 
-template<typename ...>
-using to_void = void; // maps everything to void, used in non-evaluated contexts
+template<typename T> struct is_vector_wrapper : public std::false_type {};
 
-template<typename T, typename = void>
-struct is_vector_object_wrapper : std::false_type
-{};
+template<typename T> struct is_vector_wrapper<vector_wrapper<T>> : public std::true_type {};
 
-template<typename T>
-struct is_vector_object_wrapper<T,
-	to_void<typename T::vector_type>> : std::true_type
-{};
+template <class _Ty>
+constexpr bool is_vector_wrapper_v = is_vector_wrapper<_Ty>::value;
 
-using memory_wrapper = object_wrapper<std::vector<byte>>;
+using memory_wrapper = vector_wrapper<byte>;
 
 class DataReader
 {
@@ -198,7 +192,7 @@ public:
 		m_pCur += nSize;
 	}
 
-	template <typename ValT>
+	template <typename ValT, typename std::enable_if_t<std::is_trivial_v<ValT>>* = nullptr>
 	void ReadBytes(object_wrapper<ValT>* pData, size_t nSize)
 	{
 		ASSERT(m_pCur + nSize <= m_pEnd);
@@ -224,13 +218,13 @@ public:
 	}
 
 	template <typename ValT>
-	void ReadArray(object_wrapper<ValT>& arr, size_t nCount)
+	void ReadArray(vector_wrapper<ValT>& arr, size_t nCount)
 	{
 		if (m_bAttachMemMode)
 		{
-			arr.attach( (typename ValT::value_type*)m_pCur );
+			arr.attach( (typename vector_wrapper<ValT>::value_type*)m_pCur );
 			arr.resize(nCount);
-			auto nSize = sizeof(ValT::value_type) * nCount;
+			auto nSize = sizeof(vector_wrapper<ValT>::value_type) * nCount;
 			ASSERT(m_pCur + nSize <= m_pEnd);
 			m_pCur += nSize;
 		}
@@ -239,6 +233,7 @@ public:
 			ReadArray(arr.get(), nCount);
 		}
 	}
+
 
 	template <typename ValT>
 	inline void ReadArray(optional_wrapper<ValT>& arr, size_t nCount)

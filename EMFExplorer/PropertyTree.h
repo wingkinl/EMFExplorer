@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include "DataAccess.h"
 
 struct PropertyNode 
 {
@@ -21,6 +22,8 @@ struct PropertyNode
 		NodeTypeRects,
 		NodeTypeRectData,
 		NodeTypeArcData,
+		NodeTypeUnicodeArray,
+		NodeTypePointFArray,
 	};
 	CStringW	name;
 	CStringW	text;
@@ -144,11 +147,17 @@ struct PropertyNodePlusPointDataArray : public PropertyNodePointDataArrayBase
 	bool	relative;
 };
 
+using PlusUnicodeArrayWrapper = data_access::vector_wrapper<emfplus::u16t>;
+using PlusPointArrayWrapper = data_access::vector_wrapper<emfplus::OEmfPlusPoint>;
+using PlusPointFArrayWrapper = data_access::vector_wrapper<emfplus::OEmfPlusPointF>;
+
 using PropertyNodePlusTransform = PropertyNodeData<const emfplus::OEmfPlusTransformMatrix&, PropertyNode::NodeTypeMatrix>;
 using PropertyNodePlusRectF = PropertyNodeData<const emfplus::OEmfPlusRectF&, PropertyNode::NodeTypeRectFloat>;
 using PropertyNodeColor = PropertyNodeData<const emfplus::OEmfPlusARGB&, PropertyNode::NodeTypeColor>;
 using PropertyNodePlusRectDataArray = PropertyNodeData<const emfplus::OEmfPlusRectDataArray&, PropertyNode::NodeTypeRects>;
 using PropertyNodePlusRectData = PropertyNodeData<const emfplus::OEmfPlusRectData&, PropertyNode::NodeTypeRectData>;
 using PropertyNodePlusArcData = PropertyNodeData<const emfplus::OEmfPlusArcData&, PropertyNode::NodeTypeArcData>;
+using PropertyNodePlusUnicodeArrayWrapper = PropertyNodeData<const PlusUnicodeArrayWrapper&, PropertyNode::NodeTypeUnicodeArray>;
+using PropertyNodePlusPointFArrayWrapper = PropertyNodeData<const PlusPointFArrayWrapper&, PropertyNode::NodeTypePointFArray>;
 
 #endif // PROPERTY_TREE_H

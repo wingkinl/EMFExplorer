@@ -384,7 +384,8 @@ bool CMainFrame::UpdateRecordProperty(int index)
 	auto pRec = pEMF->GetRecord((size_t)index);
 	if (!pRec)
 		return false;
-	auto props = pRec->GetProperties(pEMF.get());
+	CachePropertiesContext ctxt{pEMF.get()};
+	auto props = pRec->GetProperties(ctxt);
 	m_wndProperties.SetPropList(props);
 	return true;
 }
@@ -462,9 +463,9 @@ static EMFRecordVisualizerOptional AccessEMRRecordVisualizer(EMFRecAccess* pRec,
 	break;
 	case emfplus::EmfPlusRecordTypeDrawImage:
 	case emfplus::EmfPlusRecordTypeDrawImagePoints:
-		if (pRec->GetLinkedObjectCount())
+		if (pRec->GetLinkedRecordCount())
 		{
-			pRec = pRec->GetLinkedObject(0);
+			pRec = pRec->GetLinkedRecord(EMFRecAccess::LinkedObjTypeImage);
 			if (pRec)
 				return AccessEMRRecordVisualizer(pRec, bCheckOnly);
 		}

@@ -13,7 +13,7 @@ GS_VISITABLE_STRUCT(OEmfPlusRegionNodePath, RegionNodePath);
 GS_VISITABLE_STRUCT(OEmfPlusRect, X, Y, Width, Height);
 GS_VISITABLE_STRUCT(OEmfPlusRectF, X, Y, Width, Height);
 GS_VISITABLE_STRUCT(ORectL, Left, Top, Right, Bottom);
-GS_VISITABLE_STRUCT(OEmfPlusRegionNode, rect, path, childNodes);
+GS_VISITABLE_STRUCT(OEmfPlusRegionNode, Type, rect, path, childNodes);
 GS_VISITABLE_STRUCT(OEmfPlusRegionNodeChildNodes, Left, Right);
 GS_VISITABLE_STRUCT(OEmfPlusDashedLineData, DashedLineDataSize, DashedLineData);
 GS_VISITABLE_STRUCT(OEmfPlusCompoundLineData, CompoundLineDataSize, CompoundLineData);

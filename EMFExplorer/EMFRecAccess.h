@@ -9,6 +9,11 @@
 
 class EMFAccess;
 
+struct CachePropertiesContext
+{
+	EMFAccess* pEMF;
+};
+
 class EMFRecAccess
 {
 public:
@@ -49,36 +54,61 @@ public:
 
 	const emfplus::OEmfPlusRecInfo& GetRecInfo() const { return m_recInfo; }
 
-	std::shared_ptr<PropertyNode> GetProperties(EMFAccess* pEMF);
+	std::shared_ptr<PropertyNode> GetProperties(const CachePropertiesContext& ctxt);
 
 	inline size_t GetIndex() const { return m_nIndex; }
 
-	bool IsLinked(const EMFRecAccess* pRec) const;
-
-	inline size_t GetLinkedObjectCount() const { return m_linkRecs.size(); }
-
-	inline EMFRecAccess* GetLinkedObject(size_t index)
+	enum LinkedObjType
 	{
-		if (index >= m_linkRecs.size())
-			return nullptr;
-		return m_linkRecs[index];
+		LinkedObjTypeInvalid,
+		LinkedObjTypeBrush,
+		LinkedObjTypePen,
+		LinkedObjTypePath,
+		LinkedObjTypeRegion,
+		LinkedObjTypeImage,
+		LinkedObjTypeFont,
+		LinkedObjTypeStringFormat,
+		LinkedObjTypeImageAttributes,
+		LinkedObjTypeCustomLineCap,
+		LinkedObjTypeDrawingRecord	= 100,
+		LinkedObjTypeGraphicState,
+	};
+
+	LinkedObjType IsLinked(const EMFRecAccess* pRec) const;
+
+	inline size_t GetLinkedRecordCount() const { return m_linkRecs.size(); }
+
+	// There could be multiple LinkedObjTypeDrawingRecord type but for now we don't care
+	inline EMFRecAccess* GetLinkedRecord(LinkedObjType nType)
+	{
+		for (auto& link : m_linkRecs)
+		{
+			if (link.nType = nType)
+				return link.pRec;
+		}
+		return nullptr;
 	}
 protected:
 	void SetRecInfo(const emfplus::OEmfPlusRecInfo& info) { m_recInfo = info; }
 
 	void SetIndex(size_t nIndex) { m_nIndex = nIndex; }
 
-	virtual void CacheProperties(EMFAccess* pEMF);
+	virtual void CacheProperties(const CachePropertiesContext& ctxt);
 
 	virtual void Preprocess(EMFAccess* pEMF) {}
 
-	void AddLinkRecord(EMFRecAccess* pRecAccess, bool bMutually = true);
+	struct LinkedObjInfo
+	{
+		EMFRecAccess* pRec;
+		LinkedObjType nType;
+	};
+	void AddLinkRecord(EMFRecAccess* pRec, LinkedObjType nType, LinkedObjType nTypeThis = LinkedObjTypeDrawingRecord);
 protected:
 	friend class EMFAccess;
 	emfplus::OEmfPlusRecInfo		m_recInfo;
 	size_t							m_nIndex = 0;
 	std::shared_ptr<PropertyNode>	m_propsCached;
-	std::vector<EMFRecAccess*>		m_linkRecs;
+	std::vector<LinkedObjInfo>		m_linkRecs;
 };
 
 class EMFRecAccessGDIRec : public EMFRecAccess
@@ -86,9 +116,9 @@ class EMFRecAccessGDIRec : public EMFRecAccess
 public:
 	bool IsGDIRecord() const override { return true; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 
-	virtual void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec) {}
+	virtual void CachePropertiesFromGDI(const CachePropertiesContext& ctxt, const ENHMETARECORD* pEMFRec) {}
 };
 
 class EMFRecAccessGDIBitmapRec : public EMFRecAccessGDIRec
@@ -164,7 +194,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeHeader; }
 protected:
-	void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec) override;
+	void CachePropertiesFromGDI(const CachePropertiesContext& ctxt, const ENHMETARECORD* pEMFRec) override;
 };
 
 class EMFRecAccessGDIRecPolyBezier : public EMFRecAccessGDIDrawingRec
@@ -722,7 +752,7 @@ public:
 
 	RecCategory GetRecordCategory() const override { return RecCategoryComment; }
 protected:
-	void CachePropertiesFromGDI(EMFAccess* pEMF, const ENHMETARECORD* pEMFRec) override;
+	void CachePropertiesFromGDI(const CachePropertiesContext& ctxt, const ENHMETARECORD* pEMFRec) override;
 };
 
 class EMFRecAccessGDIRecFillRgn : public EMFRecAccessGDIDrawingRec
@@ -1154,7 +1184,7 @@ class EMFRecAccessGDIPlusRec : public EMFRecAccess
 public:
 	bool IsGDIRecord() const override { return false; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusClippingCat : public EMFRecAccessGDIPlusRec
@@ -1212,7 +1242,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeHeader; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusHeader	m_recDataCached;
 };
@@ -1291,7 +1321,7 @@ public:
 protected:
 	friend class EMFRecAccessGDIPlusRecObject;
 
-	virtual void CacheProperties(EMFAccess* pEMF, PropertyNode* pNode) const {}
+	virtual void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const {}
 protected:
 	EMFRecAccessGDIPlusRecObject*					m_pObjRec = nullptr;
 	std::unique_ptr<emfplus::OEmfPlusGraphObject>	m_obj;
@@ -1308,7 +1338,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	std::unique_ptr<EMFRecAccessGDIPlusObjWrapper>	m_recDataCached;
 };
@@ -1320,7 +1350,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeClear; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecClear	m_recDataCached;
 };
@@ -1334,7 +1364,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecFillRects	m_recDataCached;
 };
@@ -1348,7 +1378,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawRects	m_recDataCached;
 };
@@ -1362,7 +1392,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecFillPolygon	m_recDataCached;
 };
@@ -1376,7 +1406,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawLines	m_recDataCached;
 };
@@ -1390,7 +1420,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecFillEllipse	m_recDataCached;
 };
@@ -1404,7 +1434,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawEllipse	m_recDataCached;
 };
@@ -1418,7 +1448,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecFillPie	m_recDataCached;
 };
@@ -1432,7 +1462,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawPie	m_recDataCached;
 };
@@ -1446,7 +1476,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawArc	m_recDataCached;
 };
@@ -1457,16 +1487,10 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillRegion"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillRegion; }
-
-	enum LinkedObjType
-	{
-		LinkedObjTypeRegion,
-		LinkedObjTypeBrush,
-	};
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecFillPath : public EMFRecAccessGDIPlusDrawingCat
@@ -1475,16 +1499,10 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusFillPath"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeFillPath; }
-
-	enum LinkedObjType
-	{
-		LinkedObjTypePath,
-		LinkedObjTypeBrush,
-	};
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecDrawPath : public EMFRecAccessGDIPlusDrawingCat
@@ -1493,16 +1511,10 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawPath"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawPath; }
-
-	enum LinkedObjType
-	{
-		LinkedObjTypePath,
-		LinkedObjTypePen,
-	};
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawPath	m_recDataCached;
 };
@@ -1516,7 +1528,7 @@ public:
 protected:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecFillClosedCurve	m_recDataCached;
 };
@@ -1530,7 +1542,7 @@ public:
 protected:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawClosedCurve	m_recDataCached;
 };
@@ -1544,7 +1556,7 @@ public:
 protected:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawCurve	m_recDataCached;
 };
@@ -1558,7 +1570,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawBeziers	m_recDataCached;
 };
@@ -1569,16 +1581,10 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawImage"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawImage; }
-
-	enum LinkedObjType
-	{
-		LinkedObjTypeImage,
-		LinkedObjTypeImageAttribute,
-	};
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawImage	m_recDataCached;
 };
@@ -1589,16 +1595,10 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawImagePoints"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawImagePoints; }
-
-	enum LinkedObjType
-	{
-		LinkedObjTypeImage,
-		LinkedObjTypeImageAttribute,
-	};
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawImagePoints	m_recDataCached;
 };
@@ -1609,17 +1609,10 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawString"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawString; }
-
-	enum LinkedObjType
-	{
-		LinkedObjTypeFont,
-		LinkedObjTypeBrush,
-		LinkedObjTypeFormat,
-	};
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawString	m_recDataCached;
 };
@@ -1631,7 +1624,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetRenderingOrigin; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecSetRenderingOrigin	m_recDataCached;
 };
@@ -1643,7 +1636,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetAntiAliasMode; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetTextRenderingHint : public EMFRecAccessGDIPlusPropertyCat
@@ -1653,7 +1646,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetTextRenderingHint; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetTextContrast : public EMFRecAccessGDIPlusPropertyCat
@@ -1663,7 +1656,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetTextContrast; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetInterpolationMode : public EMFRecAccessGDIPlusPropertyCat
@@ -1673,7 +1666,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetInterpolationMode; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetPixelOffsetMode : public EMFRecAccessGDIPlusPropertyCat
@@ -1683,7 +1676,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetPixelOffsetMode; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetCompositingMode : public EMFRecAccessGDIPlusPropertyCat
@@ -1693,7 +1686,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetCompositingMode; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetCompositingQuality : public EMFRecAccessGDIPlusPropertyCat
@@ -1703,7 +1696,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetCompositingQuality; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSave : public EMFRecAccessGDIPlusStateCat
@@ -1713,7 +1706,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSave; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecSave	m_recDataCached;
 };
@@ -1727,7 +1720,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecRestore	m_recDataCached;
 };
@@ -1739,7 +1732,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeBeginContainer; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecBeginContainer	m_recDataCached;
 };
@@ -1751,7 +1744,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeBeginContainerNoParams; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecBeginContainerNoParams	m_recDataCached;
 };
@@ -1765,7 +1758,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecEndContainer	m_recDataCached;
 };
@@ -1777,7 +1770,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetWorldTransform; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecSetWorldTransform	m_recDataCached;
 };
@@ -1797,7 +1790,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeMultiplyWorldTransform; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecMultiplyWorldTransform	m_recDataCached;
 };
@@ -1809,7 +1802,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeTranslateWorldTransform; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecTranslateWorldTransform	m_recDataCached;
 };
@@ -1821,7 +1814,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeScaleWorldTransform; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecScaleWorldTransform	m_recDataCached;
 };
@@ -1833,7 +1826,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeRotateWorldTransform; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecRotateWorldTransform	m_recDataCached;
 };
@@ -1845,7 +1838,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetPageTransform; }
 protected:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecSetPageTransform	m_recDataCached;
 };
@@ -1865,7 +1858,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeSetClipRect; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetClipPath : public EMFRecAccessGDIPlusClippingCat
@@ -1877,7 +1870,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecSetClipRegion : public EMFRecAccessGDIPlusClippingCat
@@ -1889,7 +1882,7 @@ public:
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIPlusRecOffsetClip : public EMFRecAccessGDIPlusClippingCat
@@ -1899,7 +1892,7 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeOffsetClip; }
 private:
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecOffsetClip	m_recDataCached;
 };
@@ -1910,16 +1903,10 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawDriverString"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawDriverString; }
-
-	enum LinkedObjType
-	{
-		LinkedObjTypeFont,
-		LinkedObjTypeBrush,
-	};
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
-	void CacheProperties(EMFAccess* pEMF) override;
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 private:
 	emfplus::OEmfPlusRecDrawDriverString	m_recDataCached;
 };

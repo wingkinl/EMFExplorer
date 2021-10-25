@@ -189,7 +189,7 @@ struct OEmfPlusGraphObject
 		#define GSOptionalArray(_ty)	std::vector<_ty>
 		using GSWrapMemory = std::vector<u8t>;
 	#else
-		#define GSWrapArray(_ty)		object_wrapper<std::vector<_ty>>
+		#define GSWrapArray(_ty)		vector_wrapper<_ty>
 		#define GSOptionalT(_ty)		optional_wrapper<_ty>
 		#define GSOptionalArray(_ty)	GSOptionalT(GSWrapArray(_ty))
 		using GSWrapMemory = memory_wrapper;
@@ -1233,6 +1233,8 @@ struct OEmfPlusRecDrawEllipse
 	bool Read(DataReader& reader, u16t nFlags, size_t nExpectedSize);
 };
 
+enum : u32t {InvalidObjectID = (u32t)-1,};
+
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/778bfc49-e058-4fb2-b19d-9f801f8e458a
 struct OEmfPlusRecDrawImage
 {
@@ -1242,7 +1244,7 @@ struct OEmfPlusRecDrawImage
 		FlagObjectIDMask	= 0x00FF,
 	};
 
-	u32t				ImageAttributesID;
+	u32t				ImageAttributesID;	// could be InvalidObjectID
 	OUnitType			SrcUnit;
 	OEmfPlusRectF		SrcRect;
 	OEmfPlusRectData	RectData;
@@ -1261,7 +1263,7 @@ struct OEmfPlusRecDrawImagePoints
 		FlagObjectIDMask	= 0x00FF,
 	};
 
-	u32t					ImageAttributesID;
+	u32t					ImageAttributesID;	// could be InvalidObjectID
 	OUnitType				SrcUnit;
 	OEmfPlusRectF			SrcRect;
 	u32t					Count;
