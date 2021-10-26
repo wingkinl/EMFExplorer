@@ -210,7 +210,10 @@ BEGIN
             MENUITEM "&Light",                      ID_VIEW_THEME_LIGHT
         END
         MENUITEM SEPARATOR
-        MENUITEM "Draw to selection",           ID_VIEW_DRAWTOSELECTION
+        MENUITEM "Draw to selection",           ID_VIEW_DRAW_TO_SELECTION
+        MENUITEM "Draw to hover item",          ID_VIEW_DRAW_TO_HOVER_ITEM
+        MENUITEM SEPARATOR
+        MENUITEM "Update Properties on hover",  ID_VIEW_UPDATE_PROPERTIES_ON_HOVER
     END
     POPUP "&Zoom"
     BEGIN
@@ -540,6 +543,9 @@ END
 
 STRINGTABLE
 BEGIN
+    ID_BACKGROUND_NONE      "Do not show background under image."
+    ID_BACKGROUND_TRANSPARENTGRID "Show transparent grid under image."
+    ID_BACKGROUND_WHITE     "Show white background under image."
     ID_ZOOM_IN              "Zoom In"
     ID_ZOOM_OUT             "Zoom Out"
     ID_ZOOM_ACTUALSIZE      "View actual size"
@@ -570,7 +576,16 @@ END
 
 STRINGTABLE
 BEGIN
+    ID_ZOOM_CENTER          "Zoom Center"
     ID_VIEW_DRAWTOSELECTION "Draw records until the selected one"
+    ID_VIEW_DRAW_TO_SELECTION "Draw to selected record"
+    ID_VIEW_DRAW_TO_HOVER_ITEM "Draw to record being hovered"
+END
+
+STRINGTABLE
+BEGIN
+    ID_VIEW_UPDATE_PROPERTIES_ON_HOVER 
+                            "Update Properties window when hover on a record"
 END
 
 #endif    // English (United States) resources

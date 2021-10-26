@@ -21,6 +21,8 @@
 #endif
 #define GDIPVER 0x0110
 
+#undef Rect
+
 #pragma warning(push)
 #pragma warning(disable:4458)
 #include <GdiPlus.h>

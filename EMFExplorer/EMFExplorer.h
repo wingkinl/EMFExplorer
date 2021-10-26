@@ -42,6 +42,8 @@ public:
 	BOOL m_bHiColorIcons;
 	int m_nStyle = 0;
 	int m_nImgBackgroundType = 0;
+	int m_nDrawToType = 0;
+	BOOL m_bUpdatePropOnHover = TRUE;
 	BOOL m_bViewCenter = TRUE;
 
 	const COLORREF m_crfDarkThemeBkColor = RGB(0x53, 0x53, 0x53);

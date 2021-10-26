@@ -59,8 +59,6 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 #ifndef SHARED_HANDLERS
 	ON_UPDATE_COMMAND_UI(ID_STATUSBAR_PANE_COORD, &CEMFExplorerView::OnUpdateStatusBarCoordinates)
 	ON_UPDATE_COMMAND_UI(ID_STATUSBAR_PANE_ZOOM, &CEMFExplorerView::OnUpdateStatusBarZoom)
-	ON_COMMAND(ID_VIEW_DRAWTOSELECTION, &CEMFExplorerView::OnViewDrawToSelection)
-	ON_UPDATE_COMMAND_UI(ID_VIEW_DRAWTOSELECTION, &CEMFExplorerView::OnUpdateViewDrawToSelection)
 #endif // SHARED_HANDLERS
 END_MESSAGE_MAP()
 
@@ -112,14 +110,6 @@ void CEMFExplorerView::LoadEMFDataEvent(bool bBefore)
 	{
 		SetFitToWindow(FitToBoth);
 	}
-}
-
-void CEMFExplorerView::UpdateViewOnRecord(int nRecord)
-{
-#ifndef SHARED_HANDLERS
-	if (m_bDrawToSelection)
-		Invalidate();
-#endif
 }
 
 // CEMFExplorerView drawing
@@ -343,8 +333,6 @@ void CEMFExplorerView::OnAfterUpdateZoomedViewSize()
 
 size_t CEMFExplorerView::GetDrawToRecordIndex() const
 {
-	if (!m_bDrawToSelection)
-		return (size_t)-1;
 	auto pFrameWnd = DYNAMIC_DOWNCAST(CMainFrame, GetParent());
 	return pFrameWnd->GetDrawToRecordIndex();
 }
@@ -567,17 +555,6 @@ void CEMFExplorerView::OnUpdateStatusBarZoom(CCmdUI* pCmdUI)
 		str.LoadString(ID_STATUSBAR_PANE_ZOOM);
 	}
 	pCmdUI->SetText(str);
-}
-
-void CEMFExplorerView::OnViewDrawToSelection()
-{
-	m_bDrawToSelection = !m_bDrawToSelection;
-	Invalidate();
-}
-
-void CEMFExplorerView::OnUpdateViewDrawToSelection(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(m_bDrawToSelection);
 }
 #endif
 

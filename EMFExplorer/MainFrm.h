@@ -12,9 +12,13 @@
 
 enum MainFrameMsg
 {
+	// wParam = record index, lParam = Hover (non-zero)
 	MainFrameMsgOnSelectRecordItem = WM_APP + 100,
+	// wParam = record index
 	MainFrameMsgCanOpenRecordItem,
+	// wParam = record index
 	MainFrameMsgOpenRecordItem,
+	// wParam = Size changed (non-zero) or scroll only (zero)
 	MainFrameMsgViewUpdateSizeScroll,
 };
 
@@ -78,7 +82,7 @@ public:
 
 	BOOL CheckClipboardForEMF() const;
 private:
-	bool UpdateViewOnRecord(int index);
+	bool UpdateViewOnSelRecord(int index, BOOL bHover = FALSE);
 
 	CEMFExplorerView* CheckGetActiveView() const;
 protected:  // control bar embedded members
@@ -89,6 +93,18 @@ protected:  // control bar embedded members
 	CFileView         m_wndFileView;
 	CPropertiesWnd    m_wndProperties;
 	CThumbnailWnd     m_wndThumbnail;
+
+	enum DrawToType
+	{
+		DrawToAll,
+		DrawToSelection,
+		DrawToHover,
+	};
+
+	DrawToType GetDrawToSelection() const {return m_nDrawToType;}
+
+	DrawToType		m_nDrawToType = DrawToAll;
+	BOOL			m_bUpdatePropOnHover = FALSE;
 
 // Generated message map functions
 protected:
@@ -109,6 +125,13 @@ protected:
 	afx_msg LRESULT OnViewUpdateSizeScroll(WPARAM wp, LPARAM lp);
 
 	afx_msg void OnUpdateStatusBarColorText(CCmdUI* pCmdUI);
+
+	afx_msg void OnViewDrawToSelection();
+	afx_msg void OnUpdateViewDrawToSelection(CCmdUI* pCmdUI);
+	afx_msg void OnViewDrawToHover();
+	afx_msg void OnUpdateViewDrawToHover(CCmdUI* pCmdUI);
+	afx_msg void OnViewUpdatePropOnHover();
+	afx_msg void OnUpdateViewUpdatePropOnHover(CCmdUI* pCmdUI);
 	DECLARE_MESSAGE_MAP()
 
 	BOOL CreateDockingWindows();

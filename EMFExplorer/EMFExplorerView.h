@@ -49,10 +49,6 @@ public:
 #endif // SHARED_HANDLERS
 
 	BOOL HasValidEMFInDoc() const;
-
-	bool GetDrawToSelection() const {return m_bDrawToSelection;}
-
-	void UpdateViewOnRecord(int nRecord);
 protected:
 
 	void DrawTransparentGrid(CDC* pDC, const CRect& rect);
@@ -76,7 +72,6 @@ public:
 
 protected:
 	ImgBackgroundType	m_nImgBackgroundType = ImgBackgroundTypeTransparentGrid;
-	bool				m_bDrawToSelection = false;
 // Generated message map functions
 protected:
 #ifdef HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
@@ -114,8 +109,6 @@ protected:
 #ifndef SHARED_HANDLERS
 	afx_msg void OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateStatusBarZoom(CCmdUI* pCmdUI);
-	afx_msg void OnViewDrawToSelection();
-	afx_msg void OnUpdateViewDrawToSelection(CCmdUI* pCmdUI);
 #endif
 
 #ifdef SHARED_HANDLERS

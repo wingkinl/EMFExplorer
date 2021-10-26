@@ -39,6 +39,12 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWndEx)
 	ON_COMMAND(ID_EDIT_PASTE, &CMainFrame::OnEditPaste)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_PASTE, &CMainFrame::OnUpdateEditPaste)
 	ON_UPDATE_COMMAND_UI(ID_STATUSBAR_PANE_COLOR_TEXT, &CMainFrame::OnUpdateStatusBarColorText)
+	ON_COMMAND(ID_VIEW_DRAW_TO_SELECTION, &CMainFrame::OnViewDrawToSelection)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_DRAW_TO_SELECTION, &CMainFrame::OnUpdateViewDrawToSelection)
+	ON_COMMAND(ID_VIEW_DRAW_TO_HOVER_ITEM, &CMainFrame::OnViewDrawToHover)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_DRAW_TO_HOVER_ITEM, &CMainFrame::OnUpdateViewDrawToHover)
+	ON_COMMAND(ID_VIEW_UPDATE_PROPERTIES_ON_HOVER, &CMainFrame::OnViewUpdatePropOnHover)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_UPDATE_PROPERTIES_ON_HOVER, &CMainFrame::OnUpdateViewUpdatePropOnHover)
 END_MESSAGE_MAP()
 
 
@@ -84,6 +90,8 @@ BOOL CMainStatusBar::SetPaneText(int nIndex, LPCTSTR lpszNewText, BOOL bUpdate)
 CMainFrame::CMainFrame() noexcept
 {
 	// TODO: add member initialization code here
+	m_nDrawToType = (DrawToType)theApp.m_nDrawToType;
+	m_bUpdatePropOnHover = theApp.m_bUpdatePropOnHover;
 }
 
 CMainFrame::~CMainFrame()
@@ -290,14 +298,6 @@ void CMainFrame::Dump(CDumpContext& dc) const
 }
 #endif //_DEBUG
 
-size_t CMainFrame::GetDrawToRecordIndex() const
-{
-	int nSel = m_wndFileView.GetCurSelRecIndex();
-	if (nSel < 0)
-		return (size_t)-1;
-	return nSel;
-}
-
 // CMainFrame message handlers
 
 void CMainFrame::OnViewCustomize()
@@ -385,26 +385,88 @@ LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)
 	return lres;
 }
 
-bool CMainFrame::UpdateViewOnRecord(int index)
+size_t CMainFrame::GetDrawToRecordIndex() const
+{
+	if (m_nDrawToType == DrawToAll)
+		return (size_t)-1;
+	BOOL bHover = m_nDrawToType == DrawToHover;
+	int nIdx = m_wndFileView.GetCurSelRecIndex(bHover);
+	if (nIdx < 0 && bHover)
+		nIdx = m_wndFileView.GetCurSelRecIndex(FALSE);
+	if (nIdx < 0)
+		return (size_t)-1;
+	return nIdx;
+}
+
+void CMainFrame::OnViewDrawToSelection()
+{
+	m_nDrawToType = m_nDrawToType == DrawToSelection ? DrawToAll : DrawToSelection;
+	if (!IsSubEMFFrame())
+		theApp.m_nDrawToType = m_nDrawToType;
+	auto pView = CheckGetActiveView();
+	if (pView)
+		pView->Invalidate();
+}
+
+void CMainFrame::OnUpdateViewDrawToSelection(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(m_nDrawToType == DrawToSelection);
+}
+
+void CMainFrame::OnViewDrawToHover()
+{
+	m_nDrawToType = m_nDrawToType == DrawToHover ? DrawToAll : DrawToHover;
+	if (!IsSubEMFFrame())
+		theApp.m_nDrawToType = m_nDrawToType;
+	auto pView = CheckGetActiveView();
+	if (pView)
+		pView->Invalidate();
+}
+
+void CMainFrame::OnUpdateViewDrawToHover(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(m_nDrawToType == DrawToHover);
+}
+
+void CMainFrame::OnViewUpdatePropOnHover()
+{
+	m_bUpdatePropOnHover = !m_bUpdatePropOnHover;
+	if (!IsSubEMFFrame())
+		theApp.m_bUpdatePropOnHover = m_bUpdatePropOnHover;
+}
+
+void CMainFrame::OnUpdateViewUpdatePropOnHover(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(m_bUpdatePropOnHover);
+}
+
+bool CMainFrame::UpdateViewOnSelRecord(int index, BOOL bHover)
 {
 	auto pView = CheckGetActiveView();
-	pView->UpdateViewOnRecord(index);
 	auto pDoc = pView->GetDocument();
 	auto pEMF = pDoc->GetEMFAccess();
+	if (!pEMF)
+		return false;
 	auto pRec = pEMF->GetRecord((size_t)index);
 	if (!pRec)
 		return false;
-	CachePropertiesContext ctxt{pEMF.get()};
-	auto props = pRec->GetProperties(ctxt);
-	m_wndProperties.SetPropList(props);
+	if (m_nDrawToType != DrawToAll)
+		pView->Invalidate();
+	if (m_bUpdatePropOnHover == bHover)
+	{
+		CachePropertiesContext ctxt{ pEMF.get() };
+		auto props = pRec->GetProperties(ctxt);
+		m_wndProperties.SetPropList(props);
+	}
 	return true;
 }
+
 
 LRESULT CMainFrame::OnSelectRecordItem(WPARAM wp, LPARAM lp)
 {
 	if (m_wndProperties.IsWindowVisible())
 	{
-		UpdateViewOnRecord((int)wp);
+		UpdateViewOnSelRecord((int)wp, (BOOL)lp);
 	}
 	return 0;
 }
@@ -658,7 +720,7 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 	m_wndThumbnail.LoadEMFDataEvent(bBefore);
 	if (!bBefore)
 	{
-		UpdateViewOnRecord(0);
+		UpdateViewOnSelRecord(0);
 		m_wndFileView.SetCurSelRecIndex(0);
 	}
 }

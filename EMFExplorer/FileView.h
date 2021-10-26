@@ -27,7 +27,7 @@ public:
 
 	void LoadEMFDataEvent(bool bBefore);
 
-	int GetCurSelRecIndex() const;
+	int GetCurSelRecIndex(BOOL bHottrack = FALSE) const;
 
 	void SetCurSelRecIndex(int index);
 private:
@@ -55,6 +55,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
 	afx_msg void OnListItemChange(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnListHotTrack(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnListEnter(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult);
 

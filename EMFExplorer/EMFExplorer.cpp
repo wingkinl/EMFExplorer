@@ -312,12 +312,14 @@ void CEMFExplorerApp::SaveCustomState()
 const TCHAR cszThemeStyle[] = _T("ThemeStyle");
 const TCHAR cszImgBackgroundType[] = _T("BackgroundType");
 const TCHAR cszViewCenter[] = _T("ViewCenter");
+const TCHAR cszUpdatePropOnHover[] = _T("UpdatePropOnHover");
 
 void CEMFExplorerApp::LoadCustomSettings()
 {
 	m_nStyle = GetInt(cszThemeStyle, CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
 	m_nImgBackgroundType = GetInt(cszImgBackgroundType, CEMFExplorerView::ImgBackgroundTypeTransparentGrid);
 	m_bViewCenter = GetInt(cszViewCenter, TRUE);
+	m_bUpdatePropOnHover = GetInt(cszUpdatePropOnHover, FALSE);
 }
 
 void CEMFExplorerApp::SaveCustomSettings()
@@ -325,6 +327,7 @@ void CEMFExplorerApp::SaveCustomSettings()
 	WriteInt(cszThemeStyle, m_nStyle);
 	WriteInt(cszImgBackgroundType, m_nImgBackgroundType);
 	WriteInt(cszViewCenter, m_bViewCenter);
+	WriteInt(cszUpdatePropOnHover, m_bUpdatePropOnHover);
 }
 
 CDocument* CEMFExplorerApp::OpenDocumentFile(LPCTSTR lpszFileName)

@@ -36,16 +36,17 @@ struct EnumDrawEmfPlusContext
 	Gdiplus::Metafile*	pMetafile;
 	Gdiplus::Graphics*	pGraphics;
 	size_t				nRecordStop;
-	size_t				nRecordCount;
+	size_t				nRecordIndex;
 };
 
-BOOL EnumDrawMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data, VOID* pCallbackData)
+extern "C"
+BOOL CALLBACK EnumDrawMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data, VOID* pCallbackData)
 {
 	auto& ctxt = *(EnumDrawEmfPlusContext*)pCallbackData;
-	auto ret = ctxt.nRecordCount <= ctxt.nRecordStop;
+	auto ret = ctxt.nRecordIndex <= ctxt.nRecordStop;
 	if (ret)
 		ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
-	++ctxt.nRecordCount;
+	++ctxt.nRecordIndex;
 	return ret;
 }
 
@@ -86,7 +87,8 @@ struct EnumEmfPlusContext
 	EMFAccess*			pAccess;
 };
 
-BOOL EnumMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data, VOID* pCallbackData)
+extern "C"
+BOOL CALLBACK EnumMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data, VOID* pCallbackData)
 {
 	auto& ctxt = *(EnumEmfPlusContext*)pCallbackData;
 	auto ret = ctxt.pAccess->HandleEMFRecord((OEmfPlusRecordType)type, flags, dataSize, data);

@@ -81,13 +81,16 @@
 #define ID_VIEW_THEME                   32810
 #define ID_VIEW_RECORD                  32812
 #define ID_VIEW_DRAWTOSELECTION         32813
+#define ID_VIEW_DRAW_TO_SELECTION       32814
+#define ID_VIEW_DRAW_TO_HOVER_ITEM      32815
+#define ID_VIEW_UPDATE_PROPERTIES_ON_HOVER 32816
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         32814
+#define _APS_NEXT_COMMAND_VALUE         32817
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
