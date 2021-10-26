@@ -31,6 +31,32 @@ void EMFAccessBase::DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) con
 	gg.DrawImage(m_pMetafile.get(), rcDrawP);
 }
 
+struct EnumDrawEmfPlusContext
+{
+	Gdiplus::Metafile*	pMetafile;
+	Gdiplus::Graphics*	pGraphics;
+	size_t				nRecordStop;
+	size_t				nRecordCount;
+};
+
+BOOL EnumDrawMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data, VOID* pCallbackData)
+{
+	auto& ctxt = *(EnumDrawEmfPlusContext*)pCallbackData;
+	auto ret = ctxt.nRecordCount <= ctxt.nRecordStop;
+	if (ret)
+		ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
+	++ctxt.nRecordCount;
+	return ret;
+}
+
+void EMFAccessBase::DrawMetafileUntilRecord(Gdiplus::Graphics& gg, const CRect& rcDraw, size_t nRecord) const
+{
+	ASSERT(m_pMetafile.get());
+	Gdiplus::Rect rcDrawP(rcDraw.left, rcDraw.top, rcDraw.Width(), rcDraw.Height());
+	EnumDrawEmfPlusContext ctxt{ m_pMetafile.get(), &gg, nRecord };
+	auto sts = gg.EnumerateMetafile(m_pMetafile.get(), rcDrawP, EnumDrawMetafilePlusProc, (void*)&ctxt);
+}
+
 Gdiplus::Image* EMFAccessBase::CloneMetafile() const
 {
 	ASSERT(m_pMetafile.get());

@@ -209,6 +209,8 @@ BEGIN
             MENUITEM "&Dark",                       ID_VIEW_THEME_DARK
             MENUITEM "&Light",                      ID_VIEW_THEME_LIGHT
         END
+        MENUITEM SEPARATOR
+        MENUITEM "Draw to selection",           ID_VIEW_DRAWTOSELECTION
     END
     POPUP "&Zoom"
     BEGIN
@@ -564,6 +566,11 @@ BEGIN
     ID_ZOOM_800             "Zoom to 800%"
     ID_ZOOM_1600            "Zoom to 1600%"
     ID_ZOOM_3200            "Zoom to 3200%"
+END
+
+STRINGTABLE
+BEGIN
+    ID_VIEW_DRAWTOSELECTION "Draw records until the selected one"
 END
 
 #endif    // English (United States) resources

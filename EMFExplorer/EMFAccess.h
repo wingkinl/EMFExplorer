@@ -13,6 +13,8 @@ public:
 public:
 	void DrawMetafile(Gdiplus::Graphics& gg, const CRect& rcDraw) const;
 
+	void DrawMetafileUntilRecord(Gdiplus::Graphics& gg, const CRect& rcDraw, size_t nRecord) const;
+
 	const Gdiplus::MetafileHeader& GetMetafileHeader() const { return m_hdr; }
 
 	Gdiplus::Image* CloneMetafile() const;

@@ -290,6 +290,13 @@ void CMainFrame::Dump(CDumpContext& dc) const
 }
 #endif //_DEBUG
 
+size_t CMainFrame::GetDrawToRecordIndex() const
+{
+	int nSel = m_wndFileView.GetCurSelRecIndex();
+	if (nSel < 0)
+		return (size_t)-1;
+	return nSel;
+}
 
 // CMainFrame message handlers
 
@@ -378,9 +385,10 @@ LRESULT CMainFrame::OnToolbarCreateNew(WPARAM wp,LPARAM lp)
 	return lres;
 }
 
-bool CMainFrame::UpdateRecordProperty(int index)
+bool CMainFrame::UpdateViewOnRecord(int index)
 {
 	auto pView = CheckGetActiveView();
+	pView->UpdateViewOnRecord(index);
 	auto pDoc = pView->GetDocument();
 	auto pEMF = pDoc->GetEMFAccess();
 	auto pRec = pEMF->GetRecord((size_t)index);
@@ -396,7 +404,7 @@ LRESULT CMainFrame::OnSelectRecordItem(WPARAM wp, LPARAM lp)
 {
 	if (m_wndProperties.IsWindowVisible())
 	{
-		UpdateRecordProperty((int)wp);
+		UpdateViewOnRecord((int)wp);
 	}
 	return 0;
 }
@@ -650,7 +658,7 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 	m_wndThumbnail.LoadEMFDataEvent(bBefore);
 	if (!bBefore)
 	{
-		UpdateRecordProperty(0);
+		UpdateViewOnRecord(0);
 		m_wndFileView.SetCurSelRecIndex(0);
 	}
 }

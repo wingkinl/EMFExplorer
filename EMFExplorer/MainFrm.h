@@ -64,6 +64,8 @@ public:
 	virtual void LoadEMFDataEvent(bool bBefore);
 
 	virtual bool IsSubEMFFrame() const { return false; }
+
+	size_t GetDrawToRecordIndex() const;
 // Implementation
 public:
 	virtual ~CMainFrame();
@@ -76,7 +78,7 @@ public:
 
 	BOOL CheckClipboardForEMF() const;
 private:
-	bool UpdateRecordProperty(int index);
+	bool UpdateViewOnRecord(int index);
 
 	CEMFExplorerView* CheckGetActiveView() const;
 protected:  // control bar embedded members
