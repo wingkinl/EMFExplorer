@@ -70,8 +70,14 @@ public:
 		LinkedObjTypeStringFormat,
 		LinkedObjTypeImageAttributes,
 		LinkedObjTypeCustomLineCap,
+
+		LinkedObjTypePalette,
+		LinkedObjTypeColorspace,
+		LinkedObjTypeObjectUnspecified,	// doesn't matter the underlying type
+
 		LinkedObjTypeDrawingRecord	= 100,
 		LinkedObjTypeGraphicState,
+		LinkedObjTypeObjManipulation,
 	};
 
 	LinkedObjType IsLinked(const EMFRecAccess* pRec) const;

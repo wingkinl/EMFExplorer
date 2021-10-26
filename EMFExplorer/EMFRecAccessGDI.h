@@ -378,6 +378,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeSelectObject; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
@@ -388,6 +390,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeCreatePen; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
@@ -398,6 +402,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeCreateBrushIndirect; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
@@ -408,6 +414,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeDeleteObject; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
@@ -473,6 +481,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_SELECTPALETTE"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeSelectPalette; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecCreatePalette : public EMFRecAccessGDIObjectCat
@@ -481,6 +491,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_CREATEPALETTE"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeCreatePalette; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecSetPaletteEntries : public EMFRecAccessGDIObjManipulationCat
@@ -489,6 +501,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_SETPALETTEENTRIES"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeSetPaletteEntries; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecResizePalette : public EMFRecAccessGDIObjManipulationCat
@@ -497,6 +511,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_RESIZEPALETTE"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeResizePalette; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecRealizePalette : public EMFRecAccessGDIObjManipulationCat
@@ -751,6 +767,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_EXTCREATEFONTINDIRECTW"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeExtCreateFontIndirect; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecExtTextOutA : public EMFRecAccessGDIDrawingCat
@@ -759,6 +777,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_EXTTEXTOUTA"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeExtTextOutA; }
+private:
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIRecExtTextOutW : public EMFRecAccessGDIDrawingCat
@@ -767,6 +787,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_EXTTEXTOUTW"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeExtTextOutW; }
+private:
+	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
 class EMFRecAccessGDIRecPolyBezier16 : public EMFRecAccessGDIDrawingCat
@@ -839,6 +861,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_CREATEMONOBRUSH"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeCreateMonoBrush; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecCreateDIBPatternBrushPt : public EMFRecAccessGDIObjectCat
@@ -847,6 +871,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_CREATEDIBPATTERNBRUSHPT"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeCreateDIBPatternBrushPt; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecExtCreatePen : public EMFRecAccessGDIObjectCat
@@ -856,6 +882,8 @@ public:
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeExtCreatePen; }
 private:
+	void Preprocess(EMFAccess* pEMF) override;
+
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
@@ -889,6 +917,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_CREATECOLORSPACE"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeCreateColorSpace; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecSetColorSpace : public EMFRecAccessGDIObjManipulationCat
@@ -897,6 +927,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_SETCOLORSPACE"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeSetColorSpace; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecDeleteColorSpace : public EMFRecAccessGDIObjManipulationCat
@@ -905,6 +937,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_DELETECOLORSPACE"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeDeleteColorSpace; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecGLSRecord : public EMFRecAccessGDIOpenGLCat
@@ -987,6 +1021,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_COLORCORRECTPALETTE"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeColorCorrectPalette; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 class EMFRecAccessGDIRecSetICMProfileA : public EMFRecAccessGDIStateCat
@@ -1077,6 +1113,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_CREATECOLORSPACEW"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeCreateColorSpaceW; }
+private:
+	void Preprocess(EMFAccess* pEMF) override;
 };
 
 #endif // EMF_REC_ACCESS_GDI_H

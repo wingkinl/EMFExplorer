@@ -720,7 +720,8 @@ EMFRecAccess* EMFAccess::GetObjectCreationRecord(size_t index, bool bPlus) const
 	}
 	else
 	{
-		// TODO
+		if (index < m_vGDIObjTable.size())
+			return m_vGDIObjTable[index].pRec;
 	}
 	return nullptr;
 }
@@ -735,7 +736,9 @@ bool EMFAccess::SetObjectToTable(size_t index, EMFRecAccess* pRec, bool bPlus)
 	}
 	else
 	{
-		// TODO
+		if (index >= m_vGDIObjTable.size())
+			m_vGDIObjTable.resize(index + 1);
+		m_vGDIObjTable[index].pRec = pRec;
 	}
 	return true;
 }

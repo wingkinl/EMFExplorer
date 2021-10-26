@@ -71,6 +71,18 @@ void EMFRecAccessGDIRecRestoreDC::CacheProperties(const CachePropertiesContext& 
 	}
 }
 
+void EMFRecAccessGDIRecSelectObject::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRSELECTOBJECT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihObject, false);
+	if (pLinkedRec)
+	{
+		ASSERT(pLinkedRec->GetRecordCategory() == RecCategoryObject);
+		AddLinkRecord(pLinkedRec, LinkedObjTypeObjectUnspecified, LinkedObjTypeObjManipulation);
+		// TODO, link drawing records?
+	}
+}
+
 void EMFRecAccessGDIRecSelectObject::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
@@ -79,6 +91,12 @@ void EMFRecAccessGDIRecSelectObject::CacheProperties(const CachePropertiesContex
 	{
 		m_propsCached->AddValue(L"ihObject", pRec->ihObject);
 	}
+}
+
+void EMFRecAccessGDIRecCreatePen::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCREATEPEN*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihPen, this, false);
 }
 
 void EMFRecAccessGDIRecCreatePen::CacheProperties(const CachePropertiesContext& ctxt)
@@ -91,6 +109,12 @@ void EMFRecAccessGDIRecCreatePen::CacheProperties(const CachePropertiesContext& 
 	}
 }
 
+void EMFRecAccessGDIRecCreateBrushIndirect::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCREATEBRUSHINDIRECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihBrush, this, false);
+}
+
 void EMFRecAccessGDIRecCreateBrushIndirect::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
@@ -101,6 +125,18 @@ void EMFRecAccessGDIRecCreateBrushIndirect::CacheProperties(const CachePropertie
 	}
 }
 
+void EMFRecAccessGDIRecDeleteObject::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRDELETEOBJECT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihObject, false);
+	if (pLinkedRec)
+	{
+		ASSERT(pLinkedRec->GetRecordCategory() == RecCategoryObject);
+		AddLinkRecord(pLinkedRec, LinkedObjTypeObjectUnspecified, LinkedObjTypeObjManipulation);
+		// TODO, link drawing records?
+	}
+}
+
 void EMFRecAccessGDIRecDeleteObject::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
@@ -108,6 +144,47 @@ void EMFRecAccessGDIRecDeleteObject::CacheProperties(const CachePropertiesContex
 	if (pRec)
 	{
 		m_propsCached->AddValue(L"ihObject", pRec->ihObject);
+	}
+}
+
+void EMFRecAccessGDIRecSelectPalette::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRSELECTPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPal, false);
+	if (pLinkedRec)
+	{
+		ASSERT(pLinkedRec->GetRecordCategory() == RecCategoryObject);
+		AddLinkRecord(pLinkedRec, LinkedObjTypePalette, LinkedObjTypeObjManipulation);
+		// TODO, link drawing records?
+	}
+}
+
+void EMFRecAccessGDIRecCreatePalette::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCREATEPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihPal, this, false);
+}
+
+void EMFRecAccessGDIRecSetPaletteEntries::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRSETPALETTEENTRIES*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPal, false);
+	if (pLinkedRec)
+	{
+		AddLinkRecord(pLinkedRec, LinkedObjTypePalette, LinkedObjTypeObjManipulation);
+		// TODO, link all drawing records too?
+	}
+}
+
+void EMFRecAccessGDIRecResizePalette::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRRESIZEPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPal, false);
+	if (pLinkedRec)
+	{
+		ASSERT(pLinkedRec->GetRecordCategory() == RecCategoryObject);
+		AddLinkRecord(pLinkedRec, LinkedObjTypePalette, LinkedObjTypeObjManipulation);
+		// TODO, link drawing records?
 	}
 }
 
@@ -168,12 +245,99 @@ void EMFRecAccessGDIRecGdiComment::CacheProperties(const CachePropertiesContext&
 		m_propsCached->AddText(L"Text", strText);
 }
 
-void EMFRecAccessGDIRecExtCreatePen::CacheProperties(const CachePropertiesContext& ctxt)
+void EMFRecAccessGDIRecExtCreateFontIndirect::Preprocess(EMFAccess* pEMF)
 {
-	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
-	auto pRec = (EMREXTCREATEPEN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	auto pRec = (EMREXTCREATEFONTINDIRECTW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihFont, this, false);
+}
+
+void EMFRecAccessGDIRecExtTextOutA::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMREXTTEXTOUTA*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
 	}
 }
+
+void EMFRecAccessGDIRecExtTextOutW::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMREXTTEXTOUTW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecCreateMonoBrush::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCREATEMONOBRUSH*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihBrush, this, false);
+}
+
+void EMFRecAccessGDIRecCreateDIBPatternBrushPt::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCREATEDIBPATTERNBRUSHPT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihBrush, this, false);
+}
+
+void EMFRecAccessGDIRecExtCreatePen::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMREXTCREATEPEN*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihPen, this, false);
+}
+
+void EMFRecAccessGDIRecExtCreatePen::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
+	auto pRec = (EMREXTCREATEPEN*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecCreateColorSpace::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCREATECOLORSPACE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihCS, this, false);
+}
+
+void EMFRecAccessGDIRecSetColorSpace::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRSETCOLORSPACE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihCS, false);
+	if (pLinkedRec)
+	{
+		AddLinkRecord(pLinkedRec, LinkedObjTypeColorspace, LinkedObjTypeObjManipulation);
+		// TODO, link all drawing records too?
+	}
+}
+
+void EMFRecAccessGDIRecDeleteColorSpace::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRDELETECOLORSPACE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihCS, false);
+	if (pLinkedRec)
+	{
+		AddLinkRecord(pLinkedRec, LinkedObjTypeColorspace, LinkedObjTypeObjManipulation);
+		// TODO, link all drawing records too?
+	}
+}
+
+void EMFRecAccessGDIRecColorCorrectPalette::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCOLORCORRECTPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPalette, false);
+	if (pLinkedRec)
+		AddLinkRecord(pLinkedRec, LinkedObjTypePalette, LinkedObjTypeObjManipulation);
+}
+
+void EMFRecAccessGDIRecCreateColorSpaceW::Preprocess(EMFAccess* pEMF)
+{
+	auto pRec = (EMRCREATECOLORSPACEW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	pEMF->SetObjectToTable(pRec->ihCS, this, false);
+}
+

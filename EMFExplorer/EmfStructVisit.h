@@ -6,11 +6,15 @@
 #endif
 
 GS_VISITABLE_STRUCT(POINT, x, y);
+GS_VISITABLE_STRUCT(POINTL, x, y);
+GS_VISITABLE_STRUCT(RECTL, left, top, right, bottom);
 GS_VISITABLE_STRUCT(LOGBRUSH32, lbStyle, lbColor, lbHatch);
 GS_VISITABLE_STRUCT(LOGPEN, lopnStyle, lopnWidth, lopnColor);
 GS_VISITABLE_STRUCT(EXTLOGPEN32, elpPenStyle, elpWidth, elpBrushStyle, elpColor, elpHatch, elpNumEntries);
+GS_VISITABLE_STRUCT(EMRTEXT, ptlReference, nChars, offString, fOptions, rcl, offDx);
 
 
+GS_VISITABLE_STRUCT(EMREXTTEXTOUTA, rclBounds, iGraphicsMode, exScale, eyScale, emrtext);
 GS_VISITABLE_STRUCT(EMRCREATEBRUSHINDIRECT, ihBrush, lb);
 GS_VISITABLE_STRUCT(EMRCREATEPEN, ihPen, lopn);
 GS_VISITABLE_STRUCT(EMREXTCREATEPEN, ihPen, offBmi, cbBmi, offBits, cbBits, elp);
