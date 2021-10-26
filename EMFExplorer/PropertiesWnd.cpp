@@ -113,6 +113,8 @@ void CPropertiesWnd::SetPropList(std::shared_ptr<PropertyNode> props)
 
 #include <tuple>
 
+const size_t kMaxArraySize = 10;
+
 CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 {
 	CMFCPropertyGridProperty* pGridProp = nullptr;
@@ -190,6 +192,44 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 			pGridProp->Expand();
 		}
 		break;
+	case PropertyNode::NodeTypeRects:
+		pGridProp = new CMFCPropertyGridProperty(node.name, 0, TRUE);
+		{
+			auto& prop = (const PropertyNodePlusRectDataArray&)node;
+			auto& data = prop.data;
+			auto nActualSize = data.GetSize();
+
+			pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(nActualSize).c_str(), nullptr);
+			pSubProp->AllowEdit(FALSE);
+			pGridProp->AddSubItem(pSubProp);
+
+			size_t nCount = std::min(kMaxArraySize, nActualSize);
+			bool bFloat = !data.fvals.empty();
+			for (size_t ii = 0; ii < nCount; ++ii)
+			{
+				CStringW strName, strVal;
+				strName.Format(L"[%llu]", ii);
+				pSubProp = new CMFCPropertyGridProperty(strName, 0, TRUE);
+
+				std::vector<std::tuple<LPCWSTR, emfplus::Float>> vals;
+				vals.emplace_back(L"X", bFloat ? data.fvals[ii].X : data.ivals[ii].X);
+				vals.emplace_back(L"Y", bFloat ? data.fvals[ii].Y : data.ivals[ii].Y);
+				vals.emplace_back(L"Width", bFloat ? data.fvals[ii].Width : data.ivals[ii].Width);
+				vals.emplace_back(L"Height", bFloat ? data.fvals[ii].Height : data.ivals[ii].Height);
+				for (auto& v : vals)
+				{
+					auto pValProp = new CMFCPropertyGridProperty(std::get<0>(v), (_variant_t)std::get<1>(v), nullptr);
+					pValProp->AllowEdit(FALSE);
+					pSubProp->AddSubItem(pValProp);
+				}
+				pSubProp->AllowEdit(FALSE);
+				pSubProp->Expand();
+				pGridProp->AddSubItem(pSubProp);
+			}
+			// TODO, add way to view more data
+			pGridProp->Expand();
+		}
+		break;
 	case PropertyNode::NodeTypeSizeInt:
 		pGridProp = new CMFCPropertyGridProperty(node.name, 0, TRUE);
 		{
@@ -206,9 +246,13 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 		pGridProp = new CMFCPropertyGridProperty(node.name, 0);
 		{
 			auto& prop = (const PropertyNodePlusPointDataArray&)node;
-			const size_t maxCount = 10;
 			auto nActualSize = prop.data.GetSize();
-			size_t nCount = std::min(maxCount, nActualSize);
+
+			pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(nActualSize).c_str(), nullptr);
+			pSubProp->AllowEdit(FALSE);
+			pGridProp->AddSubItem(pSubProp);
+
+			size_t nCount = std::min(kMaxArraySize, nActualSize);
 			auto& data = prop.data;
 			bool bFloat = !data.fvals.empty();
 			for (size_t ii = 0; ii < nCount; ++ii)
@@ -220,12 +264,6 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 				else
 					strVal.Format(L"%d, %d", data.ivals[ii].x, data.ivals[ii].y);
 				pSubProp = new CMFCPropertyGridProperty(strName, strVal, nullptr);
-				pSubProp->AllowEdit(FALSE);
-				pGridProp->AddSubItem(pSubProp);
-			}
-			if (nActualSize > nCount)
-			{
-				pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(nActualSize).c_str(), nullptr);
 				pSubProp->AllowEdit(FALSE);
 				pGridProp->AddSubItem(pSubProp);
 			}
