@@ -25,6 +25,18 @@ public:
 	bool OpenFromClipboardData(const std::vector<emfplus::u8t>& data);
 public:
 	CDocument* OpenDocumentFile(LPCTSTR lpszPathName, BOOL bAddToMRU, BOOL bMakeVisible) override;
+
+	Confidence MatchDocType(LPCTSTR lpszPathName, CDocument*& rpDocMatch) override
+	{
+		// Allow reloading the same file
+		auto conf = CSingleDocTemplate::MatchDocType(lpszPathName, rpDocMatch);
+		if (conf == CDocTemplate::yesAlreadyOpen)
+		{
+			rpDocMatch = nullptr;
+			return CDocTemplate::yesAttemptNative;
+		}
+		return conf;
+	}
 };
 
 bool CEMFDocTemplate::OpenFromClipboardData(const std::vector<emfplus::u8t>& data)

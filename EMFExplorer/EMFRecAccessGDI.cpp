@@ -84,12 +84,15 @@ void EMFRecAccessGDIRecRestoreDC::CacheProperties(const CachePropertiesContext& 
 void EMFRecAccessGDIRecSelectObject::Preprocess(EMFAccess* pEMF)
 {
 	auto pRec = (EMRSELECTOBJECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
-	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihObject, false);
-	if (pLinkedRec)
+	if (pRec && !(pRec->ihObject & ENHMETA_STOCK_OBJECT))
 	{
-		ASSERT(pLinkedRec->GetRecordCategory() == RecCategoryObject);
-		AddLinkRecord(pLinkedRec, LinkedObjTypeObjectUnspecified, LinkedObjTypeObjManipulation);
-		// TODO, link drawing records?
+		auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihObject, false);
+		if (pLinkedRec)
+		{
+			ASSERT(pLinkedRec->GetRecordCategory() == RecCategoryObject);
+			AddLinkRecord(pLinkedRec, LinkedObjTypeObjectUnspecified, LinkedObjTypeObjManipulation);
+			// TODO, link drawing records?
+		}
 	}
 }
 
@@ -97,7 +100,14 @@ void EMFRecAccessGDIRecSelectObject::CacheProperties(const CachePropertiesContex
 {
 	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
 	auto pRec = (EMRSELECTOBJECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
-	if (pRec)
+	if (!pRec)
+		return;
+	if (pRec->ihObject & ENHMETA_STOCK_OBJECT)
+	{
+		auto hObj = pRec->ihObject & ~ENHMETA_STOCK_OBJECT;
+		m_propsCached->AddValue(L"ihObject", pRec->ihObject, true);
+	}
+	else
 	{
 		m_propsCached->AddValue(L"ihObject", pRec->ihObject);
 	}
