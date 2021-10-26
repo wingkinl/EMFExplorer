@@ -41,7 +41,8 @@ void EMFRecAccess::CacheProperties(const CachePropertiesContext& ctxt)
 
 void EMFRecAccess::AddLinkRecord(EMFRecAccess* pRec, LinkedObjType nType, LinkedObjType nTypeThis)
 {
-	m_linkRecs.emplace_back(pRec, nType);
+	LinkedObjInfo link{pRec, nType};
+	m_linkRecs.emplace_back(link);
 	if (nTypeThis != LinkedObjTypeInvalid)
 		pRec->AddLinkRecord(this, nTypeThis, LinkedObjTypeInvalid);
 }
