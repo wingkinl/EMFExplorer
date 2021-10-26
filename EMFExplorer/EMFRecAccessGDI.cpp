@@ -51,6 +51,16 @@ void EMFRecAccessGDIRecHeader::CacheProperties(const CachePropertiesContext& ctx
 	GetPropertiesFromGDIPlusHeader(pPlusNode.get(), hdr);
 }
 
+void EMFRecAccessGDIRecExcludeClipRect::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIClippingCat::CacheProperties(ctxt);
+	auto pRec = (EMREXCLUDECLIPRECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
 void EMFRecAccessGDIRecRestoreDC::Preprocess(EMFAccess* pEMF)
 {
 	auto pRec = (EMRRESTOREDC*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
@@ -73,7 +83,7 @@ void EMFRecAccessGDIRecRestoreDC::CacheProperties(const CachePropertiesContext& 
 
 void EMFRecAccessGDIRecSelectObject::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRSELECTOBJECT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRSELECTOBJECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihObject, false);
 	if (pLinkedRec)
 	{
@@ -95,7 +105,7 @@ void EMFRecAccessGDIRecSelectObject::CacheProperties(const CachePropertiesContex
 
 void EMFRecAccessGDIRecCreatePen::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRCREATEPEN*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRCREATEPEN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihPen, this, false);
 }
 
@@ -127,7 +137,7 @@ void EMFRecAccessGDIRecCreateBrushIndirect::CacheProperties(const CachePropertie
 
 void EMFRecAccessGDIRecDeleteObject::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRDELETEOBJECT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRDELETEOBJECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihObject, false);
 	if (pLinkedRec)
 	{
@@ -149,7 +159,7 @@ void EMFRecAccessGDIRecDeleteObject::CacheProperties(const CachePropertiesContex
 
 void EMFRecAccessGDIRecSelectPalette::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRSELECTPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRSELECTPALETTE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPal, false);
 	if (pLinkedRec)
 	{
@@ -159,15 +169,35 @@ void EMFRecAccessGDIRecSelectPalette::Preprocess(EMFAccess* pEMF)
 	}
 }
 
+void EMFRecAccessGDIRecSelectPalette::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
+	auto pRec = (EMRSELECTPALETTE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
 void EMFRecAccessGDIRecCreatePalette::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRCREATEPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRCREATEPALETTE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihPal, this, false);
+}
+
+void EMFRecAccessGDIRecCreatePalette::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
+	auto pRec = (EMRCREATEPALETTE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
 }
 
 void EMFRecAccessGDIRecSetPaletteEntries::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRSETPALETTEENTRIES*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRSETPALETTEENTRIES*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPal, false);
 	if (pLinkedRec)
 	{
@@ -176,15 +206,35 @@ void EMFRecAccessGDIRecSetPaletteEntries::Preprocess(EMFAccess* pEMF)
 	}
 }
 
+void EMFRecAccessGDIRecSetPaletteEntries::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETPALETTEENTRIES*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
 void EMFRecAccessGDIRecResizePalette::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRRESIZEPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRRESIZEPALETTE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPal, false);
 	if (pLinkedRec)
 	{
 		ASSERT(pLinkedRec->GetRecordCategory() == RecCategoryObject);
 		AddLinkRecord(pLinkedRec, LinkedObjTypePalette, LinkedObjTypeObjManipulation);
 		// TODO, link drawing records?
+	}
+}
+
+void EMFRecAccessGDIRecResizePalette::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
+	auto pRec = (EMRRESIZEPALETTE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
 	}
 }
 
@@ -245,16 +295,86 @@ void EMFRecAccessGDIRecGdiComment::CacheProperties(const CachePropertiesContext&
 		m_propsCached->AddText(L"Text", strText);
 }
 
+void EMFRecAccessGDIRecBitBlt::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRBITBLT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecStretchBlt::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRSTRETCHBLT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecMaskBlt::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRMASKBLT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPlgBlt::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRPLGBLT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetDIBitsToDevice::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETDIBITSTODEVICE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecStretchDIBits::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRSTRETCHDIBITS*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
 void EMFRecAccessGDIRecExtCreateFontIndirect::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMREXTCREATEFONTINDIRECTW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMREXTCREATEFONTINDIRECTW*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihFont, this, false);
+}
+
+void EMFRecAccessGDIRecExtCreateFontIndirect::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
+	auto pRec = (EMREXTCREATEFONTINDIRECTW*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
 }
 
 void EMFRecAccessGDIRecExtTextOutA::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
-	auto pRec = (EMREXTTEXTOUTA*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMREXTTEXTOUTA*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
@@ -264,7 +384,7 @@ void EMFRecAccessGDIRecExtTextOutA::CacheProperties(const CachePropertiesContext
 void EMFRecAccessGDIRecExtTextOutW::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
-	auto pRec = (EMREXTTEXTOUTW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMREXTTEXTOUTW*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
@@ -273,26 +393,46 @@ void EMFRecAccessGDIRecExtTextOutW::CacheProperties(const CachePropertiesContext
 
 void EMFRecAccessGDIRecCreateMonoBrush::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRCREATEMONOBRUSH*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRCREATEMONOBRUSH*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihBrush, this, false);
+}
+
+void EMFRecAccessGDIRecCreateMonoBrush::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
+	auto pRec = (EMRCREATEMONOBRUSH*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
 }
 
 void EMFRecAccessGDIRecCreateDIBPatternBrushPt::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRCREATEDIBPATTERNBRUSHPT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRCREATEDIBPATTERNBRUSHPT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihBrush, this, false);
+}
+
+void EMFRecAccessGDIRecCreateDIBPatternBrushPt::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
+	auto pRec = (EMRCREATEDIBPATTERNBRUSHPT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
 }
 
 void EMFRecAccessGDIRecExtCreatePen::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMREXTCREATEPEN*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMREXTCREATEPEN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihPen, this, false);
 }
 
 void EMFRecAccessGDIRecExtCreatePen::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
-	auto pRec = (EMREXTCREATEPEN*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMREXTCREATEPEN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
@@ -301,24 +441,44 @@ void EMFRecAccessGDIRecExtCreatePen::CacheProperties(const CachePropertiesContex
 
 void EMFRecAccessGDIRecCreateColorSpace::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRCREATECOLORSPACE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRCREATECOLORSPACE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihCS, this, false);
+}
+
+void EMFRecAccessGDIRecCreateColorSpace::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
+	auto pRec = (EMRCREATECOLORSPACE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
 }
 
 void EMFRecAccessGDIRecSetColorSpace::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRSETCOLORSPACE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRSETCOLORSPACE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihCS, false);
 	if (pLinkedRec)
 	{
 		AddLinkRecord(pLinkedRec, LinkedObjTypeColorspace, LinkedObjTypeObjManipulation);
 		// TODO, link all drawing records too?
+	}
+}
+
+void EMFRecAccessGDIRecSetColorSpace::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETCOLORSPACE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
 	}
 }
 
 void EMFRecAccessGDIRecDeleteColorSpace::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRDELETECOLORSPACE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRDELETECOLORSPACE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihCS, false);
 	if (pLinkedRec)
 	{
@@ -327,17 +487,756 @@ void EMFRecAccessGDIRecDeleteColorSpace::Preprocess(EMFAccess* pEMF)
 	}
 }
 
+void EMFRecAccessGDIRecDeleteColorSpace::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
+	auto pRec = (EMRDELETECOLORSPACE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
 void EMFRecAccessGDIRecColorCorrectPalette::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRCOLORCORRECTPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRCOLORCORRECTPALETTE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	auto pLinkedRec = pEMF->GetObjectCreationRecord(pRec->ihPalette, false);
 	if (pLinkedRec)
 		AddLinkRecord(pLinkedRec, LinkedObjTypePalette, LinkedObjTypeObjManipulation);
 }
 
+void EMFRecAccessGDIRecColorCorrectPalette::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjManipulationCat::CacheProperties(ctxt);
+	auto pRec = (EMRCOLORCORRECTPALETTE*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecAlphaBlend::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRALPHABLEND*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecTransparentBlt::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIBitmapCat::CacheProperties(ctxt);
+	auto pRec = (EMRTRANSPARENTBLT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
 void EMFRecAccessGDIRecCreateColorSpaceW::Preprocess(EMFAccess* pEMF)
 {
-	auto pRec = (EMRCREATECOLORSPACEW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	auto pRec = (EMRCREATECOLORSPACEW*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	pEMF->SetObjectToTable(pRec->ihCS, this, false);
 }
 
+void EMFRecAccessGDIRecCreateColorSpaceW::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIObjectCat::CacheProperties(ctxt);
+	auto pRec = (EMRCREATECOLORSPACEW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyBezier::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYBEZIER*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolygon::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyline::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYLINE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyBezierTo::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYBEZIERTO*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyLineTo::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYLINETO*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyPolyline::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYPOLYLINE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyPolygon::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetWindowExtEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETWINDOWEXTEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetWindowOrgEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETWINDOWORGEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetViewportExtEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETVIEWPORTEXTEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetViewportOrgEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETVIEWPORTORGEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetBrushOrgEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETBRUSHORGEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetPixelV::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETPIXELV*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetMapperFlags::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETMAPPERFLAGS*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetMapMode::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETMAPMODE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetBkMode::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETBKMODE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetPolyFillMode::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETPOLYFILLMODE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetROP2::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETROP2*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetStretchBltMode::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETSTRETCHBLTMODE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetTextAlign::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETTEXTALIGN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetColorAdjustment::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETCOLORADJUSTMENT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetTextColor::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETTEXTCOLOR*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetBkColor::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETBKCOLOR*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecOffsetClipRgn::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIClippingCat::CacheProperties(ctxt);
+	auto pRec = (EMROFFSETCLIPRGN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecMoveToEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRMOVETOEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecIntersectClipRect::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIClippingCat::CacheProperties(ctxt);
+	auto pRec = (EMRINTERSECTCLIPRECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecScaleViewportExtEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSCALEVIEWPORTEXTEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecScaleWindowExtEx::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSCALEWINDOWEXTEX*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetWorldTransform::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDITransformCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETWORLDTRANSFORM*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecModifyWorldTransform::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDITransformCat::CacheProperties(ctxt);
+	auto pRec = (EMRMODIFYWORLDTRANSFORM*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecAngleArc::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRANGLEARC*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecEllipse::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRELLIPSE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecRectangle::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRRECTANGLE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecRoundRect::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRROUNDRECT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecArc::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRARC*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecChord::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRCHORD*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPie::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPIE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecExtFloodFill::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMREXTFLOODFILL*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecLineTo::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRLINETO*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecArcTo::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRARCTO*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyDraw::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYDRAW*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetArcDirection::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETARCDIRECTION*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetMiterLimit::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETMITERLIMIT*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecFillPath::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRFILLPATH*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecStrokeAndFillPath::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRSTROKEANDFILLPATH*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecStrokePath::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRSTROKEPATH*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSelectClipPath::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIClippingCat::CacheProperties(ctxt);
+	auto pRec = (EMRSELECTCLIPPATH*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecFillRgn::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRFILLRGN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecFrameRgn::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRFRAMERGN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecInvertRgn::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRINVERTRGN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPaintRgn::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPAINTRGN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecExtSelectClipRgn::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIClippingCat::CacheProperties(ctxt);
+	auto pRec = (EMREXTSELECTCLIPRGN*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyBezier16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYBEZIER16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolygon16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYGON16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyline16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYLINE16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyBezierTo16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYBEZIERTO16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolylineTo16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYLINETO16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyPolyline16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYPOLYLINE16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyPolygon16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYPOLYGON16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyDraw16::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYDRAW16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyTextOutA::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYTEXTOUTA*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPolyTextOutW::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRPOLYTEXTOUTW*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetICMMode::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETICMMODE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecPixelFormat::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRPIXELFORMAT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetICMProfileA::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETICMPROFILEA*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetICMProfileW::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETICMPROFILEW*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecSetLayout::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRSETLAYOUT*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecGradientFill::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
+	auto pRec = (EMRGRADIENTFILL*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
+
+void EMFRecAccessGDIRecColorMatchToTargetW::CacheProperties(const CachePropertiesContext& ctxt)
+{
+	EMFRecAccessGDIStateCat::CacheProperties(ctxt);
+	auto pRec = (EMRCOLORMATCHTOTARGET*)EMFRecAccessGDIObjectCat::GetGDIRecord(m_recInfo);
+	if (pRec)
+	{
+		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+	}
+}
