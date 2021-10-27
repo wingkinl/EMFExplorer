@@ -197,7 +197,7 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 		{
 			auto& prop = (const PropertyNodePlusRectDataArray&)node;
 			auto& data = prop.data;
-			auto nActualSize = data.GetSize();
+			auto nActualSize = data.size();
 
 			pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(nActualSize).c_str(), nullptr);
 			pSubProp->AllowEdit(FALSE);
@@ -246,7 +246,7 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 		pGridProp = new CMFCPropertyGridProperty(node.name, 0);
 		{
 			auto& prop = (const PropertyNodePlusPointDataArray&)node;
-			auto nActualSize = prop.data.GetSize();
+			auto nActualSize = prop.data.size();
 
 			pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(nActualSize).c_str(), nullptr);
 			pSubProp->AllowEdit(FALSE);

@@ -203,7 +203,7 @@ struct OEmfPlusPointDataArray
 	GSOptionalArray(OEmfPlusPoint)	ivals;
 	GSOptionalArray(OEmfPlusPointF)	fvals;
 
-	inline size_t GetSize() const
+	inline size_t size() const
 	{
 		return std::max(ivals.size(), fvals.size());
 	}
@@ -1119,7 +1119,7 @@ struct OEmfPlusRectDataArray
 	GSOptionalArray(OEmfPlusRect)	ivals;
 	GSOptionalArray(OEmfPlusRectF)	fvals;
 
-	inline size_t GetSize() const
+	inline size_t size() const
 	{
 		return std::max(ivals.size(), fvals.size());
 	}

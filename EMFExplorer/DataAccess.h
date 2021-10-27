@@ -48,6 +48,13 @@ struct optional_wrapper
 		_val.reset();
 	}
 
+	auto& operator=(const _Ty& other)
+	{
+		enable();
+		_val = other;
+		return *this;
+	}
+
 	inline auto begin() { enable(); return _val.begin(); }
 	inline auto begin() const { return _val.begin(); }
 	inline auto end() { enable(); return _val.end(); }
@@ -133,10 +140,11 @@ struct vector_wrapper
 			_val.clear();
 	}
 
-	inline auto begin() { return std::begin(_ptr ? _ptr : _val); }
-	inline auto begin() const { return std::begin(_ptr ? _ptr : _val); }
-	inline auto end() { return std::end(_ptr ? (_ptr+_size) : _val); }
-	inline auto end() const { return std::end(_ptr ? (_ptr+_size) : _val); }
+	inline auto begin() { return _ptr ? _ptr : _val.data(); }
+	inline auto begin() const { return _ptr ? _ptr : _val.data(); }
+
+	inline auto end() { return begin() + size(); }
+	inline auto end() const { return begin() + size(); }
 
 	inline auto& operator[](size_t pos) { return _ptr ? _ptr[pos] : _val[pos]; }
 	inline const auto& operator[](size_t pos) const { return _ptr ? _ptr[pos] : _val[pos]; }
@@ -263,7 +271,7 @@ protected:
 	bool		m_bAttachMemMode = false;
 };
 
-enum SizeType { UNKNOWN_SIZE = SIZE_MAX };
+enum SizeType : size_t { UNKNOWN_SIZE = SIZE_MAX };
 
 class ReaderChecker
 {
