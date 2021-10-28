@@ -70,7 +70,7 @@ using namespace emfplus;
 #include "EMFRecAccessGDI.h"
 #include "EMFRecAccessPlus.h"
 
-EMFAccess::EMFAccess(const data_access::memory_wrapper& data)
+EMFAccess::EMFAccess(const emfplus::memory_vector& data)
 	: EMFAccess(data.data(), data.size())
 {
 }

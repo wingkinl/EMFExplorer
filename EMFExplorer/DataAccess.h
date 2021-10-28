@@ -67,125 +67,25 @@ protected:
 	_Ty		_val;
 };
 
-template <typename _Ty>
-struct object_wrapper
-{
-	using value_type      = _Ty;
-
-	inline bool is_attached() const { return _ptr != nullptr; }
-	inline void attach(_Ty* ptr) { _ptr = ptr; }
-
-	inline _Ty& get() { return _ptr ? *_ptr : _val; }
-	inline const _Ty& get() const { return _ptr ? *_ptr : _val; }
-
-	inline _Ty* operator->() { return &get(); }
-	inline const _Ty* operator->() const { return &get(); }
-
-	inline _Ty& operator*() { return get(); }
-protected:
-	_Ty*	_ptr = nullptr;
-	_Ty		_val;
-};
-
-template <typename _Ty>
-struct vector_wrapper
-{
-	using value_type      = _Ty;
-	using vector_type     = std::vector<_Ty>;
-
-	inline bool is_attached() const { return _ptr != nullptr; }
-	inline void attach(_Ty* ptr, size_t size = 0) { _ptr = ptr; _size = size; }
-
-	vector_type& get()
-	{
-		_ptr = nullptr;
-		return _val;
-	}
-
-	inline bool empty() const
-	{
-		if (_ptr)
-			return _size == 0;
-		return _val.empty();
-	}
-
-	inline size_t size() const { return _ptr ? _size : _val.size(); }
-	inline void resize(size_t newSize)
-	{
-		if (_ptr)
-			_size = newSize;
-		else
-			_val.resize(newSize);
-	}
-
-	template<typename ValT>
-	inline void resize(size_t newSize, ValT newVal)
-	{
-		if (_ptr)
-		{
-			_size = newSize;
-			std::fill_n(_ptr, _size, newVal);
-		}
-		else
-		{
-			_val.resize(newSize, newVal);
-		}
-	}
-
-	inline void clear()
-	{
-		if (_ptr)
-			_size = 0;
-		else
-			_val.clear();
-	}
-
-	inline auto begin() { return _ptr ? _ptr : _val.data(); }
-	inline auto begin() const { return _ptr ? _ptr : _val.data(); }
-
-	inline auto end() { return begin() + size(); }
-	inline auto end() const { return begin() + size(); }
-
-	inline auto& operator[](size_t pos) { return _ptr ? _ptr[pos] : _val[pos]; }
-	inline const auto& operator[](size_t pos) const { return _ptr ? _ptr[pos] : _val[pos]; }
-
-	inline auto data() { return _ptr ? _ptr : _val.data(); }
-	inline auto data() const { return _ptr ? _ptr : _val.data(); }
-protected:
-	_Ty*				_ptr = nullptr;
-	size_t				_size = 0;
-	std::vector<_Ty>	_val;
-};
-
 template <typename T> struct is_optional_wrapper : public std::false_type {};
 
 template <typename T> struct is_optional_wrapper<optional_wrapper<T>> : public std::true_type {};
 
-template <typename T> struct is_object_wrapper : public std::false_type {};
-
-template <typename T> struct is_object_wrapper<object_wrapper<T>> : public std::true_type {};
-
 template <class _Ty>
 constexpr bool is_optional_wrapper_v = is_optional_wrapper<_Ty>::value;
 
-template<typename T> struct is_vector_wrapper : public std::false_type {};
+template <typename T> struct is_vector: public std::false_type {};
 
-template<typename T> struct is_vector_wrapper<vector_wrapper<T>> : public std::true_type {};
-
-template <class _Ty>
-constexpr bool is_vector_wrapper_v = is_vector_wrapper<_Ty>::value;
-
-using memory_wrapper = vector_wrapper<byte>;
+template <typename T> struct is_vector<std::vector<T>> : public std::true_type {};
 
 class DataReader
 {
 public:
-	DataReader(const byte* p, size_t nSize, bool bAttachMemMode = false)
+	DataReader(byte* p, size_t nSize)
 	{
 		m_p = p;
 		m_pEnd = m_p + nSize;
 		m_pCur = p;
-		m_bAttachMemMode = bAttachMemMode;
 	}
 public:
 	inline const byte* GetPos() const
@@ -201,22 +101,6 @@ public:
 	}
 
 	template <typename ValT, typename std::enable_if_t<std::is_trivial_v<ValT>>* = nullptr>
-	void ReadBytes(object_wrapper<ValT>* pData, size_t nSize)
-	{
-		ASSERT(m_pCur + nSize <= m_pEnd);
-		ASSERT(nSize == sizeof(object_wrapper<ValT>::value_type));
-		if (m_bAttachMemMode)
-		{
-			pData->attach(m_pCur);
-		}
-		else
-		{
-			memcpy(pData, m_pCur, nSize);
-		}
-		m_pCur += nSize;
-	}
-
-	template <typename ValT>
 	void ReadBytes(optional_wrapper<ValT>* pData, size_t nSize)
 	{
 		const size_t nValSize = sizeof(optional_wrapper<ValT>::value_type);
@@ -226,30 +110,11 @@ public:
 	}
 
 	template <typename ValT>
-	void ReadArray(vector_wrapper<ValT>& arr, size_t nCount)
-	{
-		if (m_bAttachMemMode)
-		{
-			arr.attach( (typename vector_wrapper<ValT>::value_type*)m_pCur );
-			arr.resize(nCount);
-			auto nSize = sizeof(vector_wrapper<ValT>::value_type) * nCount;
-			ASSERT(m_pCur + nSize <= m_pEnd);
-			m_pCur += nSize;
-		}
-		else
-		{
-			ReadArray(arr.get(), nCount);
-		}
-	}
-
-
-	template <typename ValT>
 	inline void ReadArray(optional_wrapper<ValT>& arr, size_t nCount)
 	{
 		ReadArray(arr.get(), nCount);
 	}
 
-	// nElemSize must be either 0 or smaller than sizeof(ValT)
 	template <typename ValT, std::enable_if_t<std::is_trivial_v<ValT>, bool> = true>
 	void ReadArray(std::vector<ValT>& arr, size_t nCount)
 	{
@@ -265,10 +130,9 @@ public:
 		m_pCur += nSize;
 	}
 protected:
-	const byte* m_p;
-	const byte* m_pEnd;
-	const byte* m_pCur;
-	bool		m_bAttachMemMode = false;
+	byte*	m_p;
+	byte*	m_pEnd;
+	byte*	m_pCur;
 };
 
 enum SizeType : size_t { UNKNOWN_SIZE = SIZE_MAX };

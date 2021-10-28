@@ -925,7 +925,7 @@ OEmfPlusGraphObject* OEmfPlusRecObjectReader::CreateObject()
 	if (pObj)
 	{
 		bool bContinue = IsContinueObj();
-		const u8t* pData = bContinue ? ContinuableObjData.data() : StartRec->Data;
+		auto pData = bContinue ? ContinuableObjData.data() : StartRec->Data;
 		size_t nDataSize = bContinue ? TotalObjectSize : StartRec->DataSize;
 		DataReader reader(pData, nDataSize);
 		VERIFY(pObj->Read(reader, nDataSize));

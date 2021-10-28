@@ -34,7 +34,7 @@ class EMFAccess : public EMFAccessBase
 public:
 	using EMFAccessBase::EMFAccessBase;
 
-	EMFAccess(const data_access::memory_wrapper& data);
+	EMFAccess(const emfplus::memory_vector& data);
 	~EMFAccess();
 public:
 	inline size_t GetRecordCount() const { return m_EMFRecords.size(); }

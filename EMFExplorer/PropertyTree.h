@@ -147,9 +147,9 @@ struct PropertyNodePlusPointDataArray : public PropertyNodePointDataArrayBase
 	bool	relative;
 };
 
-using PlusUnicodeArrayWrapper = data_access::vector_wrapper<emfplus::u16t>;
-using PlusPointArrayWrapper = data_access::vector_wrapper<emfplus::OEmfPlusPoint>;
-using PlusPointFArrayWrapper = data_access::vector_wrapper<emfplus::OEmfPlusPointF>;
+using PlusUnicodeArrayWrapper = std::vector<emfplus::u16t>;
+using PlusPointArrayWrapper = std::vector<emfplus::OEmfPlusPoint>;
+using PlusPointFArrayWrapper = std::vector<emfplus::OEmfPlusPointF>;
 
 using PropertyNodePlusTransform = PropertyNodeData<const emfplus::OEmfPlusTransformMatrix&, PropertyNode::NodeTypeMatrix>;
 using PropertyNodePlusRectF = PropertyNodeData<const emfplus::OEmfPlusRectF&, PropertyNode::NodeTypeRectFloat>;

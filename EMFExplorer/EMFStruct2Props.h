@@ -287,7 +287,7 @@ struct EmfStruct2Properties
 		}
 		else if constexpr (std::is_class_v<ValT>)
 		{
-			if constexpr (data_access::is_vector_wrapper<ValT>::value)
+			if constexpr (is_vector<ValT>::value)
 			{
 				if constexpr (std::is_arithmetic_v<typename ValT::value_type>)
 				{
@@ -295,12 +295,6 @@ struct EmfStruct2Properties
 					if (!value.empty())
 						pNode->AddValue(L"junk", value[0]);
 				}
-			}
-			else if constexpr (data_access::is_object_wrapper<ValT>::value)
-			{
-				auto pBranchNode = pNode->AddBranch(CStringW(name));
-				if (pBranchNode)
-					Build(value.get(), pBranchNode.get());
 			}
 			else
 			{
