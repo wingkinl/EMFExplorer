@@ -95,7 +95,7 @@ public:
 		return nullptr;
 	}
 protected:
-	void SetRecInfo(const emfplus::OEmfPlusRecInfo& info) { m_recInfo = info; }
+	void SetRecInfo(const emfplus::OEmfPlusRecInfo& info);
 
 	void SetIndex(size_t nIndex) { m_nIndex = nIndex; }
 
@@ -112,6 +112,9 @@ protected:
 protected:
 	friend class EMFAccess;
 	emfplus::OEmfPlusRecInfo		m_recInfo;
+	// OEmfPlusRecInfo::Data points to memory from EnumerateMetafile callback
+	// and it's not safe to directly use them, so here use a copy instead
+	emfplus::memory_vector			m_recData;
 	size_t							m_nIndex = 0;
 	std::shared_ptr<PropertyNode>	m_propsCached;
 	std::vector<LinkedObjInfo>		m_linkRecs;

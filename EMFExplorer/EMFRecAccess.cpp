@@ -32,6 +32,16 @@ auto EMFRecAccess::IsLinked(const EMFRecAccess* pRec) const -> LinkedObjType
 	return LinkedObjTypeInvalid;
 }
 
+void EMFRecAccess::SetRecInfo(const emfplus::OEmfPlusRecInfo& info)
+{
+	m_recInfo = info;
+	if (info.Data && info.DataSize)
+	{
+		m_recData.assign(info.Data, info.Data+info.DataSize);
+		m_recInfo.Data = m_recData.data();
+	}
+}
+
 void EMFRecAccess::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	m_propsCached->AddText(L"RecordName", GetRecordName());
