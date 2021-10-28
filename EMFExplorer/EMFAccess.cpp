@@ -92,9 +92,8 @@ BOOL CALLBACK EnumMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, 
 {
 	auto& ctxt = *(EnumEmfPlusContext*)pCallbackData;
 	auto ret = ctxt.pAccess->HandleEMFRecord((OEmfPlusRecordType)type, flags, dataSize, data);
-	// this is not necessary
-	//if (ret)
-	//	ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
+	if (ret)
+		ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
 	return ret;
 }
 
