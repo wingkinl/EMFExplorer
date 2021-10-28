@@ -247,10 +247,6 @@ void CEMFRecListCtrl::LoadEMFDataEvent(bool bBefore)
 	{
 		SetRedraw(FALSE);
 		m_emf = nullptr;
-	}
-	else
-	{
-		int nCount = m_emf ? (int)m_emf->GetRecordCount() : 0;
 		// There could be repaint issue when the list control was previously scrolled
 		// Steps to reproduce:
 		// 1) Load EMF 1
@@ -264,6 +260,10 @@ void CEMFRecListCtrl::LoadEMFDataEvent(bool bBefore)
 		// when for some reason the list is scrolled, then loads empty list, then load 
 		// another non-empty list
 		//EnsureVisible(0, FALSE);
+	}
+	else
+	{
+		int nCount = m_emf ? (int)m_emf->GetRecordCount() : 0;
 		SetItemCount(nCount);
 		Invalidate();
 		SetRedraw(TRUE);
