@@ -92,8 +92,9 @@ BOOL CALLBACK EnumMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, 
 {
 	auto& ctxt = *(EnumEmfPlusContext*)pCallbackData;
 	auto ret = ctxt.pAccess->HandleEMFRecord((OEmfPlusRecordType)type, flags, dataSize, data);
-	if (ret)
-		ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
+	// this is not necessary
+	//if (ret)
+	//	ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
 	return ret;
 }
 
@@ -104,7 +105,7 @@ bool EMFAccess::GetRecords()
 	CDC dcMem;
 	dcMem.CreateCompatibleDC(nullptr);
 	Gdiplus::Graphics gg(dcMem.GetSafeHdc());
-	Gdiplus::Point pt(m_hdr.X, m_hdr.Y);
+	Gdiplus::Point pt(0, 0);
 	EnumEmfPlusContext ctxt{ m_pMetafile.get(), &gg, this };
 	auto sts = gg.EnumerateMetafile(m_pMetafile.get(), pt, EnumMetafilePlusProc, (void*)&ctxt);
 	return sts == Gdiplus::Ok;

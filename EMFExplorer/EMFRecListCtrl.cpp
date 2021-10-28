@@ -60,6 +60,7 @@ BEGIN_MESSAGE_MAP(CEMFRecListCtrl, CEMFRecListCtrlBase)
 	ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, &CEMFRecListCtrl::OnCustomDraw)
 	ON_NOTIFY_REFLECT(LVN_GETDISPINFO, &CEMFRecListCtrl::OnGetDispInfo)
 	ON_NOTIFY_REFLECT_EX(LVN_ITEMCHANGED, &CEMFRecListCtrl::OnItemChange)
+	ON_NOTIFY_REFLECT(LVN_ENDSCROLL, &CEMFRecListCtrl::OnEndScroll)
 	ON_WM_GETDLGCODE()
 END_MESSAGE_MAP()
 
@@ -101,19 +102,24 @@ int CEMFRecListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		if (theApp.IsDarkTheme())
 			SetBkColor(theApp.m_crfDarkThemeBkColor);
 
-		InsertColumn(ColumnTypeIndex, _T("Index"));
-		InsertColumn(ColumnTypeName, _T("Record Name"));
+		InsertColumn(ColumnTypeIndex, _T("#"));
+		InsertColumn(ColumnTypeName, _T("Name"));
 
 		_EnableListCtrlExplorerVisualStyles(GetSafeHwnd(), TRUE);
 	}
 	return nRet;
 }
 
-void CEMFRecListCtrl::OnSize(UINT nType, int cx, int cy)
+void CEMFRecListCtrl::AdjustColumnWidth(int cx)
 {
 	SetColumnWidth(ColumnTypeIndex, LVSCW_AUTOSIZE);
 	int cxIdx = GetColumnWidth(ColumnTypeIndex);
 	SetColumnWidth(ColumnTypeName, cx - cxIdx);
+}
+
+void CEMFRecListCtrl::OnSize(UINT nType, int cx, int cy)
+{
+	AdjustColumnWidth(cx);
 	CEMFRecListCtrlBase::OnSize(nType, cx, cy);
 }
 
@@ -180,6 +186,13 @@ BOOL CEMFRecListCtrl::OnItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 	return FALSE;
 }
 
+void CEMFRecListCtrl::OnEndScroll(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	CRect rc;
+	GetClientRect(&rc);
+	AdjustColumnWidth(rc.Width());
+}
+
 UINT CEMFRecListCtrl::OnGetDlgCode()
 {
 	// Add DLGC_WANTMESSAGE so we have NM_RETURN notification
@@ -238,9 +251,20 @@ void CEMFRecListCtrl::LoadEMFDataEvent(bool bBefore)
 	else
 	{
 		int nCount = m_emf ? (int)m_emf->GetRecordCount() : 0;
+		// There could be repaint issue when the list control was previously scrolled
+		// Steps to reproduce:
+		// 1) Load EMF 1
+		// 2) Scroll to some position around the middle of the list control
+		// 3) Load EMF 2
+		// ==> No visible items are shown, but if you move the mouse cursor over
+		// the list control, or scroll down a little, part of the items will be drawn
+		// DeleteAllItems() seems to fix the issue
+		DeleteAllItems();
+		// EnsureVisible may also help fix the painting issue, but it seems not enough
+		// when for some reason the list is scrolled, then loads empty list, then load 
+		// another non-empty list
+		//EnsureVisible(0, FALSE);
 		SetItemCount(nCount);
-		// EnsureVisible helps fix the repaint issue when the list control was previously scrolled
-		EnsureVisible(0, FALSE);
 		Invalidate();
 		SetRedraw(TRUE);
 	}

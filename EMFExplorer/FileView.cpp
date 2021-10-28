@@ -53,7 +53,7 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// Create view:
 	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_REPORT 
-		| LVS_NOCOLUMNHEADER | LVS_SHOWSELALWAYS | LVS_OWNERDATA;
+		| LVS_SHOWSELALWAYS | LVS_OWNERDATA;
 
 	if (!m_wndRecList.Create(dwViewStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
 	{
@@ -107,10 +107,6 @@ void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
 	{
 		m_wndRecList.ScreenToClient(&point);
 		nRow = m_wndRecList.HitTest(point);
-		if (nRow >= 0)
-		{
-
-		}
 	}
 	if (nRow < 0)
 		return;

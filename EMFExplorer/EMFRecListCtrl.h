@@ -6,7 +6,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // CEMFRecListCtrl window
 
-using CEMFRecListCtrlBase = CListCtrl;
+using CEMFRecListCtrlBase = CMFCListCtrl;
 
 class CEMFRecListCtrl : public CEMFRecListCtrlBase
 {
@@ -29,6 +29,11 @@ protected:
 	void OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const;
 
 	BOOL IsDarkTheme() const;
+
+	void AdjustColumnWidth(int cx);
+
+	// We don't want sort
+	void Sort(int iColumn, BOOL bAscending = TRUE, BOOL bAdd = FALSE) override {};
 // Implementation
 public:
 	virtual ~CEMFRecListCtrl();
@@ -38,6 +43,7 @@ protected:
 	afx_msg void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg BOOL OnItemChange(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnEndScroll(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg UINT OnGetDlgCode();
 protected:
 	COLORREF m_crfDefaultBkColor = (COLORREF)-1;
