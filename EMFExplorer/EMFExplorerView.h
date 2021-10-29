@@ -44,6 +44,8 @@ public:
 
 	COLORREF GetCursorColor() const;
 
+	void ClientToEMF(CPoint& pos) const;
+
 #ifndef SHARED_HANDLERS
 	BOOL OnScrollBy(CSize sizeScroll, BOOL bDoScroll = TRUE) override;
 #endif // SHARED_HANDLERS

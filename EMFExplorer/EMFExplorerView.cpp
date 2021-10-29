@@ -514,6 +514,15 @@ COLORREF CEMFExplorerView::GetCursorColor() const
 	return 0;
 }
 
+void CEMFExplorerView::ClientToEMF(CPoint& pos) const
+{
+	CRect rcView = GetScrolledZoomedView(true);
+	pos += rcView.TopLeft();
+	float factor = GetRealZoomFactor();
+	pos.x = (LONG)(pos.x / factor);
+	pos.y = (LONG)(pos.y / factor);
+}
+
 #ifndef SHARED_HANDLERS
 void CEMFExplorerView::OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI)
 {
@@ -525,11 +534,7 @@ void CEMFExplorerView::OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI)
 		CPoint pos;
 		GetCursorPos(&pos);
 		ScreenToClient(&pos);
-		CRect rcView = GetScrolledZoomedView(true);
-		pos += rcView.TopLeft();
-		float factor = GetRealZoomFactor();
-		pos.x = (LONG)(pos.x / factor);
-		pos.y = (LONG)(pos.y / factor);
+		ClientToEMF(pos);
  		str.Format(_T(" (%d, %d) "), pos.x, pos.y);
 	}
 	else

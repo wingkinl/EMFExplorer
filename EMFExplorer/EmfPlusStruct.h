@@ -191,6 +191,15 @@ struct OEmfPlusGraphObject
 	OEmfPlusGraphObject() = default;
 	virtual ~OEmfPlusGraphObject() = default;
 
+	enum
+	{
+		VersionMetafileSignature		= 0xDBC01,
+		VersionMetafileSignatureMask	= 0xFFFFF000,
+		VersionGraphicsVersionMask		= 0x00000FFF,
+	};
+
+	u32t Version;
+
 	virtual bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
 
 	virtual OObjType GetObjType() const = 0 { return OObjType::Invalid; }

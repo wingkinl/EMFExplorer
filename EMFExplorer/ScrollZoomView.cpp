@@ -154,6 +154,7 @@ void CScrollZoomView::OnCancelMode()
 	if (GetCapture() == this)
 	{
 		ReleaseCapture();
+		m_bStartedScrolling = FALSE;
 	}
 	CScrollZoomViewBase::OnCancelMode();
 }

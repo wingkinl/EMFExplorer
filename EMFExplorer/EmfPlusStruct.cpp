@@ -11,16 +11,8 @@ namespace emfplus
 bool OEmfPlusGraphObject::Read(DataReader& reader, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
-	u32t Version = 0;
 	reader.ReadBytes(&Version, sizeof(Version));
-	enum
-	{
-		VersionMetafileSignature		= 0xDBC01,
-		VersionMetafileSignatureMask	= 0xFFFFF000,
-		VersionGraphicsVersionMask		= 0x00000FFF,
-	};
-	ASSERT(VersionMetafileSignature == ((Version & VersionMetafileSignatureMask) >> 12)
-		&& GraphicsVersion1_1 == (Version & VersionGraphicsVersionMask));
+	ASSERT(VersionMetafileSignature == ((Version & VersionMetafileSignatureMask) >> 12));
 	return true;
 }
 
