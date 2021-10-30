@@ -9,6 +9,35 @@
 #undef min
 #undef max
 
+CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter, float* pfScale)
+{
+	CRect rcFit = rcDest;
+	CSize szDest = rcDest.Size();
+	auto fScaleDst = (float)szDest.cy / szDest.cx;
+	auto fScaleSrc = (float)szSrc.cy / szSrc.cx;
+	float fScale = 1.f;
+	if (fScaleSrc <= fScaleDst)
+	{
+		// source image is flatter than the target rectangle, so we fit the width
+		fScale = (float)szDest.cx / szSrc.cx;
+		szDest.cy = (int)(szSrc.cy * fScale);
+		rcFit.bottom = rcFit.top + szDest.cy;
+		if (bCenter)
+			rcFit.OffsetRect(0, (rcDest.Height() - rcFit.Height()) / 2);
+	}
+	else
+	{
+		fScale = (float)szDest.cy / szSrc.cy;
+		szDest.cx = (int)(szSrc.cx * fScale);
+		rcFit.right = rcFit.left + szDest.cx;
+		if (bCenter)
+			rcFit.OffsetRect((rcDest.Width() - rcFit.Width()) / 2, 0);
+	}
+	if (pfScale)
+		*pfScale = fScale;
+	return rcFit;
+}
+
 EMFAccessBase::EMFAccessBase(const void* pData, size_t nSize)
 {
 	ATL::CComPtr<IStream> stream;

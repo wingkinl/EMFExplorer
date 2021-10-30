@@ -85,15 +85,29 @@ public:
 	inline size_t GetLinkedRecordCount() const { return m_linkRecs.size(); }
 
 	// There could be multiple LinkedObjTypeDrawingRecord type but for now we don't care
-	inline EMFRecAccess* GetLinkedRecord(LinkedObjType nType)
+	inline EMFRecAccess* GetLinkedRecord(LinkedObjType nType) const
 	{
 		for (auto& link : m_linkRecs)
 		{
-			if (link.nType = nType)
+			if (link.nType == nType)
 				return link.pRec;
 		}
 		return nullptr;
 	}
+
+	struct PreviewContext
+	{
+		// [input]
+		CDC*	pDC;
+		// [input]
+		BOOL	bCalcOnly;
+		// [input] destination rect
+		RECT	rect;
+		// [output]
+		SIZE	szPreferedSize;
+	};
+
+	virtual bool DrawPreview(PreviewContext* info = nullptr) { return false; }
 protected:
 	void SetRecInfo(const emfplus::OEmfPlusRecInfo& info);
 

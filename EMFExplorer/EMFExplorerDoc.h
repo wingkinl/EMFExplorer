@@ -13,8 +13,6 @@ using EMFAccessT = EMFAccessBase;
 using EMFAccessT = EMFAccess;
 #endif // SHARED_HANDLERS
 
-CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter = false, float* pfScale = nullptr);
-
 class CEMFExplorerDoc : public CDocument
 {
 protected: // create from serialization only

@@ -142,6 +142,8 @@ public:
 	virtual bool CacheGDIPlusObject(EMFAccess* pEMF) { return false; }
 
 	virtual std::shared_ptr<EMFAccess> GetEMFAccess() const { return nullptr; }
+
+	virtual bool DrawPreview(EMFRecAccess::PreviewContext* info = nullptr) { return false; }
 protected:
 	friend class EMFRecAccessGDIPlusRecObject;
 
@@ -163,6 +165,8 @@ private:
 	void Preprocess(EMFAccess* pEMF) override;
 
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
 private:
 	std::unique_ptr<EMFRecAccessGDIPlusObjWrapper>	m_recDataCached;
 };
@@ -405,6 +409,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawImage"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawImage; }
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 
@@ -419,6 +425,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EmfPlusDrawImagePoints"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfPlusRecordTypeDrawImagePoints; }
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
 private:
 	void Preprocess(EMFAccess* pEMF) override;
 

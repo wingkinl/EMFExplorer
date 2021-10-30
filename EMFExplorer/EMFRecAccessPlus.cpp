@@ -108,8 +108,6 @@ protected:
 
 	bool CacheGDIPlusObject(EMFAccess* pEMF) override
 	{
-		if (m_emf)
-			return true;
 		auto pImg = (OEmfPlusImage*)m_obj.get();
 		switch (pImg->Type)
 		{
@@ -117,12 +115,56 @@ protected:
 			// TODO
 			break;
 		case OImageDataType::Metafile:
-			m_emf = std::make_shared<EMFAccess>(pImg->ImageDataMetafile->MetafileData);
-			m_emf->AddNestedPath(pEMF->GetNestedPath().c_str());
-			m_emf->AddNestedPath(std::to_wstring(m_pObjRec->GetIndex() + 1).c_str());
+			if (!m_emf)
+				m_emf = std::make_shared<EMFAccess>(pImg->ImageDataMetafile->MetafileData);
+			if (pEMF && m_emf->GetNestedPath().empty())
+			{
+				m_emf->AddNestedPath(pEMF->GetNestedPath().c_str());
+				m_emf->AddNestedPath(std::to_wstring(m_pObjRec->GetIndex() + 1).c_str());
+			}
 			break;
 		}
 		return true;
+	}
+
+	enum {
+		ImgPreviewCX = 400,
+		ImgPreviewCY = 400,
+	};
+
+	bool DrawPreview(EMFRecAccess::PreviewContext* info = nullptr) override
+	{
+		if (!CacheGDIPlusObject(nullptr))
+			return false;
+		auto pImg = (OEmfPlusImage*)m_obj.get();
+		switch (pImg->Type)
+		{
+		case OImageDataType::Metafile:
+			if (!m_emf)
+				return false;
+			if (!info)
+				return true;
+			auto& hdr = m_emf->GetMetafileHeader();
+			CSize szEMF(hdr.Width, hdr.Height);
+			CRect rect = info->rect;
+			if (info->bCalcOnly)
+			{
+				CClientDC dc(nullptr);
+				LONG cx = ImgPreviewCX * dc.GetDeviceCaps(LOGPIXELSX) / 96;
+				LONG cy = ImgPreviewCY * dc.GetDeviceCaps(LOGPIXELSY) / 96;
+				rect.right = rect.left + cx;
+				rect.bottom = rect.top + cy;
+			}
+			CRect rcFit = GetFitRect(rect, szEMF, true);
+			info->szPreferedSize = rcFit.Size();
+			if (!info->bCalcOnly)
+			{
+				Gdiplus::Graphics gg(info->pDC->GetSafeHdc());
+				m_emf->DrawMetafile(gg, rcFit);
+			}
+			return true;
+		}
+		return false;
 	}
 
 	std::shared_ptr<EMFAccess> GetEMFAccess() const override
@@ -275,6 +317,14 @@ void EMFRecAccessGDIPlusRecObject::CacheProperties(const CachePropertiesContext&
 	{
 		pObjWrapper->CacheProperties(ctxt, m_propsCached.get());
 	}
+}
+
+bool EMFRecAccessGDIPlusRecObject::DrawPreview(PreviewContext* info)
+{
+	auto pObjWrapper = GetObjectWrapper();
+	if (pObjWrapper)
+		return pObjWrapper->DrawPreview(info);
+	return false;
 }
 
 void EMFRecAccessGDIPlusRecClear::CacheProperties(const CachePropertiesContext& ctxt)
@@ -884,6 +934,14 @@ void EMFRecAccessGDIPlusRecDrawBeziers::CacheProperties(const CachePropertiesCon
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusPointDataArray>(L"PointData", m_recDataCached.PointData, bRelative));
 }
 
+bool EMFRecAccessGDIPlusRecDrawImage::DrawPreview(PreviewContext* info)
+{
+	auto pRec = GetLinkedRecord(LinkedObjTypeImage);
+	if (!pRec)
+		return false;
+	return pRec->DrawPreview(info);
+}
+
 void EMFRecAccessGDIPlusRecDrawImage::Preprocess(EMFAccess* pEMF)
 {
 	auto nID = (u8t)(m_recInfo.Flags & OEmfPlusRecDrawImage::FlagObjectIDMask);
@@ -930,6 +988,14 @@ void EMFRecAccessGDIPlusRecDrawImage::CacheProperties(const CachePropertiesConte
 			pAttrNode->sub = pAttrProp->sub;
 		}
 	}
+}
+
+bool EMFRecAccessGDIPlusRecDrawImagePoints::DrawPreview(PreviewContext* info)
+{
+	auto pRec = GetLinkedRecord(LinkedObjTypeImage);
+	if (!pRec)
+		return false;
+	return pRec->DrawPreview(info);
 }
 
 void EMFRecAccessGDIPlusRecDrawImagePoints::Preprocess(EMFAccess* pEMF)

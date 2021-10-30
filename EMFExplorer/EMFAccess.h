@@ -24,6 +24,8 @@ protected:
 	Gdiplus::MetafileHeader	m_hdr;
 };
 
+CRect GetFitRect(const CRect& rcDest, const SIZE& szSrc, bool bCenter = false, float* pfScale = nullptr);
+
 #ifndef SHARED_HANDLERS
 #include "DataAccess.h"
 #include "EMFRecAccess.h"
@@ -58,7 +60,7 @@ public:
 
 	bool SaveToFile(LPCWSTR szPath) const;
 
-	const std::wstring GetNestedPath() const
+	const std::wstring& GetNestedPath() const
 	{
 		return m_strNestedPath;
 	}
