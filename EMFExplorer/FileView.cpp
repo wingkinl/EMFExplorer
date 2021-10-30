@@ -52,18 +52,13 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	rectDummy.SetRectEmpty();
 
 	// Create view:
-	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_REPORT 
-		| LVS_SHOWSELALWAYS | LVS_OWNERDATA;
+	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE;
 
 	if (!m_wndRecList.Create(dwViewStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
 	{
 		TRACE0("Failed to create file view\n");
 		return -1;      // fail to create
 	}
-
-	// Load view images:
-	m_FileViewImages.Create(IDB_FILE_VIEW, 16, 0, RGB(255, 0, 255));
-	m_wndRecList.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
 
 	m_wndToolBar.Create(this, AFX_DEFAULT_TOOLBAR_STYLE, IDR_EXPLORER);
 	m_wndToolBar.LoadToolBar(IDR_EXPLORER, 0, 0, TRUE /* Is locked */);
@@ -245,30 +240,6 @@ void CFileView::OnChangeVisualStyle()
 {
 	m_wndToolBar.CleanUpLockedImages();
 	m_wndToolBar.LoadBitmap(theApp.m_bHiColorIcons ? IDB_EXPLORER_24 : IDR_EXPLORER, 0, 0, TRUE /* Locked */);
-
-	m_FileViewImages.DeleteImageList();
-
-	UINT uiBmpId = theApp.m_bHiColorIcons ? IDB_FILE_VIEW_24 : IDB_FILE_VIEW;
-
-	CBitmap bmp;
-	if (!bmp.LoadBitmap(uiBmpId))
-	{
-		TRACE(_T("Can't load bitmap: %x\n"), uiBmpId);
-		ASSERT(FALSE);
-		return;
-	}
-
-	BITMAP bmpObj;
-	bmp.GetBitmap(&bmpObj);
-
-	UINT nFlags = ILC_MASK;
-
-	nFlags |= (theApp.m_bHiColorIcons) ? ILC_COLOR24 : ILC_COLOR4;
-
-	m_FileViewImages.Create(16, bmpObj.bmHeight, nFlags, 0, 0);
-	m_FileViewImages.Add(&bmp, RGB(255, 0, 255));
-
-	m_wndRecList.SetImageList(&m_FileViewImages, TVSIL_NORMAL);
 	m_wndRecList.OnChangeVisualStyle();
 }
 

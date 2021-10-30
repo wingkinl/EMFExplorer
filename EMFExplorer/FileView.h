@@ -36,7 +36,6 @@ private:
 protected:
 
 	CEMFRecListCtrl m_wndRecList;
-	CImageList m_FileViewImages;
 	CFileViewToolBar m_wndToolBar;
 
 protected:

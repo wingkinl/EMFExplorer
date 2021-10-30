@@ -97,7 +97,6 @@ BEGIN_MESSAGE_MAP(CEMFRecListCtrl, CEMFRecListCtrlBase)
 	ON_NOTIFY_REFLECT_EX(LVN_ITEMCHANGED, &CEMFRecListCtrl::OnItemChange)
 	ON_NOTIFY_REFLECT(LVN_ENDSCROLL, &CEMFRecListCtrl::OnEndScroll)
 	ON_WM_GETDLGCODE()
-	ON_WM_MOUSEMOVE()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -130,6 +129,12 @@ BOOL CEMFRecListCtrl::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	}
 
 	return bRes;
+}
+
+BOOL CEMFRecListCtrl::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+{
+	dwStyle |= LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDATA;
+	return CEMFRecListCtrlBase::Create(dwStyle, rect, pParentWnd, nID);
 }
 
 int CEMFRecListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -261,6 +266,34 @@ void CEMFRecListCtrl::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 }
 
+void CEMFRecListCtrl::OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const
+{
+	int nColumn = lplvcd->iSubItem;
+	int nRow = (int)lplvcd->nmcd.dwItemSpec;
+
+	lplvcd->clrText = IsDarkTheme() ? theApp.m_crfDarkThemeTxtColor : GetTextColor();
+
+	auto pRec = GetEMFRecord(nRow);
+	if (nColumn == ColumnTypeIndex)
+	{
+		int nSel = GetNextItem(-1, LVNI_SELECTED);
+		if (nSel >= 0 && nSel != nRow)
+		{
+			auto pRecSel = GetEMFRecord(nSel);
+			if (pRec->IsLinked(pRecSel))
+			{
+				lplvcd->clrTextBk = RGB(255, 150, 50);
+				lplvcd->clrText = RGB(0, 0, 0);
+				return;
+			}
+		}
+	}
+	if (pRec->IsDrawingRecord())
+		lplvcd->clrTextBk = theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
+	else
+		lplvcd->clrTextBk = GetBkColor();
+}
+
 void CEMFRecListCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LV_DISPINFO* pDispInfo = (LV_DISPINFO*)pNMHDR;
@@ -313,61 +346,6 @@ UINT CEMFRecListCtrl::OnGetDlgCode()
 {
 	// Add DLGC_WANTMESSAGE so we have NM_RETURN notification
 	return CEMFRecListCtrlBase::OnGetDlgCode() | DLGC_WANTMESSAGE;
-}
-
-// void CEMFRecListCtrl::OnMouseMove(UINT nFlags, CPoint point)
-// {
-// 	CEMFRecListCtrlBase::OnMouseMove(nFlags, point);
-// 
-// 	int nItem = HitTest(point);
-// 	if (nItem != m_nTipItem)
-// 	{
-// 		if (m_nTipItem >= 0)
-// 		{
-// 			//m_ToolTip.SendMessage(TTM_POP);
-// 			m_ToolTip.SendMessage(TTM_TRACKACTIVATE, FALSE);
-// 		}
-// 		if (nItem >= 0)
-// 		{
-// 			ClientToScreen(&point);
-// 			m_ToolTip.SendMessage(TTM_TRACKPOSITION, 0, MAKELPARAM(point.x, point.y));
-// 			TOOLINFO ti = { sizeof(ti) };
-// 			ti.uFlags = TTF_TRANSPARENT | TTF_TRACK;
-// 			ti.hwnd = GetSafeHwnd();
-// 			ti.lpszText = (LPTSTR)_T("Placeholder");
-// 			SetRectEmpty(&ti.rect);
-// 			m_ToolTip.SendMessage(TTM_TRACKACTIVATE, TRUE, (LPARAM)&ti);
-// 		}
-// 		m_nTipItem = nItem;
-// 	}
-// }
-
-void CEMFRecListCtrl::OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const
-{
-	int nColumn = lplvcd->iSubItem;
-	int nRow = (int) lplvcd->nmcd.dwItemSpec;
-
-	lplvcd->clrText = IsDarkTheme() ? theApp.m_crfDarkThemeTxtColor : GetTextColor();
-	
-	auto pRec = GetEMFRecord(nRow);
-	if (nColumn == ColumnTypeIndex)
-	{
-		int nSel = GetNextItem(-1, LVNI_SELECTED);
-		if (nSel >= 0 && nSel != nRow)
-		{
-			auto pRecSel = GetEMFRecord(nSel);
-			if (pRec->IsLinked(pRecSel))
-			{
-				lplvcd->clrTextBk = RGB(255, 150, 50);
-				lplvcd->clrText = RGB(0, 0, 0);
-				return;
-			}
-		}
-	}
-	if (pRec->IsDrawingRecord())
-		lplvcd->clrTextBk = theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
-	else
-		lplvcd->clrTextBk = GetBkColor();
 }
 
 BOOL CEMFRecListCtrl::IsDarkTheme() const

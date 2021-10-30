@@ -30,6 +30,8 @@ class CEMFRecListCtrl : public CEMFRecListCtrlBase
 public:
 	CEMFRecListCtrl() noexcept;
 public:
+	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
+
 	void OnChangeVisualStyle();
 
 	void SetEMFAccess(std::shared_ptr<EMFAccess> emf);
@@ -64,7 +66,6 @@ protected:
 	afx_msg BOOL OnItemChange(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEndScroll(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg UINT OnGetDlgCode();
-	//afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 protected:
 	COLORREF m_crfDefaultBkColor = (COLORREF)-1;
 	std::shared_ptr<EMFAccess>	m_emf;
