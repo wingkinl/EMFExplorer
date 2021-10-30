@@ -398,6 +398,11 @@ size_t CMainFrame::GetDrawToRecordIndex() const
 	return nIdx;
 }
 
+void CMainFrame::SelectRecord(size_t index)
+{
+	m_wndFileView.SetCurSelRecIndex((int)index);
+}
+
 void CMainFrame::OnViewDrawToSelection()
 {
 	m_nDrawToType = m_nDrawToType == DrawToSelection ? DrawToAll : DrawToSelection;
@@ -512,27 +517,27 @@ static EMFRecordVisualizerOptional AccessEMRRecordVisualizer(EMFRecAccess* pRec,
 	switch (pRec->GetRecordType())
 	{
 	case emfplus::EmfPlusRecordTypeObject:
-	{
-		auto pObj = ((EMFRecAccessGDIPlusRecObject*)pRec)->GetObjectWrapper()->GetObject();
-		if (pObj)
 		{
-			switch (pObj->GetObjType())
+			auto pObj = ((EMFRecAccessGDIPlusRecObject*)pRec)->GetObjectWrapper()->GetObject();
+			if (pObj)
 			{
-			case emfplus::OObjType::Image:
+				switch (pObj->GetObjType())
 				{
-					auto pImg = (emfplus::OEmfPlusImage*)pObj;
-					switch (pImg->Type)
+				case emfplus::OObjType::Image:
 					{
-					case emfplus::OImageDataType::Metafile:
-						return std::make_pair(true, bCheckOnly ? nullptr : 
-							std::make_shared<EMFRecordMetafileVisualizer>((EMFRecAccessGDIPlusRecObject*)pRec));
+						auto pImg = (emfplus::OEmfPlusImage*)pObj;
+						switch (pImg->Type)
+						{
+						case emfplus::OImageDataType::Metafile:
+							return std::make_pair(true, bCheckOnly ? nullptr : 
+								std::make_shared<EMFRecordMetafileVisualizer>((EMFRecAccessGDIPlusRecObject*)pRec));
+						}
 					}
+					break;
 				}
-				break;
 			}
 		}
-	}
-	break;
+		break;
 	case emfplus::EmfPlusRecordTypeDrawImage:
 	case emfplus::EmfPlusRecordTypeDrawImagePoints:
 		if (pRec->GetLinkedRecordCount())

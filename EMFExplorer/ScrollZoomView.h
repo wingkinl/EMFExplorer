@@ -34,6 +34,8 @@ public:
 
 	void SetZoom(bool bIn);
 	bool CanDoZoom(bool bIn) const;
+
+	void ClientToView(CPoint& pos) const;
 public:
 	void OnInitialUpdate() override;
 

@@ -250,6 +250,15 @@ bool CScrollZoomView::CanDoZoom(bool bIn) const
 	return m_fZoomFactor > m_fMinZoomFactor;
 }
 
+void CScrollZoomView::ClientToView(CPoint& pos) const
+{
+	CRect rcView = GetScrolledZoomedView(true);
+	pos += rcView.TopLeft();
+	float factor = GetRealZoomFactor();
+	pos.x = (LONG)(pos.x / factor);
+	pos.y = (LONG)(pos.y / factor);
+}
+
 void CScrollZoomView::SetZoomFactor(float factor)
 {
 	if (!IsZoomAllowed())

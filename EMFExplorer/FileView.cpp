@@ -293,6 +293,7 @@ void CFileView::SetCurSelRecIndex(int index)
 {
 	m_wndRecList.SetItemState(-1, 0, LVIS_SELECTED);
 	m_wndRecList.SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
+	m_wndRecList.EnsureVisible(index, FALSE);
 }
 
 bool CFileView::CanViewCurSelRecord() const

@@ -28,6 +28,9 @@ BEGIN_MESSAGE_MAP(CEMFExplorerView, CEMFExplorerViewBase)
 #endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	ON_WM_PAINT()
 	ON_WM_CONTEXTMENU()
+#ifndef SHARED_HANDLERS
+	ON_WM_LBUTTONDOWN()
+#endif // SHARED_HANDLERS
 	ON_WM_RBUTTONUP()
 #ifdef SHARED_HANDLERS
 	ON_WM_INITMENUPOPUP()
@@ -246,6 +249,34 @@ void CEMFExplorerView::OnPaint()
 		pEMF->DrawMetafile(gg, rcImg);
 	}
 }
+
+#ifndef SHARED_HANDLERS
+void CEMFExplorerView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (nFlags & MK_CONTROL)
+	{
+		CEMFExplorerDoc* pDoc = GetDocument();
+		ASSERT_VALID(pDoc);
+		if (pDoc)
+		{
+			auto pEMF = pDoc->GetEMFAccess();
+			if (pEMF)
+			{
+				ClientToView(point);
+				auto pRec = pEMF->HitTest(point);
+				if (pRec)
+				{
+					auto idx = pRec->GetIndex();
+					auto pFrameWnd = DYNAMIC_DOWNCAST(CMainFrame, GetParent());
+					pFrameWnd->SelectRecord(idx);
+					return;
+				}
+			}
+		}
+	}
+	CEMFExplorerViewBase::OnLButtonDown(nFlags, point);
+}
+#endif // SHARED_HANDLERS
 
 void CEMFExplorerView::OnRButtonUp(UINT /* nFlags */, CPoint point)
 {
@@ -514,15 +545,6 @@ COLORREF CEMFExplorerView::GetCursorColor() const
 	return 0;
 }
 
-void CEMFExplorerView::ClientToEMF(CPoint& pos) const
-{
-	CRect rcView = GetScrolledZoomedView(true);
-	pos += rcView.TopLeft();
-	float factor = GetRealZoomFactor();
-	pos.x = (LONG)(pos.x / factor);
-	pos.y = (LONG)(pos.y / factor);
-}
-
 #ifndef SHARED_HANDLERS
 void CEMFExplorerView::OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI)
 {
@@ -534,7 +556,7 @@ void CEMFExplorerView::OnUpdateStatusBarCoordinates(CCmdUI* pCmdUI)
 		CPoint pos;
 		GetCursorPos(&pos);
 		ScreenToClient(&pos);
-		ClientToEMF(pos);
+		ClientToView(pos);
  		str.Format(_T(" (%d, %d) "), pos.x, pos.y);
 	}
 	else

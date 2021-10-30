@@ -70,6 +70,8 @@ public:
 	virtual bool IsSubEMFFrame() const { return false; }
 
 	size_t GetDrawToRecordIndex() const;
+
+	void SelectRecord(size_t index);
 // Implementation
 public:
 	virtual ~CMainFrame();

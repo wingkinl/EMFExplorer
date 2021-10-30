@@ -6,6 +6,9 @@
 #include <Shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 
+#undef min
+#undef max
+
 EMFAccessBase::EMFAccessBase(const void* pData, size_t nSize)
 {
 	ATL::CComPtr<IStream> stream;
@@ -35,18 +38,18 @@ struct EnumDrawEmfPlusContext
 {
 	Gdiplus::Metafile*	pMetafile;
 	Gdiplus::Graphics*	pGraphics;
-	size_t				nRecordStop;
-	size_t				nRecordIndex;
+	size_t				nStopRecIdx;
+	size_t				nCurRecIdx;
 };
 
 extern "C"
 BOOL CALLBACK EnumDrawMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data, VOID* pCallbackData)
 {
 	auto& ctxt = *(EnumDrawEmfPlusContext*)pCallbackData;
-	auto ret = ctxt.nRecordIndex <= ctxt.nRecordStop;
+	auto ret = ctxt.nCurRecIdx <= ctxt.nStopRecIdx;
 	if (ret)
 		ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
-	++ctxt.nRecordIndex;
+	++ctxt.nCurRecIdx;
 	return ret;
 }
 
@@ -110,6 +113,137 @@ bool EMFAccess::GetRecords()
 	return sts == Gdiplus::Ok;
 }
 
+struct EnumHitTestEmfPlusContext
+{
+	Gdiplus::Metafile*	pMetafile;
+	const EMFAccess*	pAccess;
+	COLORREF*			pBmpData;
+	std::vector<COLORREF>	vHitTestBmpData;
+	size_t				nCurRecIdx;
+
+	// It seems that alpha channel of the bitmap data always get reset
+	// to zero when drawn to by GDI/GDI+, we can make use of this feature
+	// to identify which part of the bitmap has been drawn to.
+	enum {
+		UndrawnComp = 0xff,
+		UndrawnPixel = RGB(UndrawnComp,UndrawnComp,UndrawnComp) | (UndrawnComp << 24),
+	};
+
+	void ResetBmpData()
+	{
+		memset(pBmpData, UndrawnComp, vHitTestBmpData.size()*sizeof(COLORREF));
+	}
+};
+
+#define BMPMASK_A		0xFF000000
+#define BMPMASK_R		0x000000FF
+#define BMPMASK_G		0x0000FF00
+#define BMPMASK_B		0x00FF0000
+#define BMPMASK_RGB		(BMPMASK_R | BMPMASK_G | BMPMASK_B)
+
+extern "C"
+BOOL CALLBACK EnumHitTestMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE * data, VOID * pCallbackData)
+{
+	auto& ctxt = *(EnumHitTestEmfPlusContext*)pCallbackData;
+	auto pRec = ctxt.pAccess->GetRecord(ctxt.nCurRecIdx);
+	bool bDrawRec = pRec->IsDrawingRecord();
+	if (bDrawRec)
+	{
+		ctxt.ResetBmpData();
+	}
+	ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
+	++ctxt.nCurRecIdx;
+	if (bDrawRec)
+	{
+		auto pSrcEnd = ctxt.pBmpData + ctxt.vHitTestBmpData.size();
+		for (auto pSrc = ctxt.pBmpData, pDst = ctxt.vHitTestBmpData.data(); pSrc != pSrcEnd; ++pSrc, ++pDst)
+		{
+			if (*pSrc != ctxt.UndrawnPixel)
+			{
+				*pDst = (COLORREF)ctxt.nCurRecIdx;
+			}
+		}
+	}
+	return TRUE;
+}
+
+EMFRecAccess* EMFAccess::HitTest(const POINT& pos, unsigned tolerance) const
+{
+	if (m_EMFRecords.empty() || !m_nDrawRecCount)
+		return nullptr;
+	POINT ptImg = pos;
+	ptImg.x += m_hdr.X;
+	ptImg.y += m_hdr.Y;
+	tolerance = tolerance * 2 + 1;
+	CRect rcImg(ptImg, CSize(tolerance, tolerance));
+	rcImg.left = std::max(rcImg.left, 0L);
+	rcImg.top = std::max(rcImg.top, 0L);
+	rcImg.right = std::min(rcImg.right, (LONG)m_hdr.Width);
+	rcImg.bottom = std::min(rcImg.bottom, (LONG)m_hdr.Height);
+	CSize szImg = rcImg.Size();
+
+	BITMAPV5HEADER bmpInfo;
+	ZeroMemory(&bmpInfo, sizeof(BITMAPV5HEADER));
+	bmpInfo.bV5Size = sizeof(BITMAPV5HEADER);
+	bmpInfo.bV5Width = szImg.cx;
+	bmpInfo.bV5Height = szImg.cy;
+	bmpInfo.bV5Planes = 1;
+	bmpInfo.bV5BitCount = 32;
+	bmpInfo.bV5Compression = BI_BITFIELDS;
+	// The following mask specification specifies a supported 32 BPP format
+	bmpInfo.bV5AlphaMask = BMPMASK_A;
+	bmpInfo.bV5RedMask = BMPMASK_R;
+	bmpInfo.bV5GreenMask = BMPMASK_G;
+	bmpInfo.bV5BlueMask = BMPMASK_B;
+
+	COLORREF* pBmpData = nullptr;
+	auto hBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmpInfo, DIB_RGB_COLORS, (PVOID*)&pBmpData, NULL, 0);
+	if (!hBitmap)
+		return nullptr;
+	CBitmap bmp; bmp.Attach(hBitmap);
+	
+	EnumHitTestEmfPlusContext ctxt{ m_pMetafile.get(), this };
+	ctxt.pBmpData = pBmpData;
+	ctxt.vHitTestBmpData.resize(szImg.cx * szImg.cy);
+
+	CClientDC dc(nullptr);
+	CDC dcMem;
+	dcMem.CreateCompatibleDC(&dc);
+	auto oldBmp = dcMem.SelectObject(bmp);
+
+	{
+		Gdiplus::Graphics gg(dcMem.GetSafeHdc());
+		Gdiplus::Point pt(0, 0);
+		Gdiplus::Rect srcRect(rcImg.left, rcImg.top, szImg.cx, szImg.cy);
+		gg.EnumerateMetafile(m_pMetafile.get(), pt, srcRect, Gdiplus::UnitPixel, EnumHitTestMetafilePlusProc, (void*)&ctxt);
+	}
+	CPoint ptImgCenter(szImg.cx / 2, szImg.cy / 2);
+	double dMinDist = std::numeric_limits<double>::max();
+	// 0 means no hit because the bitmap data is one-based
+	size_t nHitRecId = 0;
+	for (size_t ii = 0; ii < ctxt.vHitTestBmpData.size(); ++ii)
+	{
+		auto drawnRecId = (size_t)ctxt.vHitTestBmpData[ii];
+		if (!drawnRecId)
+			continue;
+		CPoint pt((LONG)ii % szImg.cx, (LONG)ii / szImg.cx);
+		CSize sz = ptImgCenter - pt;
+		double dist = sqrt(sz.cx * sz.cx + sz.cy * sz.cy);
+		if (dist < dMinDist)
+		{
+			dMinDist = dist;
+			nHitRecId = drawnRecId;
+			if (dist == 0)
+				break;
+		}
+	}
+
+	dcMem.SelectObject(oldBmp);
+	if (!nHitRecId)
+		return nullptr;
+	return GetRecord(nHitRecId-1);
+}
+
 void EMFAccess::FreeRecords()
 {
 	for (auto pRec : m_EMFRecords)
@@ -118,6 +252,7 @@ void EMFAccess::FreeRecords()
 	}
 	m_EMFRecords.clear();
 	m_vPlusObjTable.clear();
+	m_nDrawRecCount = 0;
 }
 
 bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE* data)
@@ -735,7 +870,10 @@ bool EMFAccess::HandleEMFRecord(OEmfPlusRecordType type, UINT flags, UINT dataSi
 		PopPlusState(((OEmfPlusRecEndContainer*)rec.Data)->StackIndex, true);
 		break;
 	}
-
+	if (pRecAccess->IsDrawingRecord())
+	{
+		++m_nDrawRecCount;
+	}
 	return true;
 }
 

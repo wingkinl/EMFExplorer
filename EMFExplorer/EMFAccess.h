@@ -72,12 +72,15 @@ public:
 	EMFRecAccess* GetGDISaveRecord(LONG nSavedDC) const;
 
 	EMFRecAccess* GetPlusSaveRecord(emfplus::u32t nStackIndex) const;
+
+	EMFRecAccess* HitTest(const POINT& pos, unsigned tolerance = 3) const;
 private:
 	bool PopPlusState(uint32_t nStackIndex, bool bContainer);
 protected:
 	using EmfRecArray	= std::vector<EMFRecAccess*>;
 	
 	EmfRecArray			m_EMFRecords;
+	size_t				m_nDrawRecCount = 0;
 	std::wstring		m_strNestedPath;
 
 	//////////////////////////////

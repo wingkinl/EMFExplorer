@@ -44,8 +44,6 @@ public:
 
 	COLORREF GetCursorColor() const;
 
-	void ClientToEMF(CPoint& pos) const;
-
 #ifndef SHARED_HANDLERS
 	BOOL OnScrollBy(CSize sizeScroll, BOOL bDoScroll = TRUE) override;
 #endif // SHARED_HANDLERS
@@ -81,6 +79,9 @@ protected:
 #endif // HANDLE_EXPLORER_VIEW_PAINT_WITH_DOUBLE_BUFFER
 	afx_msg void OnPaint();
 	afx_msg void OnFilePrintPreview();
+#ifndef SHARED_HANDLERS
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+#endif // SHARED_HANDLERS
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnUpdateFileNew(CCmdUI* pCmdUI);
