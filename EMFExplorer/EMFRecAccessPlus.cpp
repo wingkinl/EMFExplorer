@@ -27,6 +27,13 @@ void EMFRecAccessGDIPlusRecObject::Preprocess(EMFAccess* pEMF)
 
 }
 
+void EMFRecAccessGDIPlusObjWrapper::CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const
+{
+	if (!m_obj)
+		return;
+	pNode->AddValue(L"Version", m_obj->Version, true);
+}
+
 class EMFRecAccessGDIPlusBrushWrapper : public EMFRecAccessGDIPlusObjWrapper
 {
 public:
@@ -37,6 +44,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusBrush*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Brush");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());
@@ -53,6 +61,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusPen*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Pen");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());
@@ -69,6 +78,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusPath*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Path");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());
@@ -85,6 +95,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusRegion*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Region");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());
@@ -101,6 +112,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pImg = (OEmfPlusImage*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Image");
 		EmfStruct2Properties::Build(*pImg, pBranch.get());
@@ -185,6 +197,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusFont*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"Font");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());
@@ -201,6 +214,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusStringFormat*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"StringFormat");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());
@@ -217,6 +231,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusImageAttributes*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"ImageAttributes");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());
@@ -233,6 +248,7 @@ public:
 protected:
 	void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const override
 	{
+		EMFRecAccessGDIPlusObjWrapper::CacheProperties(ctxt, pNode);
 		auto pObj = (OEmfPlusCustomLineCap*)m_obj.get();
 		auto pBranch = pNode->AddBranch(L"CustomLineCap");
 		EmfStruct2Properties::Build(*pObj, pBranch.get());

@@ -147,7 +147,7 @@ public:
 protected:
 	friend class EMFRecAccessGDIPlusRecObject;
 
-	virtual void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const {}
+	virtual void CacheProperties(const CachePropertiesContext& ctxt, PropertyNode* pNode) const;
 protected:
 	EMFRecAccessGDIPlusRecObject* m_pObjRec = nullptr;
 	std::unique_ptr<emfplus::OEmfPlusGraphObject>	m_obj;
