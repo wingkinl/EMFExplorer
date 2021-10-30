@@ -161,11 +161,9 @@ protected:
 			CRect rect = info->rect;
 			if (info->bCalcOnly)
 			{
-				CClientDC dc(nullptr);
-				LONG cx = ImgPreviewCX * dc.GetDeviceCaps(LOGPIXELSX) / 96;
-				LONG cy = ImgPreviewCY * dc.GetDeviceCaps(LOGPIXELSY) / 96;
-				rect.right = rect.left + cx;
-				rect.bottom = rect.top + cy;
+				CSize sz = info->GetDefaultImgPreviewSize();
+				rect.right = rect.left + sz.cx;
+				rect.bottom = rect.top + sz.cy;
 			}
 			CRect rcFit = GetFitRect(rect, szEMF, true);
 			info->szPreferedSize = rcFit.Size();

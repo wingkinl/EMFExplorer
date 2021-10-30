@@ -87,6 +87,14 @@ protected:
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
 
+class EMFGDIRecPolygonPreviewHelper
+{
+public:
+	bool DrawPreview(EMFRecAccess::PreviewContext* info, const EMRPOLYGON* pRec, emfplus::OEmfPlusRecordType nType);
+private:
+	CRect m_rcBounds;
+};
+
 class EMFRecAccessGDIRecPolyBezier : public EMFRecAccessGDIDrawingCat
 {
 public:
@@ -95,6 +103,10 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypePolyBezier; }
 private:
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
+private:
+	EMFGDIRecPolygonPreviewHelper	m_previewHelper;
 };
 
 class EMFRecAccessGDIRecPolygon : public EMFRecAccessGDIDrawingCat
@@ -105,6 +117,10 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypePolygon; }
 private:
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
+private:
+	EMFGDIRecPolygonPreviewHelper	m_previewHelper;
 };
 
 class EMFRecAccessGDIRecPolyline : public EMFRecAccessGDIDrawingCat
@@ -115,6 +131,10 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypePolyline; }
 private:
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
+private:
+	EMFGDIRecPolygonPreviewHelper	m_previewHelper;
 };
 
 class EMFRecAccessGDIRecPolyBezierTo : public EMFRecAccessGDIDrawingCat
@@ -125,6 +145,10 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypePolyBezierTo; }
 private:
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
+private:
+	EMFGDIRecPolygonPreviewHelper	m_previewHelper;
 };
 
 class EMFRecAccessGDIRecPolyLineTo : public EMFRecAccessGDIDrawingCat
@@ -135,6 +159,10 @@ public:
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypePolyLineTo; }
 private:
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
+private:
+	EMFGDIRecPolygonPreviewHelper	m_previewHelper;
 };
 
 class EMFRecAccessGDIRecPolyPolyline : public EMFRecAccessGDIDrawingCat

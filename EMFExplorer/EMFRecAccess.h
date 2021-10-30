@@ -97,6 +97,17 @@ public:
 
 	struct PreviewContext
 	{
+		enum {
+			ImgPreviewCX = 400,
+			ImgPreviewCY = 400,
+		};
+		static CSize GetDefaultImgPreviewSize()
+		{
+			CClientDC dc(nullptr);
+			LONG cx = ImgPreviewCX * dc.GetDeviceCaps(LOGPIXELSX) / 96;
+			LONG cy = ImgPreviewCY * dc.GetDeviceCaps(LOGPIXELSY) / 96;
+			return CSize(cx, cy);
+		}
 		// [input]
 		CDC*	pDC;
 		// [input]

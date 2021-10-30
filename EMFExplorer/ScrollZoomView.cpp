@@ -96,9 +96,9 @@ void CScrollZoomView::OnDraw(CDC* pDC)
 
 	OnDrawZoomedView(pDC, rcDraw);
 
-	pDC->SetMapMode(nOldMapMode);
-	pDC->SetWindowExt(oldWndExt);
 	pDC->SetViewportExt(oldVwpExt);
+	pDC->SetWindowExt(oldWndExt);
+	pDC->SetMapMode(nOldMapMode);
 }
 
 void CScrollZoomView::OnDrawZoomedView(CDC* pDC, const CRect& rect)

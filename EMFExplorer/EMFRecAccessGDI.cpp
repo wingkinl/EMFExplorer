@@ -4,6 +4,9 @@
 #include "EMFAccess.h"
 #include "EMFStruct2Props.h"
 
+#undef min
+#undef max
+
 const ENHMETARECORD* EMFRecAccessGDIRec::GetGDIRecord(const emfplus::OEmfPlusRecInfo& rec)
 {
 	if (rec.Data)
@@ -571,6 +574,12 @@ void EMFRecAccessGDIRecPolyBezier::CacheProperties(const CachePropertiesContext&
 	}
 }
 
+bool EMFRecAccessGDIRecPolyBezier::DrawPreview(PreviewContext* info)
+{
+	auto pRec = (EMRPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	return m_previewHelper.DrawPreview(info, pRec, GetRecordType());
+}
+
 void EMFRecAccessGDIRecPolygon::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
@@ -579,6 +588,89 @@ void EMFRecAccessGDIRecPolygon::CacheProperties(const CachePropertiesContext& ct
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
 	}
+}
+
+bool EMFGDIRecPolygonPreviewHelper::DrawPreview(EMFRecAccess::PreviewContext* info, const EMRPOLYGON* pRec, emfplus::OEmfPlusRecordType nType)
+{
+	if (!pRec || pRec->cptl == 0)
+		return false;
+	if (!info)
+		return true;
+	CRect rect = info->rect;
+	if (info->bCalcOnly)
+	{
+		CSize sz = info->GetDefaultImgPreviewSize();
+		rect.right = rect.left + sz.cx;
+		rect.bottom = rect.top + sz.cy;
+	}
+	if (m_rcBounds.IsRectNull())
+	{
+		auto& rclBounds = pRec->rclBounds;
+		if (rclBounds.left == 0 && rclBounds.top == 0
+			&& rclBounds.top == -1 && rclBounds.bottom == -1)
+		{
+			auto ptMin = pRec->aptl[0];
+			auto ptMax = ptMin;
+			for (DWORD ii = 1; ii < pRec->cptl; ++ii)
+			{
+				auto& pt = pRec->aptl[ii];
+				ptMin.x = std::min(ptMin.x, pt.x);
+				ptMin.y = std::min(ptMin.y, pt.y);
+				ptMax.x = std::max(ptMax.x, pt.x);
+				ptMax.y = std::max(ptMax.y, pt.y);
+			}
+			m_rcBounds.SetRect(ptMin.x, ptMin.y, ptMax.x, ptMax.y);
+		}
+		else
+		{
+			m_rcBounds = (RECT&)rclBounds;
+		}
+	}
+	CSize szBound = m_rcBounds.Size();
+	szBound.cx = std::abs(szBound.cx);
+	szBound.cy = std::abs(szBound.cy);
+	CRect rcFit = GetFitRect(rect, szBound, true);
+	info->szPreferedSize = rcFit.Size();
+	if (!info->bCalcOnly)
+	{
+		auto pDC = info->pDC;
+		int nOldMapMode = pDC->SetMapMode(MM_ISOTROPIC);
+		auto oldWndExt = pDC->SetWindowExt(szBound.cx, szBound.cy);
+		auto oldVwpExt = pDC->SetViewportExt(info->szPreferedSize.cx, info->szPreferedSize.cy);
+		auto oldVwpOrg = pDC->SetViewportOrg(rcFit.TopLeft());
+		auto oldWndOrg = pDC->SetWindowOrg(m_rcBounds.TopLeft());
+
+		CPen pen(PS_SOLID, 1, RGB(0, 0, 255));
+		auto oldPen = pDC->SelectObject(&pen);
+
+		switch (nType)
+		{
+		case EmfRecordTypePolygon:
+		case EmfRecordTypePolyline:
+		case EmfRecordTypePolyLineTo:
+			pDC->Polygon((POINT*)pRec->aptl, (int)pRec->cptl);
+			break;
+		case EmfRecordTypePolyBezier:
+		case EmfRecordTypePolyBezierTo:
+			pDC->PolyBezier((POINT*)pRec->aptl, (int)pRec->cptl);
+			break;
+		}
+
+		pDC->SelectObject(oldPen);
+
+		pDC->SetViewportOrg(oldVwpOrg);
+		pDC->SetWindowOrg(oldWndOrg);
+		pDC->SetViewportExt(oldVwpExt);
+		pDC->SetWindowExt(oldWndExt);
+		pDC->SetMapMode(nOldMapMode);
+	}
+	return true;
+}
+
+bool EMFRecAccessGDIRecPolygon::DrawPreview(PreviewContext* info)
+{
+	auto pRec = (EMRPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	return m_previewHelper.DrawPreview(info, pRec, GetRecordType());
 }
 
 void EMFRecAccessGDIRecPolyline::CacheProperties(const CachePropertiesContext& ctxt)
@@ -591,6 +683,12 @@ void EMFRecAccessGDIRecPolyline::CacheProperties(const CachePropertiesContext& c
 	}
 }
 
+bool EMFRecAccessGDIRecPolyline::DrawPreview(PreviewContext* info)
+{
+	auto pRec = (EMRPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	return m_previewHelper.DrawPreview(info, pRec, GetRecordType());
+}
+
 void EMFRecAccessGDIRecPolyBezierTo::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
@@ -601,6 +699,12 @@ void EMFRecAccessGDIRecPolyBezierTo::CacheProperties(const CachePropertiesContex
 	}
 }
 
+bool EMFRecAccessGDIRecPolyBezierTo::DrawPreview(PreviewContext* info)
+{
+	auto pRec = (EMRPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	return m_previewHelper.DrawPreview(info, pRec, GetRecordType());
+}
+
 void EMFRecAccessGDIRecPolyLineTo::CacheProperties(const CachePropertiesContext& ctxt)
 {
 	EMFRecAccessGDIDrawingCat::CacheProperties(ctxt);
@@ -609,6 +713,12 @@ void EMFRecAccessGDIRecPolyLineTo::CacheProperties(const CachePropertiesContext&
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
 	}
+}
+
+bool EMFRecAccessGDIRecPolyLineTo::DrawPreview(PreviewContext* info)
+{
+	auto pRec = (EMRPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	return m_previewHelper.DrawPreview(info, pRec, GetRecordType());
 }
 
 void EMFRecAccessGDIRecPolyPolyline::CacheProperties(const CachePropertiesContext& ctxt)
