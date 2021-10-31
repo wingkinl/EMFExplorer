@@ -43,6 +43,12 @@ public:
 	int GetCurSelRecIndex(BOOL bHottrack = FALSE) const;
 
 	void SetCurSelRecIndex(int index);
+
+	void CopySelectedItemsToClipboard();
+
+	bool CanViewCurSelRecord() const;
+
+	bool ViewCurSelRecord() const;
 // Overrides
 protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
@@ -71,12 +77,16 @@ protected:
 	afx_msg BOOL OnItemChange(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEndScroll(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg UINT OnGetDlgCode();
+	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+	afx_msg void OnViewRecord();
+	afx_msg void OnUpdateViewRecord(CCmdUI* pCmdUI);
 protected:
 	COLORREF m_crfDefaultBkColor = (COLORREF)-1;
 	std::shared_ptr<EMFAccess>	m_emf;
 	CEMFRecTooltipCtrl			m_ToolTip;
 	int							m_nTipItem = -1;
 	int							m_nHotItem = -1;
+	HACCEL						m_hAccelTable = nullptr;
 protected:
 	DECLARE_MESSAGE_MAP()
 };

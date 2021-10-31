@@ -10,18 +10,6 @@
 
 #define _ENABLE_STATUS_BAR
 
-enum MainFrameMsg
-{
-	// wParam = record index, lParam = Hover (non-zero)
-	MainFrameMsgOnSelectRecordItem = WM_APP + 100,
-	// wParam = record index
-	MainFrameMsgCanOpenRecordItem,
-	// wParam = record index
-	MainFrameMsgOpenRecordItem,
-	// wParam = Size changed (non-zero) or scroll only (zero)
-	MainFrameMsgViewUpdateSizeScroll,
-};
-
 class CEMFExplorerView;
 
 using CMainStatusBarBase = CMFCStatusBar;

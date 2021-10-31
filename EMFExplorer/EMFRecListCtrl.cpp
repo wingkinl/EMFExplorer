@@ -65,6 +65,10 @@ BEGIN_MESSAGE_MAP(CEMFRecListCtrl, CEMFRecListCtrlBase)
 	ON_NOTIFY_REFLECT_EX(LVN_ITEMCHANGED, &CEMFRecListCtrl::OnItemChange)
 	ON_NOTIFY_REFLECT(LVN_ENDSCROLL, &CEMFRecListCtrl::OnEndScroll)
 	ON_WM_GETDLGCODE()
+	ON_COMMAND(ID_EDIT_COPY_RECORD_LIST, &CEMFRecListCtrl::CopySelectedItemsToClipboard)
+	ON_WM_CONTEXTMENU()
+	ON_COMMAND(ID_VIEW_RECORD, &CEMFRecListCtrl::OnViewRecord)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_RECORD, &CEMFRecListCtrl::OnUpdateViewRecord)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -138,6 +142,10 @@ int CEMFRecListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_ToolTip.SendMessage(TTM_ADDTOOL, 0, (LPARAM)&ti);
 
 		m_ToolTip.SetWindowPos(&wndTop, -1, -1, -1, -1, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
+
+		auto lpszResourceName = ATL_MAKEINTRESOURCE(IDR_RECORD_LIST_ACCELERATOR);
+		HINSTANCE hAccelInst = AfxFindResourceHandle(lpszResourceName, ATL_RT_ACCELERATOR);
+		m_hAccelTable = ::LoadAccelerators(hAccelInst, lpszResourceName);
 	}
 	return nRet;
 }
@@ -154,6 +162,46 @@ void CEMFRecListCtrl::AdjustColumnWidth(int cx)
 	SetColumnWidth(ColumnTypeIndex, LVSCW_AUTOSIZE);
 	int cxIdx = GetColumnWidth(ColumnTypeIndex);
 	SetColumnWidth(ColumnTypeName, cx - cxIdx);
+}
+
+void CEMFRecListCtrl::OnContextMenu(CWnd* pWnd, CPoint point)
+{
+	if (pWnd->GetSafeHwnd() != GetSafeHwnd())
+	{
+		CEMFRecListCtrlBase::OnContextMenu(pWnd, point);
+		return;
+	}
+	int nRow = -1;
+	// Select clicked item:
+	if (point == CPoint(-1, -1))
+	{
+		nRow = GetCurSelRecIndex();
+	}
+	else
+	{
+		ScreenToClient(&point);
+		nRow = HitTest(point);
+	}
+	if (nRow < 0)
+		return;
+	CRect rect;
+	GetItemRect(nRow, &rect, LVIR_BOUNDS);
+
+	if (point == CPoint(-1, -1))
+	{
+		point.x = rect.left;
+		point.y = rect.bottom;
+	}
+	CRect rcClient;
+	GetClientRect(rcClient);
+	if (point.y < rcClient.top)
+		point.y = rcClient.top;
+	else if (point.y > rcClient.bottom)
+		point.y = rcClient.bottom;
+	ClientToScreen(&point);
+
+	SetFocus();
+	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EXPLORER, point.x, point.y, this, TRUE);
 }
 
 void CEMFRecListCtrl::SetCustomHotItem(int nItem)
@@ -206,6 +254,10 @@ BOOL CEMFRecListCtrl::PreTranslateMessage(MSG* pMsg)
 			}
 		}
 		break;
+	}
+	if (pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST)
+	{
+		return m_hAccelTable != NULL && ::TranslateAccelerator(m_hWnd, m_hAccelTable, pMsg);
 	}
 	return CEMFRecListCtrlBase::PreTranslateMessage(pMsg);
 }
@@ -465,5 +517,73 @@ void CEMFRecListCtrl::SetCurSelRecIndex(int index)
 			Scroll(CSize(0, nRows * rect.Height()));
 		}
 	}
+}
+
+void CEMFRecListCtrl::OnViewRecord()
+{
+	ViewCurSelRecord();
+}
+
+bool CEMFRecListCtrl::CanViewCurSelRecord() const
+{
+	int nRow = GetCurSelRecIndex();
+	auto pMainWnd = GetTopLevelFrame();
+	auto bCanOpen = pMainWnd->SendMessage(MainFrameMsgCanOpenRecordItem, nRow);
+	return bCanOpen != 0;
+}
+
+bool CEMFRecListCtrl::ViewCurSelRecord() const
+{
+	int nRow = GetCurSelRecIndex();
+	if (nRow < 0)
+		return false;
+	auto pMainWnd = GetTopLevelFrame();
+	auto res = pMainWnd->SendMessage(MainFrameMsgOpenRecordItem, nRow);
+	return res != 0;
+}
+
+void CEMFRecListCtrl::OnUpdateViewRecord(CCmdUI* pCmdUI)
+{
+	pCmdUI->Enable(CanViewCurSelRecord());
+}
+
+void CEMFRecListCtrl::CopySelectedItemsToClipboard()
+{
+	if (GetSelectedCount() <= 0)
+		return;
+	if (!OpenClipboard())
+	{
+		AfxMessageBox(_T("Cannot open the Clipboard"));
+		return;
+	}
+	EmptyClipboard();
+
+	CStringW str;
+	auto pos = GetFirstSelectedItemPosition();
+	while (pos)
+	{
+		int nItem = GetNextSelectedItem(pos);
+		auto pRec = nItem >= 0 ? GetEMFRecord(nItem) : nullptr;
+		if (pRec)
+		{
+			auto pszName = pRec->GetRecordName();
+			if (!str.IsEmpty())
+				str += L"\r\n";
+			str += pszName;
+		}
+	}
+
+	auto pszText = (LPCWSTR)str;
+	auto nLen = str.GetLength();
+	auto hglbCopy = GlobalAlloc(GMEM_MOVEABLE, (nLen + 1) * sizeof(WCHAR));
+	auto lptstrCopy = hglbCopy ? (WCHAR*)GlobalLock(hglbCopy) : nullptr;
+	if (lptstrCopy)
+	{
+		memcpy(lptstrCopy, pszText, nLen * sizeof(WCHAR));
+		lptstrCopy[nLen] = (WCHAR)0;
+		GlobalUnlock(hglbCopy);
+		SetClipboardData(CF_UNICODETEXT, hglbCopy);
+	}
+	CloseClipboard();
 }
 

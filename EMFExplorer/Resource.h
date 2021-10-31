@@ -48,6 +48,7 @@
 #define ID_VIEW_THUMBNAIL_WND           200
 #define IDS_EXPLORER                    305
 #define IDS_EDIT_MENU                   306
+#define IDR_RECORD_LIST_ACCELERATOR     312
 #define IDC_GITHUB_LINK                 1000
 #define ID_VIEW_BACKGROUND              32772
 #define ID_VIEW_THEME_DARK              32773
@@ -84,13 +85,14 @@
 #define ID_VIEW_DRAW_TO_SELECTION       32814
 #define ID_VIEW_DRAW_TO_HOVER_ITEM      32815
 #define ID_VIEW_UPDATE_PROPERTIES_ON_HOVER 32816
+#define ID_EDIT_COPY_RECORD_LIST        32817
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         32817
+#define _APS_NEXT_RESOURCE_VALUE        313
+#define _APS_NEXT_COMMAND_VALUE         32821
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

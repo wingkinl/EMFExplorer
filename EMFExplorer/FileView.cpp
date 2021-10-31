@@ -28,10 +28,6 @@ CFileView::~CFileView()
 BEGIN_MESSAGE_MAP(CFileView, CDockablePane)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
-	ON_WM_CONTEXTMENU()
-	ON_COMMAND(ID_VIEW_RECORD, OnViewRecord)
-	ON_UPDATE_COMMAND_UI(ID_VIEW_RECORD, OnUpdateViewRecord)
-	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_FILE_VIEW_CTRL, &CFileView::OnListItemChange)
@@ -85,46 +81,6 @@ void CFileView::OnSize(UINT nType, int cx, int cy)
 	AdjustLayout();
 }
 
-void CFileView::OnContextMenu(CWnd* pWnd, CPoint point)
-{
-	if (pWnd->GetSafeHwnd() != m_wndRecList.GetSafeHwnd())
-	{
-		CDockablePane::OnContextMenu(pWnd, point);
-		return;
-	}
-	int nRow = -1;
-	// Select clicked item:
-	if (point == CPoint(-1, -1))
-	{
-		nRow = GetCurSelRecIndex();
-	}
-	else
-	{
-		m_wndRecList.ScreenToClient(&point);
-		nRow = m_wndRecList.HitTest(point);
-	}
-	if (nRow < 0)
-		return;
-	CRect rect;
-	m_wndRecList.GetItemRect(nRow, &rect, LVIR_BOUNDS);
-
-	if (point == CPoint(-1, -1))
-	{
-		point.x = rect.left;
-		point.y = rect.bottom;
-	}
-	CRect rcClient;
-	GetClientRect(rcClient);
-	if (point.y < rcClient.top)
-		point.y = rcClient.top;
-	else if (point.y > rcClient.bottom)
-		point.y = rcClient.bottom;
-	m_wndRecList.ClientToScreen(&point);
-
-	m_wndRecList.SetFocus();
-	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EXPLORER, point.x, point.y, this, TRUE);
-}
-
 void CFileView::AdjustLayout()
 {
 	if (GetSafeHwnd() == nullptr)
@@ -139,49 +95,6 @@ void CFileView::AdjustLayout()
 
 	m_wndToolBar.SetWindowPos(nullptr, rectClient.left, rectClient.top, rectClient.Width(), cyTlb, SWP_NOACTIVATE | SWP_NOZORDER);
 	m_wndRecList.SetWindowPos(nullptr, rectClient.left + 1, rectClient.top + cyTlb + 1, rectClient.Width() - 2, rectClient.Height() - cyTlb - 2, SWP_NOACTIVATE | SWP_NOZORDER);
-}
-
-void CFileView::OnViewRecord()
-{
-	int nRow = GetCurSelRecIndex();
-	auto pMainWnd = GetTopLevelFrame();
-	pMainWnd->SendMessage(MainFrameMsgOpenRecordItem, nRow);
-}
-
-void CFileView::OnUpdateViewRecord(CCmdUI* pCmdUI)
-{
-	pCmdUI->Enable(CanViewCurSelRecord());
-}
-
-void CFileView::OnEditCopy()
-{
-	int nRow = GetCurSelRecIndex();
-	auto pRec = nRow >= 0 ? m_wndRecList.GetEMFRecord(nRow) : nullptr;
-	if (!pRec)
-		return;
-	if (!OpenClipboard())
-	{
-		AfxMessageBox( _T("Cannot open the Clipboard") );
-		return;
-	}
-	EmptyClipboard();
-
-	auto pszName = pRec->GetRecordName();
-	auto nLen = wcslen(pszName);
-	auto hglbCopy = GlobalAlloc(GMEM_MOVEABLE, 
-		(nLen + 1) * sizeof(WCHAR));
-	if (!hglbCopy)
-	{
-		CloseClipboard();
-		return;
-	}
-	auto lptstrCopy = (WCHAR*)GlobalLock(hglbCopy); 
-	memcpy(lptstrCopy, pszName, 
-		nLen * sizeof(WCHAR)); 
-	lptstrCopy[nLen] = (WCHAR)0;
-	GlobalUnlock(hglbCopy); 
-	SetClipboardData(CF_UNICODETEXT, hglbCopy);
-	CloseClipboard();
 }
 
 void CFileView::OnPaint()
@@ -223,7 +136,7 @@ void CFileView::OnListHotTrack(NMHDR* pNMHDR, LRESULT* pResult)
 void CFileView::OnListEnter(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	if (CanViewCurSelRecord())
-		OnViewRecord();
+		m_wndRecList.ViewCurSelRecord();
 }
 
 void CFileView::OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult)
@@ -232,7 +145,7 @@ void CFileView::OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pItemActivate->iItem >= 0)
 	{
 		if (CanViewCurSelRecord())
-			OnViewRecord();
+			m_wndRecList.ViewCurSelRecord();
 	}
 }
 
@@ -266,9 +179,6 @@ void CFileView::SetCurSelRecIndex(int index)
 
 bool CFileView::CanViewCurSelRecord() const
 {
-	int nRow = GetCurSelRecIndex();
-	auto pMainWnd = GetTopLevelFrame();
-	auto bCanOpen = pMainWnd->SendMessage(MainFrameMsgCanOpenRecordItem, nRow);
-	return bCanOpen != 0;
+	return m_wndRecList.CanViewCurSelRecord();
 }
 

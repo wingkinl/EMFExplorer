@@ -31,6 +31,18 @@
 
 #define _ENABLE_GDIPLUS_STRUCT
 
+enum MainFrameMsg
+{
+	// wParam = record index, lParam = Hover (non-zero)
+	MainFrameMsgOnSelectRecordItem = WM_APP + 100,
+	// wParam = record index
+	MainFrameMsgCanOpenRecordItem,
+	// wParam = record index
+	MainFrameMsgOpenRecordItem,
+	// wParam = Size changed (non-zero) or scroll only (zero)
+	MainFrameMsgViewUpdateSizeScroll,
+};
+
 #ifndef _AFX_NO_OLE_SUPPORT
 #include <afxdtctl.h>           // MFC support for Internet Explorer 4 Common Controls
 #endif

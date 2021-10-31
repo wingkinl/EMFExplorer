@@ -263,9 +263,9 @@ IDR_POPUP_EXPLORER MENU
 BEGIN
     POPUP "Explorer"
     BEGIN
-        MENUITEM "&View...",                    ID_VIEW_RECORD
+        MENUITEM "&View...\tEnter",             ID_VIEW_RECORD
         MENUITEM SEPARATOR
-        MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
+        MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY_RECORD_LIST
     END
 END
 
@@ -298,6 +298,12 @@ BEGIN
     "0",            ID_ZOOM_ACTUALSIZE,     VIRTKEY, CONTROL, NOINVERT
     VK_OEM_PLUS,    ID_ZOOM_IN,             VIRTKEY, CONTROL, NOINVERT
     VK_OEM_MINUS,   ID_ZOOM_OUT,            VIRTKEY, CONTROL, NOINVERT
+END
+
+IDR_RECORD_LIST_ACCELERATOR ACCELERATORS
+BEGIN
+    VK_RETURN,      ID_VIEW_RECORD,         VIRTKEY, NOINVERT
+    "C",            ID_EDIT_COPY_RECORD_LIST, VIRTKEY, CONTROL, NOINVERT
 END
 
 
@@ -577,6 +583,7 @@ END
 STRINGTABLE
 BEGIN
     ID_ZOOM_CENTER          "Zoom Center"
+    ID_VIEW_RECORD          "View record details."
     ID_VIEW_DRAWTOSELECTION "Draw records until the selected one"
     ID_VIEW_DRAW_TO_SELECTION "Draw to selected record"
     ID_VIEW_DRAW_TO_HOVER_ITEM "Draw to record being hovered"
@@ -586,6 +593,7 @@ STRINGTABLE
 BEGIN
     ID_VIEW_UPDATE_PROPERTIES_ON_HOVER 
                             "Update Properties window when hover on a record"
+    ID_EDIT_COPY_RECORD_LIST "Copy record names."
 END
 
 #endif    // English (United States) resources
