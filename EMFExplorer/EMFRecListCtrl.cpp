@@ -343,6 +343,7 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 	for (int nCol = 0; nCol < ColumnTypeCount; ++nCol)
 	{
 		GetSubItemRect(nRow, nCol, LVIR_LABEL, rcText);
+		bool bLink = false;
 		if (nCol == ColumnTypeIndex)
 		{
 			int nSel = GetNextItem(-1, LVNI_FOCUSED);
@@ -351,16 +352,24 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 				auto pRecSel = GetEMFRecord(nSel);
 				if (pRec->IsLinked(pRecSel))
 				{
+					bLink = true;
 					lplvcd->clrTextBk = RGB(74, 0, 114);
 					CRect rcLink = rcText;
 					rcLink.left = 0;
 					pDC->FillSolidRect(&rcLink, lplvcd->clrTextBk);
+					if (!bDarkTheme)
+						pDC->SetTextColor(theApp.m_crfDarkThemeTxtColor);
 				}
 			}
 		}
 		CString str = GetItemText(nRow, nCol);
 		pDC->SetBkMode(TRANSPARENT);
 		pDC->DrawText(str, &rcText, DT_SINGLELINE|DT_END_ELLIPSIS);
+
+		if (bLink && !bDarkTheme)
+		{
+			pDC->SetTextColor(lplvcd->clrText);
+		}
 	}
 
 
