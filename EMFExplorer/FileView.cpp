@@ -255,16 +255,13 @@ void CFileView::LoadEMFDataEvent(bool bBefore)
 
 int CFileView::GetCurSelRecIndex(BOOL bHottrack) const
 {
-	if (bHottrack)
-		return m_wndRecList.GetHotItem();
-	return m_wndRecList.GetNextItem(-1, LVNI_SELECTED);
+	return m_wndRecList.GetCurSelRecIndex(bHottrack);
 }
 
 void CFileView::SetCurSelRecIndex(int index)
 {
-	m_wndRecList.SetItemState(-1, 0, LVIS_SELECTED);
-	m_wndRecList.SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
-	m_wndRecList.EnsureVisible(index, FALSE);
+	m_wndRecList.SetCurSelRecIndex(index);
+	m_wndRecList.SetFocus();
 }
 
 bool CFileView::CanViewCurSelRecord() const

@@ -14,38 +14,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-LRESULT _EnableWindowTheme(HWND hwnd, LPCWSTR classList, LPCWSTR subApp, LPCWSTR idlist)
-{
-	LRESULT lResult = SetWindowTheme(hwnd, subApp, idlist);
-	return lResult;
-}
-
-bool _IsThemeEnabled()
-{
-	return IsAppThemed() && IsThemeActive();
-}
-
-LRESULT		_EnableExplorerVisualStyles(HWND hWnd, LPCWSTR classList, BOOL bEnable)
-{
-	if ( !_IsThemeEnabled() )
-	{
-		return S_FALSE;
-	}
-
-	LRESULT rc = S_FALSE;
-	if (bEnable)
-		rc = _EnableWindowTheme(hWnd, classList, L"Explorer", NULL);
-	else
-		rc = _EnableWindowTheme(hWnd, L"", L"", NULL);
-
-	return rc;
-}
-
-LRESULT		_EnableListCtrlExplorerVisualStyles(HWND hWnd, BOOL bEnable)
-{
-	return _EnableExplorerVisualStyles(hWnd, L"ListView", bEnable);
-}
-
 CEMFRecTooltipCtrl::CEMFRecTooltipCtrl()
 {
 	m_Params.m_bBoldLabel = TRUE;
@@ -106,6 +74,7 @@ enum ColumnType
 {
 	ColumnTypeIndex,
 	ColumnTypeName,
+	ColumnTypeCount,
 };
 
 BOOL CEMFRecListCtrl::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
@@ -153,8 +122,6 @@ int CEMFRecListCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		InsertColumn(ColumnTypeIndex, _T("#"));
 		InsertColumn(ColumnTypeName, _T("Name"));
 
-		_EnableListCtrlExplorerVisualStyles(GetSafeHwnd(), TRUE);
-
 		//GetToolTips()->Activate(FALSE);
 
 		m_ToolTip.Create(this, TTS_ALWAYSTIP);
@@ -189,6 +156,18 @@ void CEMFRecListCtrl::AdjustColumnWidth(int cx)
 	SetColumnWidth(ColumnTypeName, cx - cxIdx);
 }
 
+void CEMFRecListCtrl::SetCustomHotItem(int nItem)
+{
+	if (m_nHotItem != nItem)
+	{
+		if (m_nHotItem >= 0)
+			RedrawItems(m_nHotItem, m_nHotItem);
+		if (nItem >= 0)
+			RedrawItems(nItem, nItem);
+		m_nHotItem = nItem;
+	}
+}
+
 BOOL CEMFRecListCtrl::PreTranslateMessage(MSG* pMsg)
 {
 	switch (pMsg->message)
@@ -202,27 +181,29 @@ BOOL CEMFRecListCtrl::PreTranslateMessage(MSG* pMsg)
 	case WM_RBUTTONUP:
 	case WM_MBUTTONUP:
 	case WM_MOUSEMOVE:
-		if (m_ToolTip.GetSafeHwnd() != NULL)
 		{
 			CPoint pt;
 			GetCursorPos(&pt);
 			ScreenToClient(&pt);
 			int nItem = HitTest(pt);
- 			if (nItem != m_nTipItem)
- 			{
- 				if (m_nTipItem >= 0)
- 					m_ToolTip.SendMessage(TTM_POP);
-				auto pRec = GetEMFRecord(nItem);
-				bool bShowTip = pRec && pRec->DrawPreview();
-				m_ToolTip.m_pRec = bShowTip ? pRec : nullptr;
-				if (bShowTip)
-				{
-					m_ToolTip.SetWindowTextW(pRec->GetRecordName());
-				}
-				m_nTipItem = bShowTip ? nItem : -1;
-				m_ToolTip.Activate(bShowTip);
+			if (WM_MOUSEMOVE == pMsg->message)
+			{
+				SetCustomHotItem(nItem);
 			}
-			m_ToolTip.RelayEvent(pMsg);
+			if (m_ToolTip.GetSafeHwnd() != NULL)
+			{
+				if (nItem != m_nTipItem)
+				{
+					if (m_nTipItem >= 0)
+						m_ToolTip.SendMessage(TTM_POP);
+					auto pRec = GetEMFRecord(nItem);
+					bool bShowTip = pRec && pRec->DrawPreview();
+					m_ToolTip.m_pRec = bShowTip ? pRec : nullptr;
+					m_nTipItem = bShowTip ? nItem : -1;
+					m_ToolTip.Activate(bShowTip);
+				}
+				m_ToolTip.RelayEvent(pMsg);
+			}
 		}
 		break;
 	}
@@ -256,42 +237,89 @@ void CEMFRecListCtrl::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 		break;
 
 	case CDDS_ITEMPREPAINT:
-		*pResult = CDRF_NOTIFYSUBITEMDRAW;
-		break;
-
-	case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
-		OnPreDrawSubItem(lplvcd);
-		*pResult = CDRF_DODEFAULT;
+		OnDrawItem(lplvcd);
+		*pResult = CDRF_SKIPDEFAULT;
 		break;
 	}
 }
 
-void CEMFRecListCtrl::OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const
+void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 {
-	int nColumn = lplvcd->iSubItem;
 	int nRow = (int)lplvcd->nmcd.dwItemSpec;
+	CDC* pDC = CDC::FromHandle(lplvcd->nmcd.hdc);
+	
+	auto state = GetItemState(nRow, LVIS_SELECTED | LVIS_FOCUSED);
 
-	lplvcd->clrText = IsDarkTheme() ? theApp.m_crfDarkThemeTxtColor : GetTextColor();
-
+	BOOL bDarkTheme = IsDarkTheme();
 	auto pRec = GetEMFRecord(nRow);
-	if (nColumn == ColumnTypeIndex)
+
+	lplvcd->clrText = theApp.m_crfDarkThemeTxtColor;
+	bool bHotItem = m_nHotItem == nRow;
+	if (state & LVIS_FOCUSED)
 	{
-		int nSel = GetNextItem(-1, LVNI_SELECTED);
-		if (nSel >= 0 && nSel != nRow)
+		lplvcd->clrTextBk = RGB(123, 31, 162);
+	}
+	else if (state & LVIS_SELECTED)
+	{
+		lplvcd->clrTextBk = RGB(2, 119, 189);
+	}
+	else
+	{
+		if (!bHotItem)
 		{
-			auto pRecSel = GetEMFRecord(nSel);
-			if (pRec->IsLinked(pRecSel))
+			if (pRec->IsDrawingRecord())
+				lplvcd->clrTextBk = theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
+			else
+				lplvcd->clrTextBk = GetBkColor();
+		}
+		if (!bDarkTheme)
+			lplvcd->clrText = GetTextColor();
+	}
+	if (bHotItem && !(state & LVIS_FOCUSED))
+	{
+		lplvcd->clrTextBk = RGB(156, 77, 204);
+	}
+
+	CRect rcRow = lplvcd->nmcd.rc;
+	GetItemRect(nRow, &rcRow, LVIR_SELECTBOUNDS);
+	pDC->FillSolidRect(&rcRow, lplvcd->clrTextBk);
+
+	auto oldTextColor = pDC->SetTextColor(lplvcd->clrText);
+	auto oldBkMode = pDC->GetBkMode();
+
+	CRect rcText = lplvcd->nmcd.rc;
+	for (int nCol = 0; nCol < ColumnTypeCount; ++nCol)
+	{
+		GetSubItemRect(nRow, nCol, LVIR_LABEL, rcText);
+		if (nCol == ColumnTypeIndex)
+		{
+			int nSel = GetNextItem(-1, LVNI_FOCUSED);
+			if (nSel >= 0 && nSel != nRow)
 			{
-				lplvcd->clrTextBk = RGB(255, 150, 50);
-				lplvcd->clrText = RGB(0, 0, 0);
-				return;
+				auto pRecSel = GetEMFRecord(nSel);
+				if (pRec->IsLinked(pRecSel))
+				{
+					lplvcd->clrTextBk = RGB(74, 0, 114);
+					CRect rcLink = rcText;
+					rcLink.left = 0;
+					pDC->FillSolidRect(&rcLink, lplvcd->clrTextBk);
+				}
 			}
 		}
+		CString str = GetItemText(nRow, nCol);
+		pDC->SetBkMode(TRANSPARENT);
+		pDC->DrawText(str, &rcText, DT_SINGLELINE|DT_END_ELLIPSIS);
 	}
-	if (pRec->IsDrawingRecord())
-		lplvcd->clrTextBk = theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
-	else
-		lplvcd->clrTextBk = GetBkColor();
+
+
+	pDC->SetTextColor(oldTextColor);
+	pDC->SetBkMode(oldBkMode);
+
+	if (state & LVIS_FOCUSED)
+	{
+		if (GetFocus() == this)
+			pDC->DrawFocusRect(rcRow);
+	}
 }
 
 void CEMFRecListCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
@@ -372,6 +400,7 @@ void CEMFRecListCtrl::LoadEMFDataEvent(bool bBefore)
 			m_ToolTip.SendMessage(TTM_POP);
 			m_nTipItem = -1;
 		}
+		SetCustomHotItem(-1);
 		m_emf = nullptr;
 		// There could be repaint issue when the list control was previously scrolled
 		// Steps to reproduce:
@@ -408,4 +437,33 @@ void CEMFRecListCtrl::OnChangeVisualStyle()
 	SetBkColor(bDark ? theApp.m_crfDarkThemeBkColor : m_crfDefaultBkColor);
 }
 
+int CEMFRecListCtrl::GetCurSelRecIndex(BOOL bHottrack) const
+{
+	if (bHottrack)
+		return m_nHotItem;
+	return GetNextItem(-1, LVNI_FOCUSED);
+}
+
+void CEMFRecListCtrl::SetCurSelRecIndex(int index)
+{
+	SetCustomHotItem(-1);
+	SetItemState(-1, 0, LVIS_SELECTED|LVIS_FOCUSED);
+	SetItemState(index, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+	EnsureVisible(index, FALSE);
+	int nCountPerPage = GetCountPerPage();
+	if (nCountPerPage > 0 && nCountPerPage < GetItemCount())
+	{
+		int nTop = GetTopIndex();
+		int nPreferTop = index - nCountPerPage / 2;
+		if (nPreferTop < 0)
+			nPreferTop = 0;
+		if (nPreferTop != nTop)
+		{
+			CRect rect;
+			GetItemRect(0, rect, LVIR_BOUNDS);
+			int nRows = nPreferTop - nTop;
+			Scroll(CSize(0, nRows * rect.Height()));
+		}
+	}
+}
 

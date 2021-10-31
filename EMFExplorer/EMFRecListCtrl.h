@@ -40,15 +40,20 @@ public:
 
 	inline EMFRecAccess* GetEMFRecord(int nRow) const;
 
+	int GetCurSelRecIndex(BOOL bHottrack = FALSE) const;
+
+	void SetCurSelRecIndex(int index);
 // Overrides
 protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 
-	void OnPreDrawSubItem(LPNMLVCUSTOMDRAW lplvcd) const;
+	void OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const;
 
 	BOOL IsDarkTheme() const;
 
 	void AdjustColumnWidth(int cx);
+
+	void SetCustomHotItem(int nItem);
 
 	// We don't want sort
 	void Sort(int iColumn, BOOL bAscending = TRUE, BOOL bAdd = FALSE) override {};
@@ -71,6 +76,7 @@ protected:
 	std::shared_ptr<EMFAccess>	m_emf;
 	CEMFRecTooltipCtrl			m_ToolTip;
 	int							m_nTipItem = -1;
+	int							m_nHotItem = -1;
 protected:
 	DECLARE_MESSAGE_MAP()
 };
