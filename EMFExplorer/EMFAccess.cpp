@@ -170,18 +170,23 @@ struct EnumHitTestEmfPlusContext
 #define BMPMASK_B		0x00FF0000
 #define BMPMASK_RGB		(BMPMASK_R | BMPMASK_G | BMPMASK_B)
 
+//#define DEBUG_HITTEST_BITMAP
+
 extern "C"
 BOOL CALLBACK EnumHitTestMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT flags, UINT dataSize, const BYTE * data, VOID * pCallbackData)
 {
 	auto& ctxt = *(EnumHitTestEmfPlusContext*)pCallbackData;
 	auto pRec = ctxt.pAccess->GetRecord(ctxt.nCurRecIdx);
+#ifndef DEBUG_HITTEST_BITMAP
 	bool bDrawRec = pRec->IsDrawingRecord();
 	if (bDrawRec)
 	{
 		ctxt.ResetBmpData();
 	}
+#endif // DEBUG_HITTEST_BITMAP
 	ctxt.pMetafile->PlayRecord(type, flags, dataSize, data);
 	++ctxt.nCurRecIdx;
+#ifndef DEBUG_HITTEST_BITMAP
 	if (bDrawRec)
 	{
 		auto pSrcEnd = ctxt.pBmpData + ctxt.vHitTestBmpData.size();
@@ -193,6 +198,7 @@ BOOL CALLBACK EnumHitTestMetafilePlusProc(Gdiplus::EmfPlusRecordType type, UINT 
 			}
 		}
 	}
+#endif // DEBUG_HITTEST_BITMAP
 	return TRUE;
 }
 
@@ -203,12 +209,11 @@ EMFRecAccess* EMFAccess::HitTest(const POINT& pos, unsigned tolerance) const
 	POINT ptImg = pos;
 	ptImg.x += m_hdr.X;
 	ptImg.y += m_hdr.Y;
-	tolerance = tolerance * 2 + 1;
-	CRect rcImg(ptImg, CSize(tolerance, tolerance));
-	rcImg.left = std::max(rcImg.left, 0L);
-	rcImg.top = std::max(rcImg.top, 0L);
-	rcImg.right = std::min(rcImg.right, (LONG)m_hdr.Width);
-	rcImg.bottom = std::min(rcImg.bottom, (LONG)m_hdr.Height);
+	CRect rcImg(ptImg.x-tolerance, ptImg.y-tolerance, ptImg.x+tolerance+1, ptImg.y+tolerance+1);
+	rcImg.left = std::max(rcImg.left, (LONG)m_hdr.X);
+	rcImg.top = std::max(rcImg.top, (LONG)m_hdr.Y);
+	rcImg.right = std::min(rcImg.right, (LONG)(m_hdr.X+m_hdr.Width));
+	rcImg.bottom = std::min(rcImg.bottom, (LONG)(m_hdr.Y+m_hdr.Height));
 	CSize szImg = rcImg.Size();
 
 	BITMAPV5HEADER bmpInfo;
@@ -233,7 +238,9 @@ EMFRecAccess* EMFAccess::HitTest(const POINT& pos, unsigned tolerance) const
 	
 	EnumHitTestEmfPlusContext ctxt{ m_pMetafile.get(), this };
 	ctxt.pBmpData = pBmpData;
+#ifndef DEBUG_HITTEST_BITMAP
 	ctxt.vHitTestBmpData.resize(szImg.cx * szImg.cy);
+#endif // DEBUG_HITTEST_BITMAP
 
 	CClientDC dc(nullptr);
 	CDC dcMem;
@@ -246,10 +253,11 @@ EMFRecAccess* EMFAccess::HitTest(const POINT& pos, unsigned tolerance) const
 		Gdiplus::Rect srcRect(rcImg.left, rcImg.top, szImg.cx, szImg.cy);
 		gg.EnumerateMetafile(m_pMetafile.get(), pt, srcRect, Gdiplus::UnitPixel, EnumHitTestMetafilePlusProc, (void*)&ctxt);
 	}
-	CPoint ptImgCenter(szImg.cx / 2, szImg.cy / 2);
-	double dMinDist = std::numeric_limits<double>::max();
 	// 0 means no hit because the bitmap data is one-based
 	size_t nHitRecId = 0;
+#ifndef DEBUG_HITTEST_BITMAP
+	CPoint ptImgCenter(szImg.cx / 2, szImg.cy / 2);
+	double dMinDist = std::numeric_limits<double>::max();
 	for (size_t ii = 0; ii < ctxt.vHitTestBmpData.size(); ++ii)
 	{
 		auto drawnRecId = (size_t)ctxt.vHitTestBmpData[ii];
@@ -266,6 +274,19 @@ EMFRecAccess* EMFAccess::HitTest(const POINT& pos, unsigned tolerance) const
 				break;
 		}
 	}
+#endif // DEBUG_HITTEST_BITMAP
+
+#if defined(_DEBUG) && defined(DEBUG_HITTEST_BITMAP)
+	bool bDebugDraw = false;
+	if (bDebugDraw)
+	{
+		auto oldBrush = dc.SelectObject(GetStockObject(GRAY_BRUSH));
+		CPoint pt(400, 400);
+		dc.Rectangle(CRect(pt, CSize(szImg.cx+2, szImg.cy+2)));
+		dc.BitBlt(pt.x + 1, pt.y + 1, szImg.cx, szImg.cy, &dcMem, 0, 0, SRCCOPY);
+		dc.SelectObject(oldBrush);
+	}
+#endif
 
 	dcMem.SelectObject(oldBmp);
 	if (!nHitRecId)
