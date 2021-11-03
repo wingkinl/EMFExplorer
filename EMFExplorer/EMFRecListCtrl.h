@@ -61,6 +61,8 @@ protected:
 
 	void SetCustomHotItem(int nItem);
 
+	void GetDispItemText(LVITEM& item) const;
+
 	// We don't want sort
 	void Sort(int iColumn, BOOL bAscending = TRUE, BOOL bAdd = FALSE) override {};
 

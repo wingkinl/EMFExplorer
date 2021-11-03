@@ -362,7 +362,14 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 				}
 			}
 		}
-		CString str = GetItemText(nRow, nCol);
+		CString str;
+		LVITEM item = { 0 };
+		item.iItem = nRow;
+		item.iSubItem = nCol;
+		item.cchTextMax = 260;
+		item.pszText = str.GetBuffer(item.cchTextMax);
+		GetDispItemText(item);
+		str.ReleaseBuffer();
 		pDC->SetBkMode(TRANSPARENT);
 		pDC->DrawText(str, &rcText, DT_SINGLELINE|DT_END_ELLIPSIS);
 
@@ -383,6 +390,26 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 	}
 }
 
+void CEMFRecListCtrl::GetDispItemText(LVITEM& item) const
+{
+	auto pRec = GetEMFRecord(item.iItem);
+	// See document for LVITEM:
+	// the list-view control allows any length string to be stored as item text, only the first 260 TCHARs are displayed.
+	// so better truncate the text here instead of leaving junk/gibberish string
+	switch (item.iSubItem)
+	{
+	case ColumnTypeIndex:
+		_sntprintf_s(item.pszText, item.cchTextMax, item.cchTextMax, _T("%ld"), item.iItem + 1);
+		break;
+	case ColumnTypeName:
+		{
+			auto szText = pRec->GetRecordName();
+			_tcsncpy_s(item.pszText, item.cchTextMax, szText, item.cchTextMax);
+		}
+		break;
+	}
+}
+
 void CEMFRecListCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LV_DISPINFO* pDispInfo = (LV_DISPINFO*)pNMHDR;
@@ -391,22 +418,7 @@ void CEMFRecListCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 
 	if (item.mask & LVIF_TEXT)
 	{
-		// See document for LVITEM:
-		// the list-view control allows any length string to be stored as item text, only the first 260 TCHARs are displayed.
-		// so better truncate the text here instead of leaving junk/gibberish string
-		auto pRec = GetEMFRecord(item.iItem);
-		switch (item.iSubItem)
-		{
-		case ColumnTypeIndex:
-			_sntprintf_s(item.pszText, item.cchTextMax, item.cchTextMax, _T("%ld"), item.iItem+1);
-			break;
-		case ColumnTypeName:
-			{
-				auto szText = pRec->GetRecordName();
-				_tcsncpy_s(item.pszText, item.cchTextMax, szText, item.cchTextMax);
-			}
-			break;
-		}
+		GetDispItemText(item);
 	}
 
 	if (item.mask & LVIF_IMAGE)

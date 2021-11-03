@@ -104,7 +104,11 @@ public:
 	void ReadBytes(optional_wrapper<ValT>* pData, size_t nSize)
 	{
 		const size_t nValSize = sizeof(optional_wrapper<ValT>::value_type);
-		ASSERT(nSize >= nValSize);
+		if (nValSize > nSize)
+		{
+			ASSERT(0);
+			return;
+		}
 		ASSERT(m_pCur + nValSize <= m_pEnd);
 		ReadBytes(&pData->get(), nValSize);
 	}

@@ -18,6 +18,18 @@ std::shared_ptr<PropertyNode> EMFRecAccess::GetProperties(const CachePropertiesC
 	{
 		m_propsCached = std::make_shared<PropertyNode>();
 		CacheProperties(ctxt);
+		if (!m_linkRecs.empty())
+		{
+			auto pLinkBranch = m_propsCached->AddBranch(L"LinkedRecords");
+			int count = 0;
+			for (auto& link : m_linkRecs)
+			{
+				CStringW strName, strText;
+				strName.Format(L"[%d]", count++);
+				strText.Format(L"#%zu %s", link.pRec->GetIndex()+1, link.pRec->GetRecordName());
+				pLinkBranch->AddText(strName, strText);
+			}
+		}
 	}
 	return m_propsCached;
 }
