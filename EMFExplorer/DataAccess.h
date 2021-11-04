@@ -1,6 +1,8 @@
 #ifndef DATA_ACCESS_H
 #define DATA_ACCESS_H
 
+#include <iostream>
+
 namespace data_access
 {
 	using byte = uint8_t;
@@ -10,7 +12,7 @@ struct optional_wrapper
 {
 	using value_type      = _Ty;
 
-	inline operator bool() const { return _enabled; }
+	inline bool is_enabled() const { return _enabled; }
 	inline void enable() { _enabled = true; }
 	inline _Ty& get() { enable(); return _val; }
 	inline const _Ty& get() const { ASSERT(_enabled); return _val; }
@@ -63,9 +65,23 @@ struct optional_wrapper
 	inline auto& operator[](size_t pos) { enable(); return _val[pos]; }
 	inline const auto& operator[](size_t pos) const { return _val[pos]; }
 protected:
-	bool	_enabled = false;
 	_Ty		_val;
+	bool	_enabled = false;
 };
+
+template <typename _Ty>
+inline std::ostream& operator<<(std::ostream& out, const optional_wrapper<_Ty>& v)
+{
+	out << v.get();
+	return out;
+}
+
+template <typename _Ty>
+inline std::istream& operator>>(std::istream& in, optional_wrapper<_Ty>& v)
+{
+	in >> v.get();
+	return in;
+}
 
 template <typename T> struct is_optional_wrapper : public std::false_type {};
 

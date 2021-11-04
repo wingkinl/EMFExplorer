@@ -282,12 +282,12 @@ struct EmfStruct2Properties
 	{
 		if constexpr (data_access::is_optional_wrapper_v<ValT>)
 		{
-			if (value)
+			if (value.is_enabled())
 				BuildField(name, value.get(), pNode);
 		}
 		else if constexpr (std::is_class_v<ValT>)
 		{
-			if constexpr (is_vector<ValT>::value)
+			if constexpr (data_access::is_vector<ValT>::value)
 			{
 				if constexpr (std::is_arithmetic_v<typename ValT::value_type>)
 				{
