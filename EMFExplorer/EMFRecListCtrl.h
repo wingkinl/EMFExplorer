@@ -52,6 +52,13 @@ public:
 
 	void EnableHoverNotification(BOOL enable);
 	BOOL IsHoverNotificationEnabled() const { return m_bNotifyHover; }
+
+	// The item at nStart is excluded from the search if nStart is >= 0
+	int FindRecord(LPCWSTR str, int nStart = -1);
+
+	void SetSearchText(LPCWSTR str);
+
+	BOOL GoToNextSearchItem();
 // Overrides
 protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
@@ -98,6 +105,7 @@ protected:
 	// the last hover item even when mouse is outside the list control
 	// No need to introduce another flag for now.
 	BOOL						m_bNotifyHover = FALSE;
+	CStringW					m_strSearch;
 protected:
 	DECLARE_MESSAGE_MAP()
 };

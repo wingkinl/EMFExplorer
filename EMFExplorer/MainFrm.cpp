@@ -733,7 +733,7 @@ void CMainFrame::LoadEMFDataEvent(bool bBefore)
 	m_wndThumbnail.LoadEMFDataEvent(bBefore);
 	if (!bBefore)
 	{
-		UpdateViewOnSelRecord(0);
+		//UpdateViewOnSelRecord(0);
 		m_wndFileView.SetCurSelRecIndex(0);
 	}
 }

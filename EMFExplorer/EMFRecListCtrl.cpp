@@ -399,7 +399,34 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 		GetDispItemText(item);
 		str.ReleaseBuffer();
 		pDC->SetBkMode(TRANSPARENT);
-		pDC->DrawText(str, &rcText, DT_SINGLELINE|DT_END_ELLIPSIS);
+
+		if (nCol == ColumnTypeName && !m_strSearch.IsEmpty())
+		{
+			auto szFind = StrStrIW(item.pszText, (LPCWSTR)m_strSearch);
+			if (szFind)
+			{
+				GCP_RESULTS res = { 0 };
+				res.lStructSize = sizeof(res);
+				std::vector<int> vCaretPos((size_t)str.GetLength());
+				std::vector<int> vDX(vCaretPos.size());
+				res.lpCaretPos = vCaretPos.data();
+				res.lpDx = vDX.data();
+				res.nGlyphs = str.GetLength();
+				GetCharacterPlacement(pDC->GetSafeHdc(), (LPCTSTR)str, str.GetLength(), 0, &res, 0);
+
+				auto pos = (int)(szFind - item.pszText);
+				CRect rcBk = rcText;
+				auto nEnd = pos + m_strSearch.GetLength();
+				if (nEnd < str.GetLength())
+					rcBk.right = rcBk.left + vCaretPos[nEnd];
+				else
+					rcBk.right = rcBk.left + vCaretPos.back() + vDX.back();
+				rcBk.left += vCaretPos[pos];
+				pDC->FillSolidRect(rcBk, RGB(255,150,50));
+			}
+		}
+		UINT nFormat = DT_SINGLELINE;
+		pDC->DrawText(str, &rcText, nFormat|DT_END_ELLIPSIS);
 
 		if (bLink && !bDarkTheme)
 		{
@@ -594,6 +621,47 @@ bool CEMFRecListCtrl::ViewCurSelRecord() const
 void CEMFRecListCtrl::EnableHoverNotification(BOOL enable)
 {
 	m_bNotifyHover = enable;
+}
+
+int CEMFRecListCtrl::FindRecord(LPCWSTR str, int nStart)
+{
+	if (!m_emf)
+		return -1;
+	// nStart is excluded from the search
+	nStart = nStart < 0 ? 0 : nStart + 1;
+	auto count = m_emf->GetRecordCount();
+	if (nStart >= (int)count)
+		nStart = 0;
+	for (int ii = nStart; ii < count; ++ii)
+	{
+		auto pRec = m_emf->GetRecord((size_t)ii);
+		auto szName = pRec->GetRecordName();
+		auto szFind = StrStrIW(szName, str);
+		if (szFind)
+			return ii;
+	}
+	return -1;
+}
+
+void CEMFRecListCtrl::SetSearchText(LPCWSTR str)
+{
+	m_strSearch = str;
+}
+
+BOOL CEMFRecListCtrl::GoToNextSearchItem()
+{
+	if (m_strSearch.IsEmpty())
+		return FALSE;
+	int nSel = GetNextItem(-1, LVNI_FOCUSED);
+	int nFind = FindRecord(m_strSearch, nSel);
+	if (nFind < 0)
+	{
+		nFind = FindRecord(m_strSearch);
+		if (nFind < 0)
+			return FALSE;
+	}
+	SetCurSelRecIndex(nFind);
+	return TRUE;
 }
 
 void CEMFRecListCtrl::OnUpdateViewRecord(CCmdUI* pCmdUI)

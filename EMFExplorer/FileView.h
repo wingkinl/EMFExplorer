@@ -4,6 +4,48 @@
 #include "EMFRecAccess.h"
 #include "EMFRecListCtrl.h"
 
+using CSearchComboBoxEditBase = CMFCEditBrowseCtrl;
+
+class CSearchComboBoxEdit : public CSearchComboBoxEditBase
+{
+public:
+	void OnBrowse() override;
+
+	void OnDrawBrowseButton(CDC* pDC, CRect rect, BOOL bIsButtonPressed, BOOL bIsButtonHot) override;
+
+	void Init();
+protected:
+	void OnAfterUpdate() override;
+
+	BOOL PreTranslateMessage(MSG* pMsg) override;
+protected:
+	afx_msg BOOL OnEnChange();
+
+	DECLARE_MESSAGE_MAP()
+};
+
+using CFindComboBoxBase = CComboBox;
+
+class CFindComboBox : public CFindComboBoxBase
+{
+public:
+	CFindComboBox();
+	~CFindComboBox();
+public:
+	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID) override;
+
+	BOOL	m_bSearchOK;
+
+	void OnAfterClearText();
+private:
+	CSearchComboBoxEdit	m_edit;
+	CBrush	m_brErr;
+private:
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+private:
+	DECLARE_MESSAGE_MAP()
+};
+
 class CFileView : public CDockablePane
 {
 // Construction
@@ -28,7 +70,7 @@ private:
 protected:
 
 	CEMFRecListCtrl m_wndRecList;
-	CComboBox		m_wndFindCombo;
+	CFindComboBox	m_wndFindCombo;
 	CFont			m_fntFindCombo;
 protected:
 
@@ -45,6 +87,8 @@ protected:
 	afx_msg void OnListHotTrack(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnListEnter(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnFindEditChange();
+	afx_msg void OnFindRecord();
 
 	DECLARE_MESSAGE_MAP()
 };
