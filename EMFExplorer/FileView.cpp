@@ -48,27 +48,42 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	rectDummy.SetRectEmpty();
 
 	// Create view:
-	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE;
+	DWORD dwListStyle = WS_CHILD | WS_VISIBLE;
 
-	if (!m_wndRecList.Create(dwViewStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
+	if (!m_wndRecList.Create(dwListStyle, rectDummy, this, IDC_FILE_VIEW_CTRL))
 	{
 		TRACE0("Failed to create file view\n");
 		return -1;      // fail to create
 	}
 
-	m_wndToolBar.Create(this, AFX_DEFAULT_TOOLBAR_STYLE, IDR_EXPLORER);
-	m_wndToolBar.LoadToolBar(IDR_EXPLORER, 0, 0, TRUE /* Is locked */);
+	// Create combo:
+	const DWORD dwComboStyle = WS_CHILD | WS_VISIBLE | CBS_DROPDOWN
+		| WS_BORDER | CBS_SORT | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+	if (!m_wndFindCombo.Create(dwComboStyle, rectDummy, this, 1))
+	{
+		TRACE0("Failed to create Properies Combo \n");
+		return -1;      // fail to create
+	}
+
+	LOGFONT lf;
+	afxGlobalData.fontRegular.GetLogFont(&lf);
+
+	NONCLIENTMETRICS info;
+	info.cbSize = sizeof(info);
+
+	afxGlobalData.GetNonClientMetrics(info);
+
+	lf.lfHeight = info.lfMenuFont.lfHeight;
+	lf.lfWeight = info.lfMenuFont.lfWeight;
+	lf.lfItalic = info.lfMenuFont.lfItalic;
+
+	m_fntFindCombo.CreateFontIndirect(&lf);
+
+	m_wndFindCombo.SetFont(&m_fntFindCombo);
+
+	m_wndFindCombo.SetCueBanner(L"Find...");
 
 	OnChangeVisualStyle();
-
-	m_wndToolBar.SetPaneStyle(m_wndToolBar.GetPaneStyle() | CBRS_TOOLTIPS | CBRS_FLYBY);
-
-	m_wndToolBar.SetPaneStyle(m_wndToolBar.GetPaneStyle() & ~(CBRS_GRIPPER | CBRS_SIZE_DYNAMIC | CBRS_BORDER_TOP | CBRS_BORDER_BOTTOM | CBRS_BORDER_LEFT | CBRS_BORDER_RIGHT));
-
-	m_wndToolBar.SetOwner(this);
-
-	// All commands will be routed via this control , not via the parent frame:
-	m_wndToolBar.SetRouteCommandsViaFrame(FALSE);
 
 	AdjustLayout();
 
@@ -91,10 +106,15 @@ void CFileView::AdjustLayout()
 	CRect rectClient;
 	GetClientRect(rectClient);
 
-	int cyTlb = m_wndToolBar.CalcFixedLayout(FALSE, TRUE).cy;
+	CRect rectCombo;
 
-	m_wndToolBar.SetWindowPos(nullptr, rectClient.left, rectClient.top, rectClient.Width(), cyTlb, SWP_NOACTIVATE | SWP_NOZORDER);
-	m_wndRecList.SetWindowPos(nullptr, rectClient.left + 1, rectClient.top + cyTlb + 1, rectClient.Width() - 2, rectClient.Height() - cyTlb - 2, SWP_NOACTIVATE | SWP_NOZORDER);
+	m_wndFindCombo.GetWindowRect(&rectCombo);
+
+	int cyCmb = rectCombo.Size().cy;
+	
+	m_wndFindCombo.SetWindowPos(NULL, rectClient.left, rectClient.top, rectClient.Width(), 200, SWP_NOACTIVATE | SWP_NOZORDER);
+	m_wndRecList.SetWindowPos(nullptr, rectClient.left + 1, rectClient.top + cyCmb + 1, 
+		rectClient.Width() - 2, rectClient.Height() - cyCmb - 2, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 void CFileView::OnPaint()
@@ -153,8 +173,6 @@ void CFileView::OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CFileView::OnChangeVisualStyle()
 {
-	m_wndToolBar.CleanUpLockedImages();
-	m_wndToolBar.LoadBitmap(theApp.m_bHiColorIcons ? IDB_EXPLORER_24 : IDR_EXPLORER, 0, 0, TRUE /* Locked */);
 	m_wndRecList.OnChangeVisualStyle();
 }
 

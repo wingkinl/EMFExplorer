@@ -4,16 +4,6 @@
 #include "EMFRecAccess.h"
 #include "EMFRecListCtrl.h"
 
-class CFileViewToolBar : public CMFCToolBar
-{
-	virtual void OnUpdateCmdUI(CFrameWnd* /*pTarget*/, BOOL bDisableIfNoHndler)
-	{
-		CMFCToolBar::OnUpdateCmdUI((CFrameWnd*) GetOwner(), bDisableIfNoHndler);
-	}
-
-	virtual BOOL AllowShowOnList() const { return FALSE; }
-};
-
 class CFileView : public CDockablePane
 {
 // Construction
@@ -38,8 +28,8 @@ private:
 protected:
 
 	CEMFRecListCtrl m_wndRecList;
-	CFileViewToolBar m_wndToolBar;
-
+	CComboBox		m_wndFindCombo;
+	CFont			m_fntFindCombo;
 protected:
 
 // Implementation

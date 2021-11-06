@@ -584,7 +584,6 @@ STRINGTABLE
 BEGIN
     ID_ZOOM_CENTER          "Zoom Center"
     ID_VIEW_RECORD          "View record details."
-    ID_VIEW_DRAWTOSELECTION "Draw records until the selected one"
     ID_VIEW_DRAW_TO_SELECTION "Draw to selected record"
     ID_VIEW_DRAW_TO_HOVER_ITEM "Draw to record being hovered"
 END

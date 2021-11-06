@@ -81,11 +81,11 @@
 #define ID_ZOOM_CENTER                  32800
 #define ID_VIEW_THEME                   32810
 #define ID_VIEW_RECORD                  32812
-#define ID_VIEW_DRAWTOSELECTION         32813
 #define ID_VIEW_DRAW_TO_SELECTION       32814
 #define ID_VIEW_DRAW_TO_HOVER_ITEM      32815
 #define ID_VIEW_UPDATE_PROPERTIES_ON_HOVER 32816
 #define ID_EDIT_COPY_RECORD_LIST        32817
+#define ID_EDIT_FIND_RECORD_COMBO       32818
 
 // Next default values for new objects
 // 
