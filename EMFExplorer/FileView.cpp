@@ -128,6 +128,8 @@ void CFileView::OnListItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CFileView::OnListHotTrack(NMHDR* pNMHDR, LRESULT* pResult)
 {
+	if (!m_wndRecList.IsHoverNotificationEnabled())
+		return;
 	NM_LISTVIEW* pNMLV = (NM_LISTVIEW*)pNMHDR;
 	auto pMainWnd = GetTopLevelFrame();
 	pMainWnd->SendMessage(MainFrameMsgOnSelectRecordItem, pNMLV->iItem, TRUE);
@@ -175,6 +177,11 @@ void CFileView::SetCurSelRecIndex(int index)
 {
 	m_wndRecList.SetCurSelRecIndex(index);
 	m_wndRecList.SetFocus();
+}
+
+void CFileView::EnableHoverNotification(BOOL enable)
+{
+	m_wndRecList.EnableHoverNotification(enable);
 }
 
 bool CFileView::CanViewCurSelRecord() const

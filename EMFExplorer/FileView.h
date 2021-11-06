@@ -30,6 +30,8 @@ public:
 	int GetCurSelRecIndex(BOOL bHottrack = FALSE) const;
 
 	void SetCurSelRecIndex(int index);
+
+	void EnableHoverNotification(BOOL enable);
 private:
 	bool CanViewCurSelRecord() const;
 // Attributes

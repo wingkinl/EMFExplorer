@@ -220,6 +220,16 @@ BOOL CEMFRecListCtrl::PreTranslateMessage(MSG* pMsg)
 {
 	switch (pMsg->message)
 	{
+	case WM_MOUSELEAVE:
+		if (m_bTracked)
+		{
+			if (!m_bNotifyHover && m_nHotItem >= 0)
+			{
+				SetCustomHotItem(-1);
+			}
+			m_bTracked = FALSE;
+		}
+		break;
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
 	case WM_LBUTTONDOWN:
@@ -236,6 +246,16 @@ BOOL CEMFRecListCtrl::PreTranslateMessage(MSG* pMsg)
 			int nItem = HitTest(pt);
 			if (WM_MOUSEMOVE == pMsg->message)
 			{
+				if (!m_bNotifyHover && !m_bTracked)
+				{
+					m_bTracked = TRUE;
+
+					TRACKMOUSEEVENT trackmouseevent;
+					trackmouseevent.cbSize = sizeof(trackmouseevent);
+					trackmouseevent.dwFlags = TME_LEAVE;
+					trackmouseevent.hwndTrack = GetSafeHwnd();
+					TrackMouseEvent(&trackmouseevent);
+				}
 				SetCustomHotItem(nItem);
 			}
 			if (m_ToolTip.GetSafeHwnd() != NULL)
@@ -561,6 +581,11 @@ bool CEMFRecListCtrl::ViewCurSelRecord() const
 	auto pMainWnd = GetTopLevelFrame();
 	auto res = pMainWnd->SendMessage(MainFrameMsgOpenRecordItem, nRow);
 	return res != 0;
+}
+
+void CEMFRecListCtrl::EnableHoverNotification(BOOL enable)
+{
+	m_bNotifyHover = enable;
 }
 
 void CEMFRecListCtrl::OnUpdateViewRecord(CCmdUI* pCmdUI)

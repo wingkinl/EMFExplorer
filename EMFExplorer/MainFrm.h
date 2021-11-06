@@ -75,6 +75,8 @@ private:
 	bool UpdateViewOnSelRecord(int index, BOOL bHover = FALSE);
 
 	CEMFExplorerView* CheckGetActiveView() const;
+
+	bool NeedListHoverNotification() const;
 protected:  // control bar embedded members
 	CMFCMenuBar       m_wndMenuBar;
 	CMFCToolBar       m_wndToolBar;

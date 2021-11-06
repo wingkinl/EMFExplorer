@@ -49,6 +49,9 @@ public:
 	bool CanViewCurSelRecord() const;
 
 	bool ViewCurSelRecord() const;
+
+	void EnableHoverNotification(BOOL enable);
+	BOOL IsHoverNotificationEnabled() const { return m_bNotifyHover; }
 // Overrides
 protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
@@ -89,6 +92,12 @@ protected:
 	int							m_nTipItem = -1;
 	int							m_nHotItem = -1;
 	HACCEL						m_hAccelTable = nullptr;
+	BOOL						m_bTracked = FALSE;
+	// this does two jobs at the same time:
+	// When on, notify main frame when hovering an item, AND keep
+	// the last hover item even when mouse is outside the list control
+	// No need to introduce another flag for now.
+	BOOL						m_bNotifyHover = FALSE;
 protected:
 	DECLARE_MESSAGE_MAP()
 };

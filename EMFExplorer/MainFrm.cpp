@@ -89,9 +89,9 @@ BOOL CMainStatusBar::SetPaneText(int nIndex, LPCTSTR lpszNewText, BOOL bUpdate)
 
 CMainFrame::CMainFrame() noexcept
 {
-	// TODO: add member initialization code here
 	m_nDrawToType = (DrawToType)theApp.m_nDrawToType;
 	m_bUpdatePropOnHover = theApp.m_bUpdatePropOnHover;
+	m_wndFileView.EnableHoverNotification(NeedListHoverNotification());
 }
 
 CMainFrame::~CMainFrame()
@@ -406,6 +406,7 @@ void CMainFrame::SelectRecord(size_t index)
 void CMainFrame::OnViewDrawToSelection()
 {
 	m_nDrawToType = m_nDrawToType == DrawToSelection ? DrawToAll : DrawToSelection;
+	m_wndFileView.EnableHoverNotification(NeedListHoverNotification());
 	if (!IsSubEMFFrame())
 		theApp.m_nDrawToType = m_nDrawToType;
 	auto pView = CheckGetActiveView();
@@ -421,6 +422,7 @@ void CMainFrame::OnUpdateViewDrawToSelection(CCmdUI* pCmdUI)
 void CMainFrame::OnViewDrawToHover()
 {
 	m_nDrawToType = m_nDrawToType == DrawToHover ? DrawToAll : DrawToHover;
+	m_wndFileView.EnableHoverNotification(NeedListHoverNotification());
 	if (!IsSubEMFFrame())
 		theApp.m_nDrawToType = m_nDrawToType;
 	auto pView = CheckGetActiveView();
@@ -436,6 +438,7 @@ void CMainFrame::OnUpdateViewDrawToHover(CCmdUI* pCmdUI)
 void CMainFrame::OnViewUpdatePropOnHover()
 {
 	m_bUpdatePropOnHover = !m_bUpdatePropOnHover;
+	m_wndFileView.EnableHoverNotification(NeedListHoverNotification());
 	if (!IsSubEMFFrame())
 		theApp.m_bUpdatePropOnHover = m_bUpdatePropOnHover;
 }
@@ -662,6 +665,11 @@ CEMFExplorerView* CMainFrame::CheckGetActiveView() const
 	}
 	ASSERT(pView);
 	return pView;
+}
+
+bool CMainFrame::NeedListHoverNotification() const
+{
+	return m_bUpdatePropOnHover || m_nDrawToType == DrawToHover;
 }
 
 void CMainFrame::LoadEMFDataEvent(bool bBefore)
