@@ -325,6 +325,14 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 	BOOL bDarkTheme = IsDarkTheme();
 	auto pRec = GetEMFRecord(nRow);
 
+	int nSel = GetNextItem(-1, LVNI_FOCUSED);
+	EMFRecAccess* pRecSel = nullptr;
+	if (nSel >= 0)
+	{
+		pRecSel = GetEMFRecord(nSel);
+	}
+	int nSelRecType = pRecSel ? (int)pRecSel->GetRecordType() : -1;
+
 	lplvcd->clrText = theApp.m_crfDarkThemeTxtColor;
 	bool bHotItem = m_nHotItem == nRow;
 	if (state & LVIS_FOCUSED)
@@ -339,7 +347,9 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 	{
 		if (!bHotItem)
 		{
-			if (pRec->IsDrawingRecord())
+			if (nSelRecType >= (int)emfplus::EmfRecordTypeMin && (int)pRec->GetRecordType() == nSelRecType)
+				lplvcd->clrTextBk = RGB(83, 144, 217);
+			else if (pRec->IsDrawingRecord())
 				lplvcd->clrTextBk = theApp.IsDarkTheme() ? RGB(3, 136, 87) : RGB(4, 170, 109);
 			else
 				lplvcd->clrTextBk = GetBkColor();
@@ -366,10 +376,8 @@ void CEMFRecListCtrl::OnDrawItem(LPNMLVCUSTOMDRAW lplvcd) const
 		bool bLink = false;
 		if (nCol == ColumnTypeIndex)
 		{
-			int nSel = GetNextItem(-1, LVNI_FOCUSED);
-			if (nSel >= 0 && nSel != nRow)
+			if (pRecSel && nSel != nRow)
 			{
-				auto pRecSel = GetEMFRecord(nSel);
 				if (pRec->IsLinked(pRecSel))
 				{
 					bLink = true;
