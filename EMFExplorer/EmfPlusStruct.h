@@ -434,7 +434,7 @@ struct OEmfPlusRegionNodeChildNodes
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/43d5fb61-3ee5-46ba-be9b-ff830c91ee05
 struct OEmfPlusDashedLineData 
 {
-	u32t				DashedLineDataSize;
+	u32t			DashedLineDataSize;
 	GSArray(Float)	DashedLineData;
 
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
@@ -443,7 +443,7 @@ struct OEmfPlusDashedLineData
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/9b1387ba-6008-435b-9d13-878323083130
 struct OEmfPlusCompoundLineData
 {
-	u32t				CompoundLineDataSize;
+	u32t			CompoundLineDataSize;
 	GSArray(Float)	CompoundLineData;
 
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
@@ -635,7 +635,7 @@ struct OEmfPlusPalette
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/c236db12-fc5d-4e5b-8266-0468881cd940
 struct OEmfPlusBitmapData
 {
-	GSOptional(OEmfPlusPalette)	Colors;
+	GSOptional(OEmfPlusPalette)		Colors;
 	memory_vector					PixelData;
 
 	bool Read(DataReader& reader, OPixelFormat PixelFormat, size_t nExpectedSize);
@@ -657,7 +657,7 @@ struct OEmfPlusBitmap
 	i32t			Stride;
 	OPixelFormat	PixelFormat;
 	OBitmapDataType	Type;
-	GSOptional(OEmfPlusBitmapData)			BitmapData;
+	GSOptional(OEmfPlusBitmapData)		BitmapData;
 	GSOptional(OEmfPlusCompressedImage)	BitmapDataCompressed;
 
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
@@ -795,7 +795,7 @@ struct OEmfPlusHatchBrushData
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/bab3d8e7-cc3c-44a4-a6be-2b4b88ab389c
 struct OEmfPlusBlendColors 
 {
-	u32t						PositionCount;
+	u32t					PositionCount;
 	GSArray(Float)			BlendPositions;
 	GSArray(OEmfPlusARGB)	BlendColors;
 
@@ -805,7 +805,7 @@ struct OEmfPlusBlendColors
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/c8a8d3db-09ed-4b79-b7b4-f2c502df1869
 struct OEmfPlusBlendFactors
 {
-	u32t					PositionCount;
+	u32t				PositionCount;
 	GSArray(Float)		BlendPositions;
 	GSArray(Float)		BlendFactors;
 
@@ -819,7 +819,7 @@ struct OEmfPlusLinearGradientBrushOptionalData
 
 	struct BlendPatternData
 	{
-		GSOptional(OEmfPlusBlendColors)	colors;
+		GSOptional(OEmfPlusBlendColors)		colors;
 		GSOptional(OEmfPlusBlendFactors)	factorsH;
 		GSOptional(OEmfPlusBlendFactors)	factorsV;
 	};
@@ -864,7 +864,7 @@ struct OEmfPlusBoundaryPathData
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/6a55add5-6d97-4744-ac13-e5e9ef7b050a
 struct OEmfPlusBoundaryPointData
 {
-	i32t						BoundaryPointCount;
+	i32t					BoundaryPointCount;
 	GSArray(OEmfPlusPointF)	BoundaryPointData;
 
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
@@ -877,7 +877,7 @@ struct OEmfPlusPathGradientBrushOptionalData
 
 	struct BlendPatternData
 	{
-		GSOptional(OEmfPlusBlendColors)	colors;
+		GSOptional(OEmfPlusBlendColors)		colors;
 		GSOptional(OEmfPlusBlendFactors)	factors;
 	};
 	BlendPatternData					BlendPattern;
@@ -917,7 +917,7 @@ struct OEmfPlusTextureBrushData
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/65bf0dda-baf3-4ee0-a6c4-f37a2f73c026
 	struct OEmfPlusTextureBrushOptionalData
 	{
-		GSOptional(OEmfPlusTransformMatrix)	TransformMatrix;
+		GSOptional(OEmfPlusTransformMatrix)		TransformMatrix;
 		GSOptional(OEmfPlusImage)				ImageObject;
 
 		bool Read(DataReader& reader, OBrushData BrushDataFlags, size_t nExpectedSize);
@@ -934,7 +934,7 @@ struct OEmfPlusBrush : public OEmfPlusGraphObject
 	OBrushType		Type;
 
 	GSOptional(OEmfPlusHatchBrushData)				BrushDataHatch;
-	GSOptional(OEmfPlusLinearGradientBrushData)	BrushDataLinearGrad;
+	GSOptional(OEmfPlusLinearGradientBrushData)		BrushDataLinearGrad;
 	GSOptional(OEmfPlusPathGradientBrushData)		BrushDataPathGrad;
 	GSOptional(OEmfPlusSolidBrushData)				BrushDataSolid;
 	GSOptional(OEmfPlusTextureBrushData)			BrushDataTexture;

@@ -124,7 +124,23 @@ protected:
 		switch (pImg->Type)
 		{
 		case OImageDataType::Bitmap:
-			// TODO
+			if (!m_bmp)
+			{
+				switch (pImg->ImageDataBmp->Type)
+				{
+				case OBitmapDataType::Compressed:
+					{
+						ATL::CComPtr<IStream> streamBmpData;
+						auto& data = pImg->ImageDataBmp->BitmapDataCompressed->CompressedImageData;
+						streamBmpData.Attach(SHCreateMemStream((const BYTE*)data.data(), (UINT)data.size()));
+						m_bmp.reset(Gdiplus::Image::FromStream(streamBmpData));
+					}
+					break;
+				case OBitmapDataType::Pixel:
+					// TODO
+					break;
+				}
+			}
 			break;
 		case OImageDataType::Metafile:
 			if (!m_emf)
@@ -151,26 +167,50 @@ protected:
 		auto pImg = (OEmfPlusImage*)m_obj.get();
 		switch (pImg->Type)
 		{
+		case OImageDataType::Bitmap:
+			if (!m_bmp)
+				return false;
+			if (info)
+			{
+				CSize szEMF(m_bmp->GetWidth(), m_bmp->GetHeight());
+				CRect rect = info->rect;
+				if (info->bCalcOnly)
+				{
+					CSize sz = info->GetDefaultImgPreviewSize();
+					rect.right = rect.left + sz.cx;
+					rect.bottom = rect.top + sz.cy;
+				}
+				CRect rcFit = GetFitRect(rect, szEMF, true);
+				info->szPreferedSize = rcFit.Size();
+				if (!info->bCalcOnly)
+				{
+					Gdiplus::Graphics gg(info->pDC->GetSafeHdc());
+					Gdiplus::Rect rcDraw(rcFit.left, rcFit.top, rcFit.Width(), rcFit.Height());
+					gg.DrawImage(m_bmp.get(), rcDraw);
+				}
+			}
+			return true;
 		case OImageDataType::Metafile:
 			if (!m_emf)
 				return false;
-			if (!info)
-				return true;
-			auto& hdr = m_emf->GetMetafileHeader();
-			CSize szEMF(hdr.Width, hdr.Height);
-			CRect rect = info->rect;
-			if (info->bCalcOnly)
+			if (info)
 			{
-				CSize sz = info->GetDefaultImgPreviewSize();
-				rect.right = rect.left + sz.cx;
-				rect.bottom = rect.top + sz.cy;
-			}
-			CRect rcFit = GetFitRect(rect, szEMF, true);
-			info->szPreferedSize = rcFit.Size();
-			if (!info->bCalcOnly)
-			{
-				Gdiplus::Graphics gg(info->pDC->GetSafeHdc());
-				m_emf->DrawMetafile(gg, rcFit);
+				auto& hdr = m_emf->GetMetafileHeader();
+				CSize szEMF(hdr.Width, hdr.Height);
+				CRect rect = info->rect;
+				if (info->bCalcOnly)
+				{
+					CSize sz = info->GetDefaultImgPreviewSize();
+					rect.right = rect.left + sz.cx;
+					rect.bottom = rect.top + sz.cy;
+				}
+				CRect rcFit = GetFitRect(rect, szEMF, true);
+				info->szPreferedSize = rcFit.Size();
+				if (!info->bCalcOnly)
+				{
+					Gdiplus::Graphics gg(info->pDC->GetSafeHdc());
+					m_emf->DrawMetafile(gg, rcFit);
+				}
 			}
 			return true;
 		}
@@ -182,7 +222,8 @@ protected:
 		return m_emf;
 	}
 private:
-	std::shared_ptr<EMFAccess>	m_emf;
+	std::shared_ptr<EMFAccess>			m_emf;
+	std::unique_ptr<Gdiplus::Image>		m_bmp;
 };
 
 class EMFRecAccessGDIPlusFontWrapper : public EMFRecAccessGDIPlusObjWrapper
