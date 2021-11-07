@@ -15,6 +15,14 @@ public:
 	virtual BOOL AllowShowOnList() const { return FALSE; }
 };
 
+using CEMFRecPropertyGridCtrlBase = CMFCPropertyGridCtrl;
+
+class CEMFRecPropertyGridCtrl : public CEMFRecPropertyGridCtrlBase
+{
+public:
+	BOOL EndEditItem(BOOL bUpdateData = TRUE) override;
+};
+
 class CPropertiesWnd : public CDockablePane
 {
 // Construction
@@ -41,7 +49,7 @@ private:
 protected:
 	CFont m_fntPropList;
 	CPropertiesToolBar m_wndToolBar;
-	CMFCPropertyGridCtrl m_wndPropList;
+	CEMFRecPropertyGridCtrl m_wndPropList;
 
 // Implementation
 public:

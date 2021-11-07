@@ -206,13 +206,11 @@ void CEMFExplorerView::OnPaint()
 
 	if (GetImgBackgroundType() != ImgBackgroundTypeNone)
 	{
-		CRect rcClient;
-		GetClientRect(rcClient);
 		CRect rcGrid(rcImg);
-		if (rcGrid.left < 0)
-			rcGrid.left = 0;
-		if (rcGrid.top < 0)
-			rcGrid.top = 0;
+		if (rcGrid.left < rcClient.left)
+			rcGrid.left = rcClient.left;
+		if (rcGrid.top < rcClient.top)
+			rcGrid.top = rcClient.top;
 		if (rcGrid.right > rcClient.right)
 			rcGrid.right = rcClient.right;
 		if (rcGrid.bottom > rcClient.bottom)
