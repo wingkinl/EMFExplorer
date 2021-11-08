@@ -34,7 +34,7 @@ public:
 public:
 	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID) override;
 
-	BOOL	m_bSearchOK;
+	BOOL	m_bSearchOK = TRUE;
 
 	void OnAfterClearText();
 private:
