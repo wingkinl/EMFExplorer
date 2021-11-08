@@ -56,6 +56,9 @@ CEMFRecListCtrl::~CEMFRecListCtrl()
 {
 }
 
+#define TIMER_ID_ADJUST_COLUMN_WIDTH_EVENT	0x00010000
+#define TIMER_ADJUST_COLUMN_WIDTH_DELAY		400
+
 BEGIN_MESSAGE_MAP(CEMFRecListCtrl, CEMFRecListCtrlBase)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
@@ -69,6 +72,7 @@ BEGIN_MESSAGE_MAP(CEMFRecListCtrl, CEMFRecListCtrlBase)
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_VIEW_RECORD, &CEMFRecListCtrl::OnViewRecord)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_RECORD, &CEMFRecListCtrl::OnUpdateViewRecord)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -493,9 +497,7 @@ BOOL CEMFRecListCtrl::OnItemChange(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CEMFRecListCtrl::OnEndScroll(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	CRect rc;
-	GetClientRect(&rc);
-	AdjustColumnWidth(rc.Width());
+	m_nAdjustColumnWidthTimerID = SetTimer(TIMER_ID_ADJUST_COLUMN_WIDTH_EVENT, TIMER_ADJUST_COLUMN_WIDTH_DELAY, NULL);
 }
 
 UINT CEMFRecListCtrl::OnGetDlgCode()
@@ -667,6 +669,21 @@ BOOL CEMFRecListCtrl::GoToNextSearchItem()
 void CEMFRecListCtrl::OnUpdateViewRecord(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(CanViewCurSelRecord());
+}
+
+void CEMFRecListCtrl::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == TIMER_ID_ADJUST_COLUMN_WIDTH_EVENT)
+	{
+		CRect rc;
+		GetClientRect(&rc);
+		AdjustColumnWidth(rc.Width());
+
+		KillTimer(m_nAdjustColumnWidthTimerID);
+		m_nAdjustColumnWidthTimerID = 0;
+	}
+
+	CEMFRecListCtrlBase::OnTimer(nIDEvent);
 }
 
 void CEMFRecListCtrl::CopySelectedItemsToClipboard()

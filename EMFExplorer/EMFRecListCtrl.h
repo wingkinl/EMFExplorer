@@ -92,6 +92,7 @@ protected:
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnViewRecord();
 	afx_msg void OnUpdateViewRecord(CCmdUI* pCmdUI);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 protected:
 	COLORREF m_crfDefaultBkColor = (COLORREF)-1;
 	std::shared_ptr<EMFAccess>	m_emf;
@@ -106,6 +107,8 @@ protected:
 	// No need to introduce another flag for now.
 	BOOL						m_bNotifyHover = FALSE;
 	CStringW					m_strSearch;
+
+	UINT_PTR					m_nAdjustColumnWidthTimerID = 0;
 protected:
 	DECLARE_MESSAGE_MAP()
 };
