@@ -209,7 +209,7 @@ int CFileView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	}
 
 	// Create combo:
-	const DWORD dwComboStyle = WS_CHILD | WS_VISIBLE | WS_DISABLED
+	const DWORD dwComboStyle = WS_CHILD | WS_VISIBLE
 		| WS_BORDER | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 	if (!m_wndFindCombo.Create(dwComboStyle, rectDummy, this, IDC_FIND_COMBO))
 	{
@@ -358,14 +358,6 @@ void CFileView::SetEMFAccess(std::shared_ptr<EMFAccess> emf)
 void CFileView::LoadEMFDataEvent(bool bBefore)
 {
 	m_wndRecList.LoadEMFDataEvent(bBefore);
-	if (bBefore)
-	{
-		m_wndFindCombo.EnableWindow(FALSE);
-	}
-	else
-	{
-		m_wndFindCombo.EnableWindow(m_wndRecList.GetItemCount() > 0);
-	}
 }
 
 int CFileView::GetCurSelRecIndex(BOOL bHottrack) const

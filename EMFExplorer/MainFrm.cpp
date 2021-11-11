@@ -178,7 +178,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerOffice2007));
 
 	// set the visual style to be used the by the visual manager
-	CMFCVisualManagerOffice2007::SetStyle(CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
+	CMFCVisualManagerOffice2007::SetStyle((CMFCVisualManagerOffice2007::Style)theApp.m_nStyle);
 
 	// Enable toolbar and docking window menu replacement
 	//EnablePaneMenu(TRUE, ID_VIEW_CUSTOMIZE, strCustomize, ID_VIEW_TOOLBAR);
