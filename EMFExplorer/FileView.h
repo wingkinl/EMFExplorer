@@ -14,12 +14,13 @@ public:
 	void OnDrawBrowseButton(CDC* pDC, CRect rect, BOOL bIsButtonPressed, BOOL bIsButtonHot) override;
 
 	void Init();
+
+	void SetShowClearButton(bool bShowClearBtn);
 protected:
 	void OnAfterUpdate() override;
 
 	BOOL PreTranslateMessage(MSG* pMsg) override;
 protected:
-	afx_msg BOOL OnEnChange();
 
 	DECLARE_MESSAGE_MAP()
 };
@@ -42,6 +43,7 @@ private:
 	CBrush	m_brErr;
 private:
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg BOOL OnSelEditChange();
 private:
 	DECLARE_MESSAGE_MAP()
 };
@@ -72,6 +74,8 @@ protected:
 	CEMFRecListCtrl m_wndRecList;
 	CFindComboBox	m_wndFindCombo;
 	CFont			m_fntFindCombo;
+
+	bool			m_bFindDirty = true;
 protected:
 
 // Implementation
@@ -87,7 +91,7 @@ protected:
 	afx_msg void OnListHotTrack(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnListEnter(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnFindEditChange();
+	afx_msg void OnFindSelEditChange();
 	afx_msg void OnFindRecord();
 
 	DECLARE_MESSAGE_MAP()

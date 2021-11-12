@@ -58,6 +58,8 @@ public:
 
 	void SetSearchText(LPCWSTR str);
 
+	const CStringW& GetSearchText() const { return m_strSearch; }
+
 	BOOL GoToNextSearchItem();
 // Overrides
 protected:

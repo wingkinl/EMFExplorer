@@ -13,7 +13,6 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 BEGIN_MESSAGE_MAP(CSearchComboBoxEdit, CSearchComboBoxEditBase)
-	ON_CONTROL_REFLECT_EX(EN_CHANGE, OnEnChange)
 END_MESSAGE_MAP()
 
 void CSearchComboBoxEdit::OnBrowse()
@@ -56,6 +55,16 @@ void CSearchComboBoxEdit::Init()
 	OnChangeLayout();
 }
 
+void CSearchComboBoxEdit::SetShowClearButton(bool bShowClearBtn)
+{
+	bool bOldShowClearBtn = m_Mode != BrowseMode_None;
+	if (bShowClearBtn ^ bOldShowClearBtn)
+	{
+		EnableBrowseButton(bShowClearBtn);
+		RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+	}
+}
+
 void CSearchComboBoxEdit::OnAfterUpdate()
 {
 	CSearchComboBoxEditBase::OnAfterUpdate();
@@ -91,18 +100,6 @@ BOOL CSearchComboBoxEdit::PreTranslateMessage(MSG* pMsg)
 	return CSearchComboBoxEditBase::PreTranslateMessage(pMsg);
 }
 
-BOOL CSearchComboBoxEdit::OnEnChange()
-{
-	bool bShowClearBtn = GetWindowTextLength() > 0;
-	bool bOldShowClearBtn = m_Mode != BrowseMode_None;
-	if (bShowClearBtn ^ bOldShowClearBtn)
-	{
-		EnableBrowseButton(bShowClearBtn);
-		RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
-	}
-	return FALSE;	// allow parent to handle it too
-}
-
 CFindComboBox::CFindComboBox()
 {
 
@@ -136,15 +133,18 @@ BOOL CFindComboBox::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UI
 
 BEGIN_MESSAGE_MAP(CFindComboBox, CFindComboBoxBase)
 	ON_WM_CTLCOLOR()
+	ON_CONTROL_REFLECT_EX(CBN_EDITCHANGE, OnSelEditChange)
+	ON_CONTROL_REFLECT_EX(CBN_SELCHANGE, OnSelEditChange)
 END_MESSAGE_MAP()
 
 void CFindComboBox::OnAfterClearText()
 {
 	m_bSearchOK = TRUE;
+	SetCurSel(-1);
 	RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 	auto pParent = GetParent();
 	if (pParent->GetSafeHwnd())
-		pParent->SendMessage(WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(), CBN_EDITCHANGE), (LPARAM)GetSafeHwnd());
+		pParent->PostMessage(WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(), CBN_EDITCHANGE), (LPARAM)GetSafeHwnd());
 }
 
 HBRUSH CFindComboBox::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
@@ -159,6 +159,14 @@ HBRUSH CFindComboBox::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		return (HBRUSH)m_brErr.GetSafeHandle();
 	}
 	return CFindComboBoxBase::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+
+BOOL CFindComboBox::OnSelEditChange()
+{
+	int nSel = GetCurSel();
+	bool bShowClearBtn = nSel >= 0 || GetWindowTextLength() > 0;
+	m_edit.SetShowClearButton(bShowClearBtn);
+	return FALSE;	// allow parent to handle it too
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -184,7 +192,8 @@ BEGIN_MESSAGE_MAP(CFileView, CDockablePane)
 	ON_NOTIFY(LVN_HOTTRACK, IDC_RECORD_VIEW_CTRL, &CFileView::OnListHotTrack)
 	ON_NOTIFY(NM_RETURN, IDC_RECORD_VIEW_CTRL, &CFileView::OnListEnter)
 	ON_NOTIFY(NM_DBLCLK, IDC_RECORD_VIEW_CTRL, &CFileView::OnListDblClk)
-	ON_CBN_EDITCHANGE(IDC_FIND_COMBO, &CFileView::OnFindEditChange)
+	ON_CBN_EDITCHANGE(IDC_FIND_COMBO, &CFileView::OnFindSelEditChange)
+	ON_CBN_SELCHANGE(IDC_FIND_COMBO, &CFileView::OnFindSelEditChange)
 	ON_COMMAND(IDC_FIND_COMBO, &CFileView::OnFindRecord)
 END_MESSAGE_MAP()
 
@@ -321,11 +330,16 @@ void CFileView::OnListDblClk(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 }
 
-void CFileView::OnFindEditChange()
+void CFileView::OnFindSelEditChange()
 {
+	m_bFindDirty = true;
 	BOOL bFindOK = TRUE;
 	CStringW str;
-	m_wndFindCombo.GetWindowTextW(str);
+	int nSel = m_wndFindCombo.GetCurSel();
+	if (nSel >= 0)
+		m_wndFindCombo.GetLBText(nSel, str);
+	else
+		m_wndFindCombo.GetWindowTextW(str);
 	m_wndRecList.SetSearchText(str);
 	if (!str.IsEmpty())
 	{
@@ -341,6 +355,38 @@ void CFileView::OnFindEditChange()
 
 void CFileView::OnFindRecord()
 {
+	if (m_bFindDirty)
+	{
+		m_bFindDirty = false;
+		auto& strFindText = m_wndRecList.GetSearchText();
+		if (!strFindText.IsEmpty())
+		{
+			const int nCount = m_wndFindCombo.GetCount();
+			int ind = 0;
+			CString strCmpText;
+
+			while (ind < nCount)
+			{
+				m_wndFindCombo.GetLBText(ind, strCmpText);
+
+				if (strCmpText.GetLength() == strFindText.GetLength())
+				{
+					if (strCmpText == strFindText)
+						break;
+				}
+
+				ind++;
+			}
+
+			if (ind < nCount)
+			{
+				m_wndFindCombo.DeleteString(ind);
+			}
+
+			m_wndFindCombo.InsertString(0, strFindText);
+			m_wndFindCombo.SetCurSel(0);
+		}
+	}
 	if (!m_wndRecList.GoToNextSearchItem())
 		MessageBeep((UINT)-1);
 }
