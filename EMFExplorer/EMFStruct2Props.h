@@ -289,12 +289,7 @@ struct EmfStruct2Properties
 		{
 			if constexpr (data_access::is_vector<ValT>::value)
 			{
-				if constexpr (std::is_arithmetic_v<typename ValT::value_type>)
-				{
-					// TODO
-					if (!value.empty())
-						pNode->AddValue(L"junk", value[0]);
-				}
+				pNode->sub.emplace_back(std::make_shared<PropertyNodeArray>(CStringW(name), value));
 			}
 			else
 			{

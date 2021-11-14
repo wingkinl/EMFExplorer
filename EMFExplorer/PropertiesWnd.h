@@ -3,6 +3,7 @@
 #include <memory>
 
 struct PropertyNode;
+struct PropertyNodeArray;
 
 class CPropertiesToolBar : public CMFCToolBar
 {
@@ -45,7 +46,11 @@ public:
 
 	void SetPropList(std::shared_ptr<PropertyNode> props);
 private:
-	CMFCPropertyGridProperty* AddPropList(const PropertyNode& prop);
+	CMFCPropertyGridProperty* AddPropList(const PropertyNode& node);
+
+	CMFCPropertyGridProperty* AddPropListForArray(const PropertyNodeArray& node);
+
+	CMFCPropertyGridProperty* AddPropListForArrayMember(const PropertyNodeArray& node, size_t index);
 protected:
 	CFont m_fntPropList;
 	CPropertiesToolBar m_wndToolBar;

@@ -12,7 +12,9 @@
 
 #include "EMFExplorerDoc.h"
 #include "EMFExplorerView.h"
+#ifndef SHARED_HANDLERS
 #include "MainFrm.h"
+#endif // SHARED_HANDLERS
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

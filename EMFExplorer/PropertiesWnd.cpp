@@ -194,41 +194,6 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 			pGridProp->Expand();
 		}
 		break;
-	case PropertyNode::NodeTypeRects:
-		pGridProp = new CMFCPropertyGridProperty(node.name, 0, TRUE);
-		{
-			auto& prop = (const PropertyNodePlusRectDataArray&)node;
-			auto& data = prop.data;
-			auto nActualSize = data.size();
-
-			pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(nActualSize).c_str(), nullptr);
-			pGridProp->AddSubItem(pSubProp);
-
-			size_t nCount = std::min(kMaxArraySize, nActualSize);
-			bool bFloat = !data.fvals.empty();
-			for (size_t ii = 0; ii < nCount; ++ii)
-			{
-				CStringW strName, strVal;
-				strName.Format(L"[%llu]", ii);
-				pSubProp = new CMFCPropertyGridProperty(strName, 0, TRUE);
-
-				std::vector<std::tuple<LPCWSTR, emfplus::Float>> vals;
-				vals.emplace_back(L"X", bFloat ? data.fvals[ii].X : data.ivals[ii].X);
-				vals.emplace_back(L"Y", bFloat ? data.fvals[ii].Y : data.ivals[ii].Y);
-				vals.emplace_back(L"Width", bFloat ? data.fvals[ii].Width : data.ivals[ii].Width);
-				vals.emplace_back(L"Height", bFloat ? data.fvals[ii].Height : data.ivals[ii].Height);
-				for (auto& v : vals)
-				{
-					auto pValProp = new CMFCPropertyGridProperty(std::get<0>(v), (_variant_t)std::get<1>(v), nullptr);
-					pSubProp->AddSubItem(pValProp);
-				}
-				pSubProp->Expand();
-				pGridProp->AddSubItem(pSubProp);
-			}
-			// TODO, add way to view more data
-			pGridProp->Expand();
-		}
-		break;
 	case PropertyNode::NodeTypeSizeInt:
 		pGridProp = new CMFCPropertyGridProperty(node.name, 0, TRUE);
 		{
@@ -240,31 +205,7 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 		}
 		break;
 	case PropertyNode::NodeTypePointDataArray:
-		pGridProp = new CMFCPropertyGridProperty(node.name, 0);
-		{
-			auto& prop = (const PropertyNodePlusPointDataArray&)node;
-			auto nActualSize = prop.data.size();
-
-			pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(nActualSize).c_str(), nullptr);
-			pGridProp->AddSubItem(pSubProp);
-
-			size_t nCount = std::min(kMaxArraySize, nActualSize);
-			auto& data = prop.data;
-			bool bFloat = !data.fvals.empty();
-			for (size_t ii = 0; ii < nCount; ++ii)
-			{
-				CStringW strName, strVal;
-				strName.Format(L"[%llu]", ii);
-				if (bFloat)
-					strVal.Format(L"%g, %g", data.fvals[ii].x, data.fvals[ii].y);
-				else
-					strVal.Format(L"%d, %d", data.ivals[ii].x, data.ivals[ii].y);
-				pSubProp = new CMFCPropertyGridProperty(strName, strVal, nullptr);
-				pGridProp->AddSubItem(pSubProp);
-			}
-			// TODO, add way to view more data
-			pGridProp->Expand();
-		}
+		pGridProp = AddPropListForArray((const PropertyNodeArray&)node);
 		break;
 	case PropertyNode::NodeTypeMatrix:
 		pGridProp = new CMFCPropertyGridProperty(node.name, 0, TRUE);
@@ -311,11 +252,112 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropList(const PropertyNode& node)
 		break;
 	case PropertyNode::NodeTypeFont:
 		break;
+	case PropertyNode::NodeTypeArray:
+		pGridProp = AddPropListForArray((const PropertyNodeArray&)node);
+		break;
 	default:
 		pGridProp = new CMFCPropertyGridProperty(node.name, (_variant_t)node.text, nullptr);
 		break;
 	}
 	return pGridProp;
+}
+
+CMFCPropertyGridProperty* CPropertiesWnd::AddPropListForArray(const PropertyNodeArray& node)
+{
+	CMFCPropertyGridProperty* pGridProp = new CMFCPropertyGridProperty(node.name, 0, TRUE);
+	CMFCPropertyGridProperty* pSubProp = nullptr;
+
+	pSubProp = new CMFCPropertyGridProperty(L"Size", std::to_wstring(node.size).c_str(), nullptr);
+	pGridProp->AddSubItem(pSubProp);
+
+	size_t nCount = std::min(kMaxArraySize, node.size);
+	for (size_t ii = 0; ii < nCount; ++ii)
+	{
+		pSubProp = AddPropListForArrayMember(node, ii);
+		if (pSubProp)
+			pGridProp->AddSubItem(pSubProp);
+	}
+	// TODO, add way to view more data
+	pGridProp->Expand();
+	return pGridProp;
+}
+
+CMFCPropertyGridProperty* CPropertiesWnd::AddPropListForArrayMember(const PropertyNodeArray& node, size_t index)
+{
+	CStringW strName, strVal;
+	strName.Format(L"[%llu]", index);
+	switch (node.elem_type)
+	{
+	case PropertyNodeArray::ElemTypeu8t:
+		strVal.Format(L"0x%02X '%C'", ((emfplus::u8t*)node.data)[index], ((char*)node.data)[index]);
+		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
+	case PropertyNodeArray::ElemTypeu16t:
+		strVal.Format(L"0x%04X '%c'", ((emfplus::u16t*)node.data)[index], ((wchar_t*)node.data)[index]);
+		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
+	case PropertyNodeArray::ElemTypeuFloat:
+		strVal.Format(L"%f", ((emfplus::Float*)node.data)[index]);
+		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
+	case PropertyNodeArray::ElemTypePlusPoint:
+		{
+			auto& val = ((emfplus::OEmfPlusPoint*)node.data)[index];
+			strVal.Format(L"%d, %d", val.x, val.y);
+		}
+		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
+	case PropertyNodeArray::ElemTypePlusPointF:
+		{
+			auto& val = ((emfplus::OEmfPlusPointF*)node.data)[index];
+			strVal.Format(L"%g, %g", val.x, val.y);
+		}
+		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
+	case PropertyNodeArray::ElemTypePlusRect:
+		{
+			auto& val = ((emfplus::OEmfPlusRect*)node.data)[index];
+			auto pSubProp = new CMFCPropertyGridProperty(strName, 0, TRUE);
+
+			auto pValProp = new CMFCPropertyGridProperty(L"X", (_variant_t)val.X, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			pValProp = new CMFCPropertyGridProperty(L"Y", (_variant_t)val.Y, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			pValProp = new CMFCPropertyGridProperty(L"Width", (_variant_t)val.Width, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			pValProp = new CMFCPropertyGridProperty(L"Height", (_variant_t)val.Height, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			return pSubProp;
+		}
+		break;
+	case PropertyNodeArray::ElemTypePlusRectF:
+		{
+			auto& val = ((emfplus::OEmfPlusRectF*)node.data)[index];
+			auto pSubProp = new CMFCPropertyGridProperty(strName, 0, TRUE);
+
+			auto pValProp = new CMFCPropertyGridProperty(L"X", (_variant_t)val.X, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			pValProp = new CMFCPropertyGridProperty(L"Y", (_variant_t)val.Y, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			pValProp = new CMFCPropertyGridProperty(L"Width", (_variant_t)val.Width, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			pValProp = new CMFCPropertyGridProperty(L"Height", (_variant_t)val.Height, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			return pSubProp;
+		}
+		break;
+	case PropertyNodeArray::ElemTypePlusCharacterRange:
+		{
+			auto& val = ((emfplus::OEmfPlusCharacterRange*)node.data)[index];
+			auto pSubProp = new CMFCPropertyGridProperty(strName, 0, TRUE);
+
+			auto pValProp = new CMFCPropertyGridProperty(L"First", (_variant_t)val.First, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			pValProp = new CMFCPropertyGridProperty(L"Length", (_variant_t)val.Length, nullptr);
+			pSubProp->AddSubItem(pValProp);
+			return pSubProp;
+		}
+		break;
+	case PropertyNodeArray::ElemTypePlusARGB:
+		return new CMFCPropertyGridColorProperty(node.name, ((emfplus::OEmfPlusARGB*)node.data)[index].ToCOLORREF(), nullptr);
+	}
+	ASSERT(0);
+	return nullptr;
 }
 
 int CPropertiesWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)

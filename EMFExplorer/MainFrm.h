@@ -3,10 +3,16 @@
 //
 
 #pragma once
+
+#ifdef SHARED_HANDLERS
+#error Should not include this in handlers
+#endif // SHARED_HANDLERS
+
 #include "FileView.h"
 #include "PropertiesWnd.h"
-#include "EMFExplorerDoc.h"
 #include "ThumbnailWnd.h"
+
+#include "EMFExplorerDoc.h"
 
 #define _ENABLE_STATUS_BAR
 

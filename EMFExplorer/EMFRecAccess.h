@@ -1,6 +1,11 @@
 #ifndef EMF_REC_ACCESS_H
 #define EMF_REC_ACCESS_H
 
+#ifdef SHARED_HANDLERS
+#error Should not include this in handlers
+#endif // SHARED_HANDLERS
+
+
 #include <memory>
 #include <vector>
 #include "GdiplusEnums.h"

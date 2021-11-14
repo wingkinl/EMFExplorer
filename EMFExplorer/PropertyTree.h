@@ -19,11 +19,9 @@ struct PropertyNode
 		NodeTypeFont,
 		NodeTypePointDataArray,
 		NodeTypeMatrix,
-		NodeTypeRects,
 		NodeTypeRectData,
 		NodeTypeArcData,
-		NodeTypeUnicodeArray,
-		NodeTypePointFArray,
+		NodeTypeArray,
 	};
 	CStringW	name;
 	CStringW	text;
@@ -66,7 +64,7 @@ struct PropertyNode
 struct PropertyNodeBranch : public PropertyNode
 {
 	using PropertyNode::PropertyNode;
-	NodeType	GetNodeType() const { return NodeTypeBranch; }
+	NodeType	GetNodeType() const override { return NodeTypeBranch; }
 };
 
 std::shared_ptr<PropertyNode> PropertyNode::AddBranch(LPCWSTR szName, LPCWSTR szText)
@@ -97,7 +95,7 @@ struct PropertyNodeRectInt : public PropertyNode
 		rect.bottom = b;
 	}
 
-	NodeType	GetNodeType() const { return NodeTypeRectInt; }
+	NodeType	GetNodeType() const override { return NodeTypeRectInt; }
 	RECT	rect;
 };
 
@@ -116,7 +114,7 @@ struct PropertyNodeSizeInt : public PropertyNode
 		size.cy = cy;
 	}
 
-	NodeType	GetNodeType() const { return NodeTypeSizeInt; }
+	NodeType	GetNodeType() const override { return NodeTypeSizeInt; }
 	SIZE	size;
 };
 
@@ -130,34 +128,128 @@ struct PropertyNodeData : public PropertyNode
 		name = szName;
 	}
 
-	NodeType	GetNodeType() const { return _type; }
+	NodeType	GetNodeType() const override { return _type; }
 	T	data;
 };
 
-using PropertyNodePointDataArrayBase = PropertyNodeData<const emfplus::OEmfPlusPointDataArray&, PropertyNode::NodeTypePointDataArray>;
-
-struct PropertyNodePlusPointDataArray : public PropertyNodePointDataArrayBase
+struct PropertyNodeArray : public PropertyNode
 {
-	PropertyNodePlusPointDataArray(LPCWSTR szName, const emfplus::OEmfPlusPointDataArray& refData, bool bRelative = false)
-		: PropertyNodePointDataArrayBase(szName, refData)
+	template <typename T>
+	PropertyNodeArray(LPCWSTR szName, const T* _data, size_t _size)
 	{
-		relative = bRelative;
+		name = szName;
+		SetData(_data, _size);
+	}
+	template <typename T>
+	PropertyNodeArray(LPCWSTR szName, const std::vector<T>& _data)
+	{
+		SetData(_data);
+		name = szName;
+	}
+	PropertyNodeArray(LPCWSTR szName)
+	{
+		name = szName;
 	}
 
+	template <typename T>
+	void SetData(const T* _data, size_t _size)
+	{
+		data = _data;
+		size = _size;
+		elem_type = GetElemType<T>();
+	}
+
+	template <typename T>
+	void SetData(const std::vector<T>& _data)
+	{
+		data = _data.data();
+		size = _data.size();
+		elem_type = GetElemType<T>();
+	}
+
+	enum ElemType
+	{
+		ElemTypeUnknown,
+		ElemTypeu8t,
+		ElemTypeu16t,
+		ElemTypeuFloat,
+		ElemTypePlusPoint,
+		ElemTypePlusPointF,
+		ElemTypePlusRect,
+		ElemTypePlusRectF,
+		ElemTypePlusCharacterRange,
+		ElemTypePlusARGB,
+	};
+
+	template <typename T>
+	ElemType GetElemType(const T* p = nullptr)
+	{
+		if constexpr (std::is_same_v<T, emfplus::u8t>)
+			return ElemTypeu8t;
+		else if constexpr (std::is_same_v<T, emfplus::u16t>)
+			return ElemTypeu16t;
+		else if constexpr (std::is_same_v<T, emfplus::Float>)
+			return ElemTypeuFloat;
+		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusPoint>)
+			return ElemTypePlusPoint;
+		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusPointF>)
+			return ElemTypePlusPointF;
+		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusRect>)
+			return ElemTypePlusRect;
+		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusRectF>)
+			return ElemTypePlusRectF;
+		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusCharacterRange>)
+			return ElemTypePlusCharacterRange;
+		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusARGB>)
+			return ElemTypePlusARGB;
+		else
+			static_assert(false, "Unknown array type");
+		return ElemTypeUnknown;
+	}
+
+	NodeType	GetNodeType() const override { return NodeTypeArray; }
+	const void*	data = nullptr;
+	size_t		size = 0;
+	ElemType	elem_type;
+};
+
+struct PropertyNodePlusPointDataArray : public PropertyNodeArray
+{
+	PropertyNodePlusPointDataArray(LPCWSTR szName, const emfplus::OEmfPlusPointDataArray& refData, bool bRelative = false)
+		: PropertyNodeArray(szName)
+	{
+		if (refData.size() > 0)
+		{
+			if (!refData.ivals.empty())
+				SetData(*refData.ivals);
+			else
+				SetData(*refData.fvals);
+		}
+		relative = bRelative;
+	}
+	NodeType	GetNodeType() const override { return NodeTypePointDataArray; }
 	bool	relative;
 };
 
-using PlusUnicodeArrayWrapper = std::vector<emfplus::u16t>;
-using PlusPointArrayWrapper = std::vector<emfplus::OEmfPlusPoint>;
-using PlusPointFArrayWrapper = std::vector<emfplus::OEmfPlusPointF>;
+struct PropertyNodePlusRectDataArray : public PropertyNodeArray
+{
+	PropertyNodePlusRectDataArray(LPCWSTR szName, const emfplus::OEmfPlusRectDataArray& refData)
+		: PropertyNodeArray(szName)
+	{
+		if (refData.size() > 0)
+		{
+			if (!refData.ivals.empty())
+				SetData(*refData.ivals);
+			else
+				SetData(*refData.fvals);
+		}
+	}
+};
 
 using PropertyNodePlusTransform = PropertyNodeData<const emfplus::OEmfPlusTransformMatrix&, PropertyNode::NodeTypeMatrix>;
 using PropertyNodePlusRectF = PropertyNodeData<const emfplus::OEmfPlusRectF&, PropertyNode::NodeTypeRectFloat>;
 using PropertyNodeColor = PropertyNodeData<const emfplus::OEmfPlusARGB&, PropertyNode::NodeTypeColor>;
-using PropertyNodePlusRectDataArray = PropertyNodeData<const emfplus::OEmfPlusRectDataArray&, PropertyNode::NodeTypeRects>;
 using PropertyNodePlusRectData = PropertyNodeData<const emfplus::OEmfPlusRectData&, PropertyNode::NodeTypeRectData>;
 using PropertyNodePlusArcData = PropertyNodeData<const emfplus::OEmfPlusArcData&, PropertyNode::NodeTypeArcData>;
-using PropertyNodePlusUnicodeArrayWrapper = PropertyNodeData<const PlusUnicodeArrayWrapper&, PropertyNode::NodeTypeUnicodeArray>;
-using PropertyNodePlusPointFArrayWrapper = PropertyNodeData<const PlusPointFArrayWrapper&, PropertyNode::NodeTypePointFArray>;
 
 #endif // PROPERTY_TREE_H

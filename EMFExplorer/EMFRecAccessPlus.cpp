@@ -1224,7 +1224,7 @@ void EMFRecAccessGDIPlusRecDrawDriverString::CacheProperties(const CacheProperti
 	{
 		if ((u32t)ODriverStringOptions::CmapLookup & m_recDataCached.DriverStringOptionsFlags)
 		{
-			m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusUnicodeArrayWrapper>(L"Glyphs", m_recDataCached.Glyphs));
+			m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeArray>(L"Glyphs", m_recDataCached.Glyphs));
 		}
 		else
 		{
@@ -1233,7 +1233,7 @@ void EMFRecAccessGDIPlusRecDrawDriverString::CacheProperties(const CacheProperti
 	}
 	if (!m_recDataCached.GlyphPos.empty())
 	{
-		m_propsCached->sub.emplace_back(std::make_shared<PropertyNodePlusPointFArrayWrapper>(L"GlyphPos", m_recDataCached.GlyphPos));
+		m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeArray>(L"GlyphPos", m_recDataCached.GlyphPos));
 	}
 	if (m_recDataCached.MatrixPresent)
 	{
