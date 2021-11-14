@@ -294,11 +294,15 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropListForArrayMember(const Proper
 	case PropertyNodeArray::ElemTypeu16t:
 		strVal.Format(L"0x%04X '%c'", ((emfplus::u16t*)node.data)[index], ((wchar_t*)node.data)[index]);
 		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
+	case PropertyNodeArray::ElemTypeu32t:
+		strVal.Format(L"0x%08X (%u)", ((emfplus::u32t*)node.data)[index], ((emfplus::u32t*)node.data)[index]);
+		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
 	case PropertyNodeArray::ElemTypeuFloat:
 		strVal.Format(L"%f", ((emfplus::Float*)node.data)[index]);
 		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
 	case PropertyNodeArray::ElemTypePlusPoint:
 		{
+			static_assert(sizeof(emfplus::OEmfPlusPoint) == sizeof(POINTS));
 			auto& val = ((emfplus::OEmfPlusPoint*)node.data)[index];
 			strVal.Format(L"%d, %d", val.x, val.y);
 		}
@@ -307,6 +311,12 @@ CMFCPropertyGridProperty* CPropertiesWnd::AddPropListForArrayMember(const Proper
 		{
 			auto& val = ((emfplus::OEmfPlusPointF*)node.data)[index];
 			strVal.Format(L"%g, %g", val.x, val.y);
+		}
+		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
+	case PropertyNodeArray::ElemTypeGDIPOINTL:
+		{
+			auto& val = ((POINTL*)node.data)[index];
+			strVal.Format(L"%d, %d", val.x, val.y);
 		}
 		return new CMFCPropertyGridProperty(strName, strVal, nullptr);
 	case PropertyNodeArray::ElemTypePlusRect:

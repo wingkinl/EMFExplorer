@@ -2,6 +2,7 @@
 #define EMF_STRUCT2PROPS_H
 
 #include "EmfPlusStruct.h"
+#include "EmfStruct.h"
 
 using namespace emfplus;
 
@@ -258,6 +259,30 @@ static inline LPCWSTR EMFPlusLinkedObjText(EMFRecAccess::LinkedObjType val)
 	return L"Unknown";
 }
 
+static inline LPCWSTR EMFGDIStockObjText(DWORD val)
+{
+	static const LPCWSTR aText[] = {
+		L"WHITE_BRUSH",
+		L"LTGRAY_BRUSH",
+		L"GRAY_BRUSH",
+		L"DKGRAY_BRUSH",
+		L"BLACK_BRUSH",
+		L"NULL_BRUSH",
+		L"WHITE_PEN",
+		L"BLACK_PEN",
+		L"NULL_PEN",
+		L"Unknown",
+		L"OEM_FIXED_FONT",
+		L"ANSI_FIXED_FONT",
+		L"ANSI_VAR_FONT",
+		L"SYSTEM_FONT",
+		L"DEVICE_DEFAULT_FONT",
+		L"DEFAULT_PALETTE",
+		L"SYSTEM_FIXED_FONT",
+	};
+	return aText[val];
+}
+
 static inline LPCWSTR EMFPlusMetafileTypeText(OMetafileDataType type)
 {
 	static const LPCWSTR aText[] = {
@@ -287,7 +312,7 @@ struct EmfStruct2Properties
 		}
 		else if constexpr (std::is_class_v<ValT>)
 		{
-			if constexpr (data_access::is_vector<ValT>::value)
+			if constexpr (data_access::is_vector<ValT>::value || data_access::is_array_wrapper<ValT>::value)
 			{
 				pNode->sub.emplace_back(std::make_shared<PropertyNodeArray>(CStringW(name), value));
 			}
@@ -300,8 +325,15 @@ struct EmfStruct2Properties
 		}
 		else if constexpr (std::is_arithmetic_v<ValT>)
 		{
-			CStringW str(name);
-			pNode->AddValue(str, value);
+			if constexpr (std::is_same_v<ValT, DWORD>)
+			{
+				if (strstr(name, "Color"))
+				{
+					pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(CStringW(name), (emfplus::OEmfPlusARGB&)(value)));
+					return;
+				}
+			}
+			pNode->AddValue(CStringW(name), value);
 		}
 		else if constexpr (std::is_enum_v<ValT>)
 		{
@@ -319,6 +351,11 @@ struct EmfStruct2Properties
 	static inline void BuildField(const char* name, const OEmfPlusARGB& value, PropertyNode* pNode)
 	{
 		pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(CStringW(name), value));
+	}
+
+	static inline void BuildField(const char* name, const XFORM& value, PropertyNode* pNode)
+	{
+		pNode->sub.emplace_back(std::make_shared<PropertyNodePlusTransform>(CStringW(name), (emfplus::OEmfPlusTransformMatrix&)(value)));
 	}
 
 	static inline void BuildField(const char* name, const OEmfPlusPointDataArray& value, PropertyNode* pNode)

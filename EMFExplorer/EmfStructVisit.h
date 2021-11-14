@@ -48,7 +48,7 @@ GS_VISITABLE_STRUCT(EMRDELETECOLORSPACE, ihCS);
 GS_VISITABLE_STRUCT(EMRDELETEOBJECT, ihObject);
 GS_VISITABLE_STRUCT(EMRRESIZEPALETTE, ihPal, cEntries);
 GS_VISITABLE_STRUCT(EMRSELECTPALETTE, ihPal);
-GS_VISITABLE_STRUCT(EMRSETPALETTEENTRIES, ihPal, iStart, cEntries, aPalEntries);
+//GS_VISITABLE_STRUCT(EMRSETPALETTEENTRIES, ihPal, iStart, cEntries, aPalEntries);
 
 GS_VISITABLE_STRUCT(EMRCOLORMATCHTOTARGET, dwAction, dwFlags, cbName, cbData, Data);
 GS_VISITABLE_STRUCT(EMRINVERTRGN, rclBounds, cbRgnData, RgnData);
@@ -96,12 +96,12 @@ GS_VISITABLE_STRUCT(EMRFILLRGN, rclBounds,cbRgnData, ihBrush, RgnData);
 GS_VISITABLE_STRUCT(EMRFRAMERGN, rclBounds,cbRgnData, ihBrush, szlStroke, RgnData);
 GS_VISITABLE_STRUCT(EMRGRADIENTFILL, rclBounds,nVer,nTri,ulMode,Ver);
 //GS_VISITABLE_STRUCT(EMRPAINTRGN, rclBounds,cbRgnData, RgnData);
-GS_VISITABLE_STRUCT(EMRPOLYBEZIER, rclBounds,cptl, aptl);
-GS_VISITABLE_STRUCT(EMRPOLYBEZIER16, rclBounds,cpts, apts);
-GS_VISITABLE_STRUCT(EMRPOLYDRAW, rclBounds,cptl, aptl, abTypes);
-GS_VISITABLE_STRUCT(EMRPOLYDRAW16, rclBounds,cpts, apts, abTypes);
-GS_VISITABLE_STRUCT(EMRPOLYPOLYGON, rclBounds,nPolys, cptl,aPolyCounts, aptl);
-GS_VISITABLE_STRUCT(EMRPOLYPOLYGON16, rclBounds,nPolys, cpts,aPolyCounts, apts);
+//GS_VISITABLE_STRUCT(EMRPOLYBEZIER, rclBounds,cptl, aptl);
+//GS_VISITABLE_STRUCT(EMRPOLYBEZIER16, rclBounds,cpts, apts);
+//GS_VISITABLE_STRUCT(EMRPOLYDRAW, rclBounds,cptl, aptl, abTypes);
+//GS_VISITABLE_STRUCT(EMRPOLYDRAW16, rclBounds,cpts, apts, abTypes);
+//GS_VISITABLE_STRUCT(EMRPOLYPOLYGON, rclBounds,nPolys, cptl,aPolyCounts, aptl);
+//GS_VISITABLE_STRUCT(EMRPOLYPOLYGON16, rclBounds,nPolys, cpts,aPolyCounts, apts);
 GS_VISITABLE_STRUCT(EMRPOLYTEXTOUTA, rclBounds,iGraphicsMode, exScale,eyScale, cStrings, aemrtext);
 GS_VISITABLE_STRUCT(EMRROUNDRECT, rclBox,szlCorner);
 GS_VISITABLE_STRUCT(EMRSETPIXELV, ptlPixel,crColor);
@@ -116,6 +116,18 @@ GS_VISITABLE_STRUCT(EMRCREATEPALETTE, ihPal, lgpl);
 GS_VISITABLE_STRUCT(EMRCREATEPEN, ihPen, lopn);
 GS_VISITABLE_STRUCT(EMREXTCREATEFONTINDIRECTW, ihFont, elfw);
 GS_VISITABLE_STRUCT(EMREXTCREATEPEN, ihPen, offBmi, cbBmi, offBits, cbBits, elp);
+
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+
+GS_VISITABLE_STRUCT(emfgdi::OEmfSetPaletteEntries, ihPal, iStart, PalEntries);
+GS_VISITABLE_STRUCT(emfgdi::OEmfPolyline, rclBounds, aptl);
+GS_VISITABLE_STRUCT(emfgdi::OEmfPolyline16, rclBounds, apts);
+GS_VISITABLE_STRUCT(emfgdi::OEmfPolyPolyline, rclBounds, aPolyCounts, aptl);
+GS_VISITABLE_STRUCT(emfgdi::OEmfPolyPolyline16, rclBounds, aPolyCounts, apts);
+GS_VISITABLE_STRUCT(emfgdi::OEmfPolyDraw, rclBounds, aptl, abTypes);
+GS_VISITABLE_STRUCT(emfgdi::OEmfPolyDraw16, rclBounds, apts, abTypes);
 
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////

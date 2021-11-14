@@ -2,6 +2,7 @@
 #define DATA_ACCESS_H
 
 #include <iostream>
+#include <vector>
 
 namespace data_access
 {
@@ -90,9 +91,30 @@ template <typename T> struct is_optional_wrapper<optional_wrapper<T>> : public s
 template <class _Ty>
 constexpr bool is_optional_wrapper_v = is_optional_wrapper<_Ty>::value;
 
+template <typename _Ty>
+struct array_wrapper
+{
+	array_wrapper(_Ty* _data = nullptr, size_t _size = 0)
+	{
+		data = _data;
+		size = _size;
+	}
+	array_wrapper(const std::vector<_Ty>& vec)
+	{
+		data = vec.data();
+		size = vec.size();
+	}
+	_Ty*	data;
+	size_t	size;
+};
+
 template <typename T> struct is_vector: public std::false_type {};
 
 template <typename T> struct is_vector<std::vector<T>> : public std::true_type {};
+
+template <typename T> struct is_array_wrapper : public std::false_type {};
+
+template <typename T> struct is_array_wrapper<array_wrapper<T>> : public std::true_type {};
 
 class DataReader
 {

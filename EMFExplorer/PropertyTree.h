@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 #include "DataAccess.h"
+#include "EmfPlusStruct.h"
 
 struct PropertyNode 
 {
@@ -146,6 +147,12 @@ struct PropertyNodeArray : public PropertyNode
 		SetData(_data);
 		name = szName;
 	}
+	template <typename T>
+	PropertyNodeArray(LPCWSTR szName, const data_access::array_wrapper<T>& _data)
+	{
+		SetData(_data);
+		name = szName;
+	}
 	PropertyNodeArray(LPCWSTR szName)
 	{
 		name = szName;
@@ -167,11 +174,20 @@ struct PropertyNodeArray : public PropertyNode
 		elem_type = GetElemType<T>();
 	}
 
+	template <typename T>
+	void SetData(const data_access::array_wrapper<T>& _data)
+	{
+		data = _data.data;
+		size = _data.size;
+		elem_type = GetElemType<T>();
+	}
+
 	enum ElemType
 	{
 		ElemTypeUnknown,
 		ElemTypeu8t,
 		ElemTypeu16t,
+		ElemTypeu32t,
 		ElemTypeuFloat,
 		ElemTypePlusPoint,
 		ElemTypePlusPointF,
@@ -179,29 +195,38 @@ struct PropertyNodeArray : public PropertyNode
 		ElemTypePlusRectF,
 		ElemTypePlusCharacterRange,
 		ElemTypePlusARGB,
+		ElemTypeGDIPALETTEENTRY,
+		ElemTypeGDIPOINTL,
 	};
 
 	template <typename T>
 	ElemType GetElemType(const T* p = nullptr)
 	{
-		if constexpr (std::is_same_v<T, emfplus::u8t>)
+		using Ty = std::remove_const<T>::type;
+		if constexpr (std::is_same_v<Ty, emfplus::u8t>)
 			return ElemTypeu8t;
-		else if constexpr (std::is_same_v<T, emfplus::u16t>)
+		else if constexpr (std::is_same_v<Ty, emfplus::u16t>)
 			return ElemTypeu16t;
-		else if constexpr (std::is_same_v<T, emfplus::Float>)
+		else if constexpr (std::is_same_v<Ty, emfplus::u32t> || std::is_same_v<Ty, DWORD>)
+			return ElemTypeu32t;
+		else if constexpr (std::is_same_v<Ty, emfplus::Float>)
 			return ElemTypeuFloat;
-		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusPoint>)
+		else if constexpr (std::is_same_v<Ty, emfplus::OEmfPlusPoint> || std::is_same_v<Ty, POINTS>)
 			return ElemTypePlusPoint;
-		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusPointF>)
+		else if constexpr (std::is_same_v<Ty, emfplus::OEmfPlusPointF>)
 			return ElemTypePlusPointF;
-		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusRect>)
+		else if constexpr (std::is_same_v<Ty, emfplus::OEmfPlusRect>)
 			return ElemTypePlusRect;
-		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusRectF>)
+		else if constexpr (std::is_same_v<Ty, emfplus::OEmfPlusRectF>)
 			return ElemTypePlusRectF;
-		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusCharacterRange>)
+		else if constexpr (std::is_same_v<Ty, emfplus::OEmfPlusCharacterRange>)
 			return ElemTypePlusCharacterRange;
-		else if constexpr (std::is_same_v<T, emfplus::OEmfPlusARGB>)
+		else if constexpr (std::is_same_v<Ty, emfplus::OEmfPlusARGB>)
 			return ElemTypePlusARGB;
+		else if constexpr (std::is_same_v<Ty, PALETTEENTRY>)
+			return ElemTypeGDIPALETTEENTRY;
+		else if constexpr (std::is_same_v<Ty, POINTL>)
+			return ElemTypeGDIPOINTL;
 		else
 			static_assert(false, "Unknown array type");
 		return ElemTypeUnknown;

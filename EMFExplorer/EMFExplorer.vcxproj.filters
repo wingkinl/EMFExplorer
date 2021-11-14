@@ -78,6 +78,9 @@
     <ClInclude Include="EMFStruct2Props.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EmfStruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EMFExplorer.cpp">
@@ -126,6 +129,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="EMFRecAccessGDI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EmfStruct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -3,6 +3,7 @@
 #include "EMFRecAccessGDI.h"
 #include "EMFAccess.h"
 #include "EMFStruct2Props.h"
+#include "EmfStruct.h"
 
 #undef min
 #undef max
@@ -44,7 +45,10 @@ void EMFRecAccessGDIRecHeader::CacheProperties(const CachePropertiesContext& ctx
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeSizeInt>(L"szlMillimeters", pRec->szlMillimeters));
 	if (pRec->cbPixelFormat && pRec->offPixelFormat)
 	{
-		// TODO, ENHMETAHEADER::offPixelFormat
+		ASSERT(pRec->offPixelFormat == sizeof(PIXELFORMATDESCRIPTOR));
+		auto pixelFormat = (const PIXELFORMATDESCRIPTOR*)((const char*)pRec + pRec->offPixelFormat);
+		auto pPixelFormatNode = m_propsCached->AddBranch(L"PixelFormat");
+		EmfStruct2Properties::Build(*pixelFormat, pPixelFormatNode.get());
 	}
 	m_propsCached->AddValue(L"bOpenGL", pRec->bOpenGL);
 	m_propsCached->sub.emplace_back(std::make_shared<PropertyNodeSizeInt>(L"szlMicrometers", pRec->szlMicrometers));
@@ -108,7 +112,10 @@ void EMFRecAccessGDIRecSelectObject::CacheProperties(const CachePropertiesContex
 	if (pRec->ihObject & ENHMETA_STOCK_OBJECT)
 	{
 		auto hObj = pRec->ihObject & ~ENHMETA_STOCK_OBJECT;
-		m_propsCached->AddValue(L"ihObject", pRec->ihObject, true);
+
+		CStringW str;
+		str.Format(L"%s (%08X)", EMFGDIStockObjText(hObj), pRec->ihObject);
+		m_propsCached->AddText(L"ihObject", str);
 	}
 	else
 	{
@@ -225,7 +232,7 @@ void EMFRecAccessGDIRecSetPaletteEntries::CacheProperties(const CachePropertiesC
 	auto pRec = (EMRSETPALETTEENTRIES*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfSetPaletteEntries(*pRec), m_propsCached.get());
 	}
 }
 
@@ -293,7 +300,7 @@ void EMFRecAccessGDIRecGdiComment::CacheProperties(const CachePropertiesContext&
 				break;
 			}
 		}
-	break;
+		break;
 	default:
 		if (pRec->DataSize)
 		{
@@ -570,7 +577,7 @@ void EMFRecAccessGDIRecPolyBezier::CacheProperties(const CachePropertiesContext&
 	auto pRec = (EMRPOLYBEZIER*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline(*pRec), m_propsCached.get());
 	}
 }
 
@@ -586,7 +593,7 @@ void EMFRecAccessGDIRecPolygon::CacheProperties(const CachePropertiesContext& ct
 	auto pRec = (EMRPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline(*pRec), m_propsCached.get());
 	}
 }
 
@@ -679,7 +686,7 @@ void EMFRecAccessGDIRecPolyline::CacheProperties(const CachePropertiesContext& c
 	auto pRec = (EMRPOLYLINE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline(*pRec), m_propsCached.get());
 	}
 }
 
@@ -695,7 +702,7 @@ void EMFRecAccessGDIRecPolyBezierTo::CacheProperties(const CachePropertiesContex
 	auto pRec = (EMRPOLYBEZIERTO*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline(*pRec), m_propsCached.get());
 	}
 }
 
@@ -711,7 +718,7 @@ void EMFRecAccessGDIRecPolyLineTo::CacheProperties(const CachePropertiesContext&
 	auto pRec = (EMRPOLYLINETO*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline(*pRec), m_propsCached.get());
 	}
 }
 
@@ -727,7 +734,7 @@ void EMFRecAccessGDIRecPolyPolyline::CacheProperties(const CachePropertiesContex
 	auto pRec = (EMRPOLYPOLYLINE*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyPolyline(*pRec), m_propsCached.get());
 	}
 }
 
@@ -737,7 +744,7 @@ void EMFRecAccessGDIRecPolyPolygon::CacheProperties(const CachePropertiesContext
 	auto pRec = (EMRPOLYPOLYGON*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyPolyline(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1077,7 +1084,7 @@ void EMFRecAccessGDIRecPolyDraw::CacheProperties(const CachePropertiesContext& c
 	auto pRec = (EMRPOLYDRAW*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyDraw(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1197,7 +1204,7 @@ void EMFRecAccessGDIRecPolyBezier16::CacheProperties(const CachePropertiesContex
 	auto pRec = (EMRPOLYBEZIER16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline16(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1207,7 +1214,7 @@ void EMFRecAccessGDIRecPolygon16::CacheProperties(const CachePropertiesContext& 
 	auto pRec = (EMRPOLYGON16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline16(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1217,7 +1224,7 @@ void EMFRecAccessGDIRecPolyline16::CacheProperties(const CachePropertiesContext&
 	auto pRec = (EMRPOLYLINE16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline16(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1227,7 +1234,7 @@ void EMFRecAccessGDIRecPolyBezierTo16::CacheProperties(const CachePropertiesCont
 	auto pRec = (EMRPOLYBEZIERTO16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline16(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1237,7 +1244,7 @@ void EMFRecAccessGDIRecPolylineTo16::CacheProperties(const CachePropertiesContex
 	auto pRec = (EMRPOLYLINETO16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyline16(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1247,7 +1254,7 @@ void EMFRecAccessGDIRecPolyPolyline16::CacheProperties(const CachePropertiesCont
 	auto pRec = (EMRPOLYPOLYLINE16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyPolyline16(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1257,7 +1264,7 @@ void EMFRecAccessGDIRecPolyPolygon16::CacheProperties(const CachePropertiesConte
 	auto pRec = (EMRPOLYPOLYGON16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyPolyline16(*pRec), m_propsCached.get());
 	}
 }
 
@@ -1267,7 +1274,7 @@ void EMFRecAccessGDIRecPolyDraw16::CacheProperties(const CachePropertiesContext&
 	auto pRec = (EMRPOLYDRAW16*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
 	if (pRec)
 	{
-		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		EmfStruct2Properties::Build(emfgdi::OEmfPolyDraw16(*pRec), m_propsCached.get());
 	}
 }
 

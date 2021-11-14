@@ -199,6 +199,7 @@
     <ClInclude Include="EMFRecAccess.h" />
     <ClInclude Include="EMFRecAccessGDI.h" />
     <ClInclude Include="EMFRecAccessPlus.h" />
+    <ClInclude Include="EmfStruct.h" />
     <ClInclude Include="EMFStruct2Props.h" />
     <ClInclude Include="FileView.h" />
     <ClInclude Include="framework.h" />
@@ -222,6 +223,7 @@
     <ClCompile Include="EMFRecAccess.cpp" />
     <ClCompile Include="EMFRecAccessGDI.cpp" />
     <ClCompile Include="EMFRecAccessPlus.cpp" />
+    <ClCompile Include="EmfStruct.cpp" />
     <ClCompile Include="FileView.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="pch.cpp">

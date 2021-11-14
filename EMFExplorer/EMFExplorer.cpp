@@ -78,7 +78,6 @@ public:
 		if (pDoc)
 		{
 			ASSERT(pDoc->GetEMFType() == CEMFExplorerDoc::EMFType::FromEMFRecord);
-			// TODO
 			pDocument->SetTitle(_T("Sub EMF"));
 			return;
 		}
