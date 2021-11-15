@@ -329,7 +329,8 @@ struct EmfStruct2Properties
 			{
 				if (strstr(name, "Color"))
 				{
-					pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(CStringW(name), (emfplus::OEmfPlusARGB&)(value)));
+					pNode->sub.emplace_back(std::make_shared<PropertyNodeColor>(CStringW(name), 
+						emfplus::OEmfPlusARGB::FromCOLORREF(value)));
 					return;
 				}
 			}
