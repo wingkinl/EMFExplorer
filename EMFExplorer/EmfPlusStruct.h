@@ -6,6 +6,7 @@
 #include "GdiplusEnums.h"
 #include <vector>
 #include <memory>
+#undef string
 #include <string>
 #include <algorithm>
 #include "DataAccess.h"
@@ -1010,11 +1011,11 @@ struct OEmfPlusCharacterRange
 struct OEmfPlusStringFormat : public OEmfPlusGraphObject
 {
 	u32t						StringFormatFlags;	// see OStringFormat
-	OEmfPlusLanguageIdentifier	Language;
+	u32t						Language;
 	OStringAlignment			StringAlignment;
 	OStringAlignment			LineAlign;
 	OStringDigitSubstitution	DigitSubstitution;
-	OEmfPlusLanguageIdentifier	DigitLanguage;
+	u32t						DigitLanguage;
 	Float						FirstTabOffset;
 	OHotkeyPrefix				HotkeyPrefix;
 	Float						LeadingMargin;
@@ -1510,7 +1511,7 @@ struct OEmfPlusRecObjectReader
 
 	u8t GetObjectID() const;
 private:
-	const OEmfPlusRecInfo*	StartRec;
+	const OEmfPlusRecInfo*	StartRec = nullptr;
 #ifdef _DEBUG
 	UINT					ContinuableObjFlags = 0;
 #endif // _DEBUG
