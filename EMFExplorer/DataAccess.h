@@ -84,6 +84,18 @@ inline std::istream& operator>>(std::istream& in, optional_wrapper<_Ty>& v)
 	return in;
 }
 
+template <class _Ty1, class _Ty2>
+constexpr bool operator==(const optional_wrapper<_Ty1>& _Left, const optional_wrapper<_Ty2>& _Right) {
+	const bool _Left_is_enabled = _Left.is_enabled();
+	return _Left_is_enabled == _Right.is_enabled() && (!_Left_is_enabled || *_Left == *_Right);
+}
+
+template <class _Ty1, class _Ty2>
+constexpr bool operator!=(const optional_wrapper<_Ty1>& _Left, const optional_wrapper<_Ty2>& _Right) {
+	const bool _Left_is_enabled = _Left.is_enabled();
+	return _Left_is_enabled != _Right.is_enabled() || (_Left_is_enabled && *_Left != *_Right);
+}
+
 template <typename T> struct is_optional_wrapper : public std::false_type {};
 
 template <typename T> struct is_optional_wrapper<optional_wrapper<T>> : public std::true_type {};

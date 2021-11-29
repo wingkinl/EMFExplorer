@@ -180,6 +180,18 @@ struct OEmfPlusPointF
 	Float y;
 };
 
+inline bool operator==(const OEmfPlusPoint& _Left, const OEmfPlusPoint& _Right)
+{
+	//return _Left.x == _Right.x && _Left.y == _Right.y;
+	return !std::memcmp(&_Left, &_Right, sizeof(_Left));
+}
+
+inline bool operator==(const OEmfPlusPointF& _Left, const OEmfPlusPointF& _Right)
+{
+	//return _Left.x == _Right.x && _Left.y == _Right.y;
+	return !std::memcmp(&_Left, &_Right, sizeof(_Left));
+}
+
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/c2b45b77-c9ce-4b2e-8ede-ff5e90ec7f1b
 typedef i8t		OEmfPlusInteger7;
 
@@ -219,6 +231,13 @@ struct OEmfPlusPointDataArray
 	void Read(DataReader& reader, u32t Count, bool bRelative, bool asInt);
 
 	void Reset();
+
+	bool operator==(const OEmfPlusPointDataArray& other) const;
+
+	inline bool operator!=(const OEmfPlusPointDataArray& other) const
+	{
+		return !operator==(other);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/b539cf16-6232-4705-9f6e-6f914705145f
@@ -296,6 +315,13 @@ struct OEmfPlusPath : public OEmfPlusGraphObject
 	void Reset();
 
 	OObjType GetObjType() const override { return OObjType::Path; }
+
+	bool operator==(const OEmfPlusPath& other) const;
+
+	inline bool operator!=(const OEmfPlusPath& other) const
+	{
+		return !operator==(other);
+	}
 };
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emfplus/01c7de4f-d37e-49d1-9f64-5627a9ca2eea
@@ -308,6 +334,16 @@ struct OEmfPlusRegionNodePath
 	inline void Reset()
 	{
 		RegionNodePath.Reset();
+	}
+
+	inline bool operator==(const OEmfPlusRegionNodePath& other) const
+	{
+		return RegionNodePath == other.RegionNodePath;
+	}
+
+	inline bool operator!=(const OEmfPlusRegionNodePath& other) const
+	{
+		return !operator==(other);
 	}
 };
 
@@ -328,6 +364,16 @@ struct OEmfPlusRectF
 	Float Width;
 	Float Height;
 };
+
+inline bool operator==(const OEmfPlusRect& _Left, const OEmfPlusRect& _Right)
+{
+	return !std::memcmp(&_Left, &_Right, sizeof(_Left));
+}
+
+inline bool operator==(const OEmfPlusRectF& _Left, const OEmfPlusRectF& _Right)
+{
+	return !std::memcmp(&_Left, &_Right, sizeof(_Left));
+}
 
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/fe9329f4-7a87-4025-9a8a-541ee21e6530
 struct ORectL 
@@ -404,6 +450,13 @@ struct OEmfPlusRegionNode
 	OEmfPlusRegionNode& operator=(const OEmfPlusRegionNode& other);
 
 	bool Read(DataReader& reader, size_t nExpectedSize = UNKNOWN_SIZE);
+
+	bool operator==(const OEmfPlusRegionNode& other) const;
+
+	inline bool operator!=(const OEmfPlusRegionNode& other) const
+	{
+		return !operator==(other);
+	}
 
 	inline void SetTransform(const OEmfPlusTransformMatrix& mat)
 	{
@@ -1133,6 +1186,13 @@ struct OEmfPlusRectDataArray
 	}
 
 	void Read(DataReader& reader, bool asInt);
+
+	bool operator==(const OEmfPlusRectDataArray& other) const;
+
+	inline bool operator!=(const OEmfPlusRectDataArray& other) const
+	{
+		return !operator==(other);
+	}
 };
 
 struct OEmfPlusArcData 

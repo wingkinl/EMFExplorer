@@ -4,6 +4,7 @@
 #include "EmfPlusStruct.h"
 #include <sstream>
 #include <iomanip>
+#include <tuple>
 
 namespace emfplus
 {
@@ -69,6 +70,11 @@ void OEmfPlusPointDataArray::Reset()
 	fvals.clear();
 }
 
+bool OEmfPlusPointDataArray::operator==(const OEmfPlusPointDataArray& other) const
+{
+	return std::tie(ivals, fvals) == std::tie(other.ivals, other.fvals);
+}
+
 bool OEmfPlusPath::Read(DataReader& reader, size_t nExpectedSize)
 {
 	ReaderChecker readerCheck(reader, nExpectedSize);
@@ -94,6 +100,21 @@ void OEmfPlusPath::Reset()
 	PathPointCount = 0;
 	PathPointFlags = 0;
 	PathPoints.Reset();
+}
+
+bool OEmfPlusPath::operator==(const OEmfPlusPath& other) const
+{
+	if (PathPointCount != other.PathPointCount)
+		return false;
+	if (PathPointFlags != other.PathPointFlags)
+		return false;
+	if (PathPoints != other.PathPoints)
+		return false;
+	if (PathPointTypes != other.PathPointTypes)
+		return false;
+	if (PathPointTypesRLE != other.PathPointTypesRLE)
+		return false;
+	return true;
 }
 
 bool OEmfPlusRegionNodePath::Read(DataReader& reader, size_t nExpectedSize)
@@ -175,6 +196,41 @@ bool OEmfPlusRegionNode::Read(DataReader& reader, size_t nExpectedSize)
 		if (!childNodes.get())
 			childNodes = std::make_unique<OEmfPlusRegionNodeChildNodes>();
 		childNodes->Read(reader, readerCheck.GetLeftoverSize());
+		break;
+	}
+	return true;
+}
+
+bool OEmfPlusRegionNode::operator==(const OEmfPlusRegionNode& other) const
+{
+	if (Type != other.Type)
+		return false;
+	if (std::memcmp(transform, other.transform, sizeof(transform)))
+		return false;
+	switch (Type)
+	{
+	case ORegionNodeDataTypeRect:
+		if (std::memcmp(&rect.get(), &other.rect.get(), sizeof(rect)))
+			return false;
+		break;
+	case ORegionNodeDataTypePath:
+		if (*path != *other.path)
+			return false;
+		break;
+	case ORegionNodeDataTypeAnd:
+	case ORegionNodeDataTypeOr:
+	case ORegionNodeDataTypeXor:
+	case ORegionNodeDataTypeExclude:
+	case ORegionNodeDataTypeComplement:
+		if ((childNodes.get() != nullptr) ^ (other.childNodes.get() != nullptr))
+			return false;
+		if (childNodes)
+		{
+			if (childNodes->Left != other.childNodes->Left)
+				return false;
+			if (childNodes->Right != other.childNodes->Right)
+				return false;
+		}
 		break;
 	}
 	return true;
@@ -702,6 +758,11 @@ void OEmfPlusRectDataArray::Read(DataReader& reader, bool asInt)
 		else
 			reader.ReadArray(fvals, (size_t)Count);
 	}
+}
+
+bool OEmfPlusRectDataArray::operator==(const OEmfPlusRectDataArray& other) const
+{
+	return std::tie(ivals, fvals) == std::tie(other.ivals, other.fvals);
 }
 
 bool OEmfPlusArcData::Read(DataReader& reader, bool bIntRectData, size_t nExpectedSize)
