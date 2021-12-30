@@ -172,7 +172,7 @@ protected:
 				return false;
 			if (info)
 			{
-				CSize szEMF(m_bmp->GetWidth(), m_bmp->GetHeight());
+				CSize szImg(m_bmp->GetWidth(), m_bmp->GetHeight());
 				CRect rect = info->rect;
 				if (info->bCalcOnly)
 				{
@@ -180,7 +180,7 @@ protected:
 					rect.right = rect.left + sz.cx;
 					rect.bottom = rect.top + sz.cy;
 				}
-				CRect rcFit = GetFitRect(rect, szEMF, true);
+				CRect rcFit = GetFitRect(rect, szImg, true);
 				info->szPreferedSize = rcFit.Size();
 				if (!info->bCalcOnly)
 				{

@@ -322,6 +322,12 @@ void EMFRecAccessGDIRecBitBlt::CacheProperties(const CachePropertiesContext& ctx
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		if (pRec->offBmiSrc)
+		{
+			auto pSrcBmpHeader = (const BITMAPINFOHEADER*)((char*)pRec + pRec->offBmiSrc);
+			auto pSrcBmpHeaderNode = m_propsCached->AddBranch(L"BMP");
+			EmfStruct2Properties::Build(*pSrcBmpHeader, pSrcBmpHeaderNode.get());
+		}
 	}
 }
 
@@ -332,6 +338,12 @@ void EMFRecAccessGDIRecStretchBlt::CacheProperties(const CachePropertiesContext&
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		if (pRec->offBmiSrc)
+		{
+			auto pSrcBmpHeader = (const BITMAPINFOHEADER*)((char*)pRec + pRec->offBmiSrc);
+			auto pSrcBmpHeaderNode = m_propsCached->AddBranch(L"BMP");
+			EmfStruct2Properties::Build(*pSrcBmpHeader, pSrcBmpHeaderNode.get());
+		}
 	}
 }
 
@@ -362,7 +374,42 @@ void EMFRecAccessGDIRecSetDIBitsToDevice::CacheProperties(const CachePropertiesC
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		if (pRec->offBmiSrc)
+		{
+			auto pSrcBmpHeader = (const BITMAPINFOHEADER*)((char*)pRec + pRec->offBmiSrc);
+			auto pSrcBmpHeaderNode = m_propsCached->AddBranch(L"BMP");
+			EmfStruct2Properties::Build(*pSrcBmpHeader, pSrcBmpHeaderNode.get());
+		}
 	}
+}
+
+bool EMFRecAccessGDIRecStretchDIBits::DrawPreview(PreviewContext* info)
+{
+	auto pRec = (EMRSTRETCHDIBITS*)EMFRecAccessGDIRec::GetGDIRecord(m_recInfo);
+	if (!pRec->offBmiSrc)
+		return false;
+	if (info)
+	{
+		auto pSrcBmpHeader = (const BITMAPINFOHEADER*)((char*)pRec + pRec->offBmiSrc);
+		CSize szImg(pSrcBmpHeader->biWidth, pSrcBmpHeader->biHeight);
+		CRect rect = info->rect;
+		if (info->bCalcOnly)
+		{
+			CSize sz = info->GetDefaultImgPreviewSize();
+			rect.right = rect.left + sz.cx;
+			rect.bottom = rect.top + sz.cy;
+		}
+		float scale = 1.0f;
+		CRect rcFit = GetFitRect(rect, szImg, true, &scale);
+		info->szPreferedSize = rcFit.Size();
+		if (!info->bCalcOnly)
+		{
+			const char* pSrcBits = (const char*)((char*)pRec + pRec->offBitsSrc);
+			StretchDIBits(info->pDC->GetSafeHdc(), rcFit.left, rcFit.top, rcFit.Width(), rcFit.Height(),
+				0, 0, szImg.cx, szImg.cy, pSrcBits, (BITMAPINFO*)pSrcBmpHeader, pRec->iUsageSrc, SRCCOPY);
+		}
+	}
+	return true;
 }
 
 void EMFRecAccessGDIRecStretchDIBits::CacheProperties(const CachePropertiesContext& ctxt)
@@ -372,6 +419,12 @@ void EMFRecAccessGDIRecStretchDIBits::CacheProperties(const CachePropertiesConte
 	if (pRec)
 	{
 		EmfStruct2Properties::Build(*pRec, m_propsCached.get());
+		if (pRec->offBmiSrc)
+		{
+			auto pSrcBmpHeader = (const BITMAPINFOHEADER*)((char*)pRec + pRec->offBmiSrc);
+			auto pSrcBmpHeaderNode = m_propsCached->AddBranch(L"BMP");
+			EmfStruct2Properties::Build(*pSrcBmpHeader, pSrcBmpHeaderNode.get());
+		}
 	}
 }
 

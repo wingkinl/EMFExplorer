@@ -35,6 +35,8 @@ GS_VISITABLE_STRUCT(PIXELFORMATDESCRIPTOR, nSize,nVersion,dwFlags,iPixelType,cCo
 	cGreenBits,cGreenShift,cBlueBits,cBlueShift,cAlphaBits,cAlphaShift,cAccumBits,cAccumRedBits,cAccumGreenBits,
 	cAccumBlueBits,cAccumAlphaBits,cDepthBits,cStencilBits,cAuxBuffers,iLayerType,bReserved,dwLayerMask,dwVisibleMask,
 	dwDamageMask);
+GS_VISITABLE_STRUCT(BITMAPINFOHEADER, biSize, biWidth, biHeight, biPlanes, biBitCount, biCompression, 
+	biSizeImage, biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant);
 
 GS_VISITABLE_STRUCT(EMREXCLUDECLIPRECT, rclClip);
 GS_VISITABLE_STRUCT(EMREXTSELECTCLIPRGN, cbRgnData,iMode,RgnData);

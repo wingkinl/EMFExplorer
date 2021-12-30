@@ -911,6 +911,8 @@ public:
 	LPCWSTR GetRecordName() const override { return L"EMR_STRETCHDIBITS"; }
 
 	emfplus::OEmfPlusRecordType GetRecordType() const override { return emfplus::EmfRecordTypeStretchDIBits; }
+
+	bool DrawPreview(PreviewContext* info = nullptr) override;
 private:
 	void CacheProperties(const CachePropertiesContext& ctxt) override;
 };
